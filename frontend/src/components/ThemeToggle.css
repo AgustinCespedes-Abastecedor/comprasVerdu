@@ -83,3 +83,20 @@
     transform: translateX(calc(100% + 3px));
   }
 }
+
+/* App/Android: mismo tamaño que botones del header (volver, logout) */
+html.is-native .theme-toggle-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+}
+
+html.is-native .theme-toggle-thumb {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+html.is-native .theme-toggle-thumb[data-active="dark"] {
+  transform: translateX(calc(100% + 3px));
+}

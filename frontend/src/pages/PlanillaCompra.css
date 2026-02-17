@@ -149,20 +149,28 @@
   box-shadow: 0 0 0 2px var(--planilla-accent-soft);
 }
 
+.planilla-filter-group:first-child {
+  max-width: 11.5rem;
+}
+
 .planilla-input-date {
-  min-width: 11rem;
+  width: 100%;
+  min-width: 10rem;
+  max-width: 11.5rem;
 }
 
 .planilla-input-select {
-  min-width: 14rem;
+  width: 100%;
+  min-width: 10rem;
+  max-width: 13rem;
   cursor: pointer;
 }
 
 /* ----- Selector de proveedor con búsqueda (solo en app/APK) ----- */
 .planilla-filter-group-proveedor {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
-  max-width: 100%;
+  max-width: 13rem;
 }
 
 .planilla-provider-picker-field {
@@ -171,7 +179,8 @@
   justify-content: space-between;
   gap: 0.5rem;
   width: 100%;
-  min-width: 14rem;
+  min-width: 10rem;
+  max-width: 13rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   color: var(--planilla-text);
@@ -1230,6 +1239,86 @@
   .planilla-btn-primary {
     min-height: 44px;
     -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Android/app: mantener columna Descripción (y Código) fijas al scroll horizontal para ver artículo y 2+ columnas a la vez */
+@media (max-width: 768px) {
+  html.is-native .planilla-th-accion,
+  html.is-native .planilla-td-accion,
+  html.is-native .planilla-th-sticky-group,
+  html.is-native .planilla-th.planilla-col-codigo,
+  html.is-native .planilla-th.planilla-col-desc,
+  html.is-native .planilla-td.planilla-col-codigo,
+  html.is-native .planilla-td.planilla-col-desc {
+    position: sticky;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.15);
+  }
+
+  html.is-native .planilla-th-accion {
+    left: 0;
+    z-index: 3;
+  }
+
+  html.is-native .planilla-td-accion {
+    left: 0;
+    z-index: 2;
+    background: var(--planilla-cell-bd-bg);
+  }
+
+  html.is-native .planilla-th-sticky-group {
+    left: 2.5rem;
+    z-index: 3;
+    width: 11rem;
+    min-width: 11rem;
+  }
+
+  html.is-native .planilla-th.planilla-col-codigo {
+    left: 2.5rem;
+    z-index: 3;
+  }
+
+  html.is-native .planilla-th.planilla-col-desc {
+    left: 5.5rem;
+    z-index: 3;
+  }
+
+  html.is-native .planilla-td.planilla-col-codigo {
+    left: 2.5rem;
+    z-index: 2;
+    background: var(--planilla-cell-bd-bg);
+  }
+
+  html.is-native .planilla-td.planilla-col-desc {
+    left: 5.5rem;
+    z-index: 2;
+    background: var(--planilla-cell-bd-bg);
+  }
+
+  html.is-native .planilla-tbody-tr:hover .planilla-td.planilla-col-codigo,
+  html.is-native .planilla-tbody-tr:hover .planilla-td.planilla-col-desc {
+    background: var(--planilla-cell-bd-bg);
+  }
+
+  /* Anchos reducidos para sticky en app: deja espacio para 2+ columnas a la derecha */
+  html.is-native .planilla-col-codigo {
+    min-width: 2.5rem;
+    width: 3rem;
+  }
+
+  html.is-native .planilla-cell-codigo {
+    min-width: 2.25rem;
+    max-width: 3rem;
+  }
+
+  html.is-native .planilla-col-desc {
+    min-width: 6rem;
+    width: 8rem;
+  }
+
+  html.is-native .planilla-cell-desc {
+    min-width: 6rem;
+    max-width: 8rem;
   }
 }
 
