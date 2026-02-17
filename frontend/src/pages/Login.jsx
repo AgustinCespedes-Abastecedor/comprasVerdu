@@ -57,6 +57,9 @@ export default function Login() {
         <ThemeToggle />
       </div>
       <div className="login-card">
+        <div className="login-logo" aria-hidden>
+          <img src="/logo.png" alt="" width="56" height="56" />
+        </div>
         <h1>Compras Verdu</h1>
         <p className="login-subtitle">
           {modo === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}

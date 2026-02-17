@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Compras Verdu</string>
+    <string name="title_activity_main">Compras Verdu</string>
+    <string name="package_name">com.elabastecedor.comprasverdu</string>
+    <string name="custom_url_scheme">com.elabastecedor.comprasverdu</string>
+</resources>

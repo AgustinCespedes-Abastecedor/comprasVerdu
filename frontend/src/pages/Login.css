@@ -4,7 +4,21 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: linear-gradient(160deg, var(--bg) 0%, var(--surface) 100%);
+  background: var(--bg);
+  background-image:
+    linear-gradient(165deg, var(--bg) 0%, var(--surface) 50%, var(--bg) 100%),
+    radial-gradient(ellipse 120% 80% at 50% -20%, var(--accent-soft) 0%, transparent 50%);
+  position: relative;
+}
+
+.login-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at 20% 30%, var(--accent-soft) 0%, transparent 25%),
+                    radial-gradient(circle at 80% 70%, var(--accent-soft) 0%, transparent 20%);
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .login-theme-wrap {
@@ -19,9 +33,41 @@
   max-width: 380px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border-radius: 16px;
+  padding: 2.25rem 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 1px 0 rgba(255, 255, 255, 0.04);
+  position: relative;
+  z-index: 1;
+  animation: login-card-in 0.4s ease-out;
+}
+
+@keyframes login-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  color: var(--text);
+}
+
+.login-logo img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.login-card:hover .login-logo img {
+  transform: scale(1.02);
 }
 
 .login-card h1 {
@@ -29,12 +75,15 @@
   font-size: 1.75rem;
   font-weight: 700;
   color: var(--text);
+  text-align: center;
+  letter-spacing: -0.02em;
 }
 
 .login-subtitle {
   margin: 0 0 1.5rem;
   color: var(--text-muted);
   font-size: 0.95rem;
+  text-align: center;
 }
 
 .login-card form {
@@ -51,11 +100,12 @@
 
 .login-card input,
 .login-card select {
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
   color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .login-card input:focus,
@@ -67,17 +117,23 @@
 
 .btn-primary {
   margin-top: 0.5rem;
-  padding: 0.7rem 1rem;
+  padding: 0.75rem 1rem;
   background: var(--accent);
   color: var(--accent-fg);
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  transition: filter 0.2s, transform 0.15s ease;
 }
 
 .btn-primary:hover:not(:disabled) {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .btn-primary:disabled {

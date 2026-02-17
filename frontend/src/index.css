@@ -52,6 +52,14 @@ a {
   --theme-thumb-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   --theme-focus-ring: rgba(63, 185, 80, 0.5);
 
+  /* Scrollbars */
+  --scrollbar-track: rgba(255, 255, 255, 0.04);
+  --scrollbar-thumb: #30363d;
+  --scrollbar-thumb-hover: #484f58;
+  --scrollbar-thumb-active: #3fb950;
+  --scrollbar-size: 10px;
+  --scrollbar-radius: 6px;
+
   /* Home */
   --home-bg: #0d1117;
   --home-header-bg: #161b22;
@@ -131,6 +139,14 @@ a {
   --theme-thumb-border: rgba(31, 35, 40, 0.08);
   --theme-thumb-shadow: 0 1px 3px rgba(31, 35, 40, 0.12), 0 1px 2px rgba(31, 35, 40, 0.08);
   --theme-focus-ring: rgba(26, 127, 55, 0.4);
+
+  /* Scrollbars */
+  --scrollbar-track: rgba(31, 35, 40, 0.06);
+  --scrollbar-thumb: #afb8c1;
+  --scrollbar-thumb-hover: #8b949e;
+  --scrollbar-thumb-active: #1a7f37;
+  --scrollbar-size: 10px;
+  --scrollbar-radius: 6px;
 
   /* Home */
   --home-bg: #f6f8fa;
@@ -245,5 +261,47 @@ input.campo-calculo:focus {
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
+}
+
+/* ========== SCROLLBARS ========== */
+/* Firefox */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: var(--scrollbar-radius);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
+  border-radius: var(--scrollbar-radius);
 }
 
