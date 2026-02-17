@@ -347,8 +347,13 @@
   border-radius: 8px;
 }
 
+.gestion-usuarios-form-group .password-input-wrap .password-input-field {
+  padding-right: 2.75rem;
+}
+
 .gestion-usuarios-form-group input:focus,
-.gestion-usuarios-form-group select:focus {
+.gestion-usuarios-form-group select:focus,
+.gestion-usuarios-form-group .password-input-wrap .password-input-field:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);

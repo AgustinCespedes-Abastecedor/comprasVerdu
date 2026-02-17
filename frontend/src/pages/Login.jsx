@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { auth } from '../api/client';
 import { ROLES_REGISTRO, rolEtiqueta } from '../lib/roles';
 import ThemeToggle from '../components/ThemeToggle';
+import PasswordInput from '../components/PasswordInput';
 import './Login.css';
 
 export default function Login() {
@@ -97,8 +98,7 @@ export default function Login() {
             autoComplete="email"
           />
           <label>Contraseña</label>
-          <input
-            type="password"
+          <PasswordInput
             name="password"
             value={form.password}
             onChange={handleChange}

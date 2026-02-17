@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { compras, proveedores as apiProveedores } from '../api/client';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
+import AppLoader from '../components/AppLoader';
 import './VerCompras.css';
 
 function formatNum(n) {
@@ -93,7 +94,7 @@ export default function VerCompras() {
         </div>
       </div>
       {loading ? (
-        <div className="layout-center" style={{ padding: '2rem' }}>Cargando compras...</div>
+        <AppLoader message="Cargando compras..." />
       ) : list.length === 0 ? (
         <div className="vercompras-empty">No hay compras con los filtros elegidos.</div>
       ) : (

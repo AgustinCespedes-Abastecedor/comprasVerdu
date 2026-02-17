@@ -1,0 +1,86 @@
+/* Loader inicial (antes de React) - mismo aspecto que AppLoader */
+#root .app-loader-initial {
+  min-height: 100vh;
+  min-height: calc(100vh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  padding-top: max(2rem, env(safe-area-inset-top, 0));
+  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0));
+  background: #0d1117;
+  color: #8b949e;
+}
+
+[data-theme="light"] #root .app-loader-initial {
+  background: #f6f8fa;
+  color: #656d76;
+}
+
+#root .app-loader-wrap {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#root .app-loader-orbit {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  animation: app-loader-orbit-spin 8s linear infinite;
+}
+
+#root .app-loader-orbit-item {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  margin-left: -18px;
+  margin-top: -18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  transform: rotate(var(--angle)) translateY(-72px) rotate(calc(-1 * var(--angle)));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+#root .app-loader-center {
+  position: relative;
+  z-index: 1;
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #161b22;
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 2px solid #21262d;
+}
+
+[data-theme="light"] #root .app-loader-center {
+  background: #fff;
+  border-color: #d0d7de;
+}
+
+#root .app-loader-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  animation: app-loader-logo-pulse 2s ease-in-out infinite;
+}
+
+@keyframes app-loader-orbit-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes app-loader-logo-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.05); }
+}

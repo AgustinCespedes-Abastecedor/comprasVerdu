@@ -4,6 +4,8 @@ import { users } from '../api/client';
 import { rolEtiqueta } from '../lib/roles';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
+import PasswordInput from '../components/PasswordInput';
+import AppLoader from '../components/AppLoader';
 import './GestionUsuarios.css';
 
 const ROLES_FILTER = [
@@ -144,13 +146,11 @@ export default function GestionUsuarios() {
           </div>
         )}
 
+        {loading ? (
+          <AppLoader message="Cargando usuarios..." />
+        ) : (
         <div className="gestion-usuarios-table-wrap">
-          {loading ? (
-            <div className="gestion-usuarios-loading">
-              <div className="gestion-usuarios-spinner" />
-              <p>Cargando usuarios...</p>
-            </div>
-          ) : list.length === 0 ? (
+          {list.length === 0 ? (
             <div className="gestion-usuarios-empty">
               <p>No hay usuarios que coincidan con los filtros.</p>
               <p className="gestion-usuarios-empty-hint">Probá cambiando la búsqueda o agregá un nuevo usuario.</p>
@@ -195,6 +195,7 @@ export default function GestionUsuarios() {
             </table>
           )}
         </div>
+        )}
       </main>
 
       {modal === 'create' && (
@@ -212,7 +213,7 @@ export default function GestionUsuarios() {
               </div>
               <div className="gestion-usuarios-form-group">
                 <label htmlFor="create-password">Contraseña</label>
-                <input id="create-password" name="password" type="password" required placeholder="Mínimo 6 caracteres" autoComplete="new-password" minLength={6} />
+                <PasswordInput id="create-password" name="password" required placeholder="Mínimo 6 caracteres" autoComplete="new-password" minLength={6} />
               </div>
               <div className="gestion-usuarios-form-group">
                 <label htmlFor="create-rol">Rol</label>
@@ -258,7 +259,7 @@ export default function GestionUsuarios() {
               </div>
               <div className="gestion-usuarios-form-group">
                 <label htmlFor="edit-password">Nueva contraseña <span className="gestion-usuarios-optional">(opcional)</span></label>
-                <input id="edit-password" name="password" type="password" placeholder="Dejar en blanco para no cambiar" autoComplete="new-password" minLength={6} />
+                <PasswordInput id="edit-password" name="password" placeholder="Dejar en blanco para no cambiar" autoComplete="new-password" minLength={6} />
               </div>
               <div className="gestion-usuarios-modal-actions">
                 <button type="button" className="gestion-usuarios-btn-secondary" onClick={() => !saving && setModal(null)} disabled={saving}>

@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ResponseProvider } from './context/ResponseContext';
 import { puedeComprar, puedeGestionarUsuarios } from './lib/roles';
+import AppLoader from './components/AppLoader';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import PlanillaCompra from './pages/PlanillaCompra';
@@ -12,7 +13,7 @@ import GestionUsuarios from './pages/GestionUsuarios';
 
 function PrivateRoute({ children, compradorOnly, adminOnly }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="layout-center">Cargando...</div>;
+  if (loading) return <AppLoader message="Cargando..." />;
   if (!user) return <Navigate to="/login" replace />;
   if (compradorOnly && !puedeComprar(user.rol)) return <Navigate to="/" replace />;
   if (adminOnly && !puedeGestionarUsuarios(user.rol)) return <Navigate to="/" replace />;

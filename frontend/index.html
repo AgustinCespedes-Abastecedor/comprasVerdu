@@ -8,9 +8,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/loader.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="app-loader app-loader-initial" role="status" aria-label="Cargando">
+        <div class="app-loader-wrap">
+          <div class="app-loader-orbit" aria-hidden>
+            <span class="app-loader-orbit-item" style="--angle: 0deg">🍎</span>
+            <span class="app-loader-orbit-item" style="--angle: 45deg">🍋</span>
+            <span class="app-loader-orbit-item" style="--angle: 90deg">🍊</span>
+            <span class="app-loader-orbit-item" style="--angle: 135deg">🥕</span>
+            <span class="app-loader-orbit-item" style="--angle: 180deg">🍅</span>
+            <span class="app-loader-orbit-item" style="--angle: 225deg">🥬</span>
+            <span class="app-loader-orbit-item" style="--angle: 270deg">🍇</span>
+            <span class="app-loader-orbit-item" style="--angle: 315deg">🥦</span>
+          </div>
+          <div class="app-loader-center">
+            <img src="/logo.png" alt="" class="app-loader-logo" width="80" height="80">
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
