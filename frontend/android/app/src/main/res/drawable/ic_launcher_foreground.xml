@@ -1,57 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-
-    <!-- Carrito: cuerpo principal (canasta) -->
-    <path
-        android:fillColor="#2E7D32"
-        android:pathData="M30,62 L34,50 L38,46 L70,46 L74,50 L78,62 L78,74 Q78,80 72,80 L36,80 Q30,80 30,74 Z" />
-    <!-- Borde superior carrito -->
-    <path
-        android:fillColor="#1B5E20"
-        android:pathData="M34,50 L38,46 L70,46 L74,50 L72,52 L36,52 Z" />
-    <!-- Asa del carrito -->
-    <path
-        android:fillColor="none"
-        android:strokeColor="#1B5E20"
-        android:strokeWidth="3.5"
-        android:strokeLineCap="round"
-        android:pathData="M70,46 Q90,38 94,30" />
-    <!-- Rueda izquierda -->
-    <path
-        android:fillColor="#1B5E20"
-        android:pathData="M38,78 m-3.5,0 a 3.5,3.5 0 1,1 7,0 a 3.5,3.5 0 1,1 -7,0" />
-    <!-- Rueda derecha -->
-    <path
-        android:fillColor="#1B5E20"
-        android:pathData="M70,78 m-3.5,0 a 3.5,3.5 0 1,1 7,0 a 3.5,3.5 0 1,1 -7,0" />
-
-    <!-- Tomate -->
-    <path
-        android:fillColor="#D32F2F"
-        android:pathData="M42,52 m-5,0 a 5,5 0 1,1 10,0 a 5,5 0 1,1 -10,0" />
-    <path
-        android:fillColor="#388E3C"
-        android:pathData="M45,47 L47,44 L49,47 Z" />
-
-    <!-- Limón -->
-    <path
-        android:fillColor="#FBC02D"
-        android:pathData="M56,50 m-4.5,0 a 4.5,4.5 0 1,1 9,0 a 4.5,4.5 0 1,1 -9,0" />
-
-    <!-- Manzana -->
-    <path
-        android:fillColor="#C62828"
-        android:pathData="M68,54 m-4.5,0 a 4.5,4.5 0 1,1 9,0 a 4.5,4.5 0 1,1 -9,0" />
-    <path
-        android:fillColor="#558B2F"
-        android:pathData="M71,50 L72,48 L73,50 Z" />
-
-    <!-- Hoja / verde -->
-    <path
-        android:fillColor="#43A047"
-        android:pathData="M50,44 Q46,40 48,36 Q52,39 52,44 Q50,46 50,44 Z" />
-</vector>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="75dp"
+        android:height="75dp"
+        android:gravity="center">
+        <bitmap
+            android:src="@drawable/ic_launcher_logo"
+            android:gravity="fill"
+            android:filter="true"
+            android:antialias="true" />
+    </item>
+</layer-list>
