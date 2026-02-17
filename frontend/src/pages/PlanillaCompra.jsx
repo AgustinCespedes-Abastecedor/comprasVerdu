@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { proveedores, productos, compras } from '../api/client';
 import { useResponse } from '../context/ResponseContext';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import './PlanillaCompra.css';
+
+const isApp = () => Capacitor.isNativePlatform();
 
 const PAGE_SIZE = 50;
 const DEBOUNCE_MS = 300;
@@ -68,6 +71,29 @@ export default function PlanillaCompra() {
   const [busquedaDebounced, setBusquedaDebounced] = useState('');
   const { showSuccess, showError } = useResponse();
   const debounceRef = useRef(null);
+  const [providerPickerOpen, setProviderPickerOpen] = useState(false);
+  const [providerSearch, setProviderSearch] = useState('');
+  const providerSearchInputRef = useRef(null);
+
+  const filteredProveedores = useMemo(() => {
+    if (!providerSearch.trim()) return proveedoresList;
+    const q = providerSearch.trim().toLowerCase();
+    return proveedoresList.filter((p) => (p.nombre || '').toLowerCase().includes(q));
+  }, [proveedoresList, providerSearch]);
+
+  useEffect(() => {
+    if (providerPickerOpen && providerSearchInputRef.current) {
+      const t = setTimeout(() => providerSearchInputRef.current?.focus(), 100);
+      return () => clearTimeout(t);
+    }
+  }, [providerPickerOpen]);
+
+  useEffect(() => {
+    if (!providerPickerOpen) return;
+    const onEscape = (e) => { if (e.key === 'Escape') setProviderPickerOpen(false); };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [providerPickerOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -381,18 +407,126 @@ export default function PlanillaCompra() {
                 className="planilla-input planilla-input-date"
               />
             </div>
-            <div className="planilla-filter-group">
+            <div className="planilla-filter-group planilla-filter-group-proveedor">
               <label className="planilla-filter-label">Proveedor</label>
-              <select
-                value={proveedorId}
-                onChange={(e) => setProveedorId(e.target.value)}
-                className="planilla-input planilla-input-select"
-              >
-                <option value="">Seleccionar proveedor</option>
-                {proveedoresList.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nombre}</option>
-                ))}
-              </select>
+              {isApp() ? (
+                <>
+                  <button
+                    type="button"
+                    className="planilla-provider-picker-field"
+                    onClick={() => setProviderPickerOpen(true)}
+                    aria-haspopup="dialog"
+                    aria-expanded={providerPickerOpen}
+                    aria-label="Elegir proveedor. Buscar por nombre."
+                    data-has-value={proveedorId ? 'true' : undefined}
+                  >
+                    <span className="planilla-provider-picker-field-value">
+                      {proveedorId
+                        ? (proveedoresList.find((p) => p.id === proveedorId)?.nombre ?? 'Proveedor')
+                        : 'Buscar o elegir proveedor'}
+                    </span>
+                    <svg className="planilla-provider-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+                  {providerPickerOpen && (
+                    <div
+                      className="planilla-provider-picker-backdrop"
+                      onClick={() => setProviderPickerOpen(false)}
+                      role="presentation"
+                    >
+                      <div
+                        className="planilla-provider-picker-sheet"
+                        onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Buscar proveedor"
+                      >
+                        <div className="planilla-provider-picker-sheet-header">
+                          <h2 className="planilla-provider-picker-sheet-title">Elegir proveedor</h2>
+                          <button
+                            type="button"
+                            className="planilla-provider-picker-close"
+                            onClick={() => setProviderPickerOpen(false)}
+                            aria-label="Cerrar"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                              <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className="planilla-provider-picker-search-wrap">
+                          <svg className="planilla-provider-picker-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
+                          </svg>
+                          <input
+                            ref={providerSearchInputRef}
+                            type="search"
+                            value={providerSearch}
+                            onChange={(e) => setProviderSearch(e.target.value)}
+                            placeholder="Buscar por nombre..."
+                            className="planilla-provider-picker-search"
+                            autoComplete="off"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                            aria-label="Buscar proveedor"
+                          />
+                          {providerSearch && (
+                            <button
+                              type="button"
+                              className="planilla-provider-picker-search-clear"
+                              onClick={() => setProviderSearch('')}
+                              aria-label="Borrar búsqueda"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                        <div className="planilla-provider-picker-list-wrap">
+                          <ul className="planilla-provider-picker-list" role="listbox">
+                            {filteredProveedores.length === 0 ? (
+                              <li className="planilla-provider-picker-empty">
+                                {providerSearch.trim() ? 'Ningún proveedor coincide con la búsqueda.' : 'No hay proveedores cargados.'}
+                              </li>
+                            ) : (
+                              filteredProveedores.map((p) => (
+                                <li
+                                  key={p.id}
+                                  role="option"
+                                  aria-selected={proveedorId === p.id}
+                                  className={`planilla-provider-picker-item ${proveedorId === p.id ? 'planilla-provider-picker-item-selected' : ''}`}
+                                  onClick={() => {
+                                    setProveedorId(p.id);
+                                    setProviderPickerOpen(false);
+                                    setProviderSearch('');
+                                  }}
+                                >
+                                  <span className="planilla-provider-picker-item-name">{p.nombre}</span>
+                                  {proveedorId === p.id && (
+                                    <span className="planilla-provider-picker-item-check" aria-hidden>✓</span>
+                                  )}
+                                </li>
+                              ))
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <select
+                  value={proveedorId}
+                  onChange={(e) => setProveedorId(e.target.value)}
+                  className="planilla-input planilla-input-select"
+                >
+                  <option value="">Seleccionar proveedor</option>
+                  {proveedoresList.map((p) => (
+                    <option key={p.id} value={p.id}>{p.nombre}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
         </section>
@@ -441,6 +575,11 @@ export default function PlanillaCompra() {
                 </span>
               )}
             </div>
+          )}
+          {totalProductos > 0 && (
+            <p className="planilla-table-hint" aria-live="polite">
+              Deslizá la tabla a la derecha o izquierda para ver todas las columnas (Bultos, Precio, Total, etc.).
+            </p>
           )}
           <div className="planilla-table-wrap">
             <table className="planilla-table">

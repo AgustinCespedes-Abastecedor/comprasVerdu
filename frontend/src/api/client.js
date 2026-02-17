@@ -1,5 +1,13 @@
-// En desarrollo web usa el proxy (/api). En Capacitor/móvil usa VITE_API_URL (ej: http://192.168.1.100:4000/api)
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// Navegador: usa /api (proxy de Vite → localhost:4000). Capacitor/móvil: usa VITE_API_URL (URL completa).
+import { Capacitor } from '@capacitor/core';
+
+const getApiBase = () => {
+  if (Capacitor.isNativePlatform()) {
+    return import.meta.env.VITE_API_URL || 'http://192.168.1.99:4000/api';
+  }
+  return '/api';
+};
+const API_BASE = getApiBase();
 
 function getToken() {
   return localStorage.getItem('compras_verdu_token');

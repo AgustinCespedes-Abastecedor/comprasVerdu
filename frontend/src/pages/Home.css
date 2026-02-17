@@ -69,6 +69,9 @@
   width: 100%;
   margin: 0 auto;
   padding: 3rem 2rem 2rem;
+  padding-left: max(2rem, env(safe-area-inset-left, 0));
+  padding-right: max(2rem, env(safe-area-inset-right, 0));
+  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0));
 }
 
 /* ----- Hero ----- */
@@ -276,4 +279,19 @@
   letter-spacing: 0.05em;
   color: var(--home-muted);
   opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .home-btn-logout {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .home-action-card,
+  .home-config-link {
+    -webkit-tap-highlight-color: transparent;
+  }
 }

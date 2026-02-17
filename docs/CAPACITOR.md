@@ -56,3 +56,16 @@ La APK estará en `android/app/build/outputs/apk/debug/app-debug.apk`
 - Conecta un dispositivo Android con depuración USB activada
 - En Android Studio: **Run** (▶️) para instalar y ejecutar
 - O desde terminal: `npx cap run android`
+
+## Error "failed to fetch" en celular físico
+
+1. **Verifica la IP de tu PC**: En PowerShell ejecutá `ipconfig` y buscá la IPv4 de tu adaptador WiFi (ej: 192.168.1.99). Actualizá `frontend/.env` con esa IP.
+
+2. **Firewall de Windows**: El firewall puede bloquear conexiones entrantes. Ejecutá como **Administrador**:
+   ```powershell
+   .\scripts\allow-backend-firewall.ps1
+   ```
+
+3. **Prueba desde el navegador del celular**: Abrí Chrome en el celular y andá a `http://TU_IP:4000/api/health`. Si ves `{"ok":true}` la red está bien. Si no carga, es firewall o IP incorrecta.
+
+4. **Backend corriendo**: Asegurate de tener `npm run dev:backend` ejecutándose en la PC.

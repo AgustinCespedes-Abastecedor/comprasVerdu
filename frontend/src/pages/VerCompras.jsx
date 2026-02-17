@@ -110,7 +110,8 @@ export default function VerCompras() {
                 <span>$ {formatNum(c.totalMonto)}</span>
               </div>
               {c.detalles?.length > 0 && (
-                <table className="vercompras-detalle">
+                <div className="vercompras-detalle-wrap">
+                  <table className="vercompras-detalle">
                   <thead>
                     <tr>
                       <th>Código</th>
@@ -136,6 +137,7 @@ export default function VerCompras() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </article>
           ))}

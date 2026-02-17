@@ -1,5 +1,10 @@
 {
   "appId": "com.elabastecedor.comprasverdu",
   "appName": "Compras Verdu",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }

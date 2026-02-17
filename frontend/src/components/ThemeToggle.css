@@ -64,3 +64,22 @@
 .theme-toggle-thumb[data-active="light"] {
   transform: translateX(0);
 }
+
+@media (max-width: 768px) {
+  .theme-toggle-btn {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .theme-toggle-thumb {
+    width: 44px;
+    height: 44px;
+  }
+
+  .theme-toggle-thumb[data-active="dark"] {
+    transform: translateX(calc(100% + 3px));
+  }
+}
