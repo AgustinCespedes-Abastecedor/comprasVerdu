@@ -384,12 +384,7 @@ export default function PlanillaCompra() {
                 <path d="M15 6l-6 6 6 6" />
               </svg>
             </Link>
-            <div className="planilla-header-title-block">
-              <h1 className="planilla-title">{isApp() ? 'Compra' : 'Nueva compra'}</h1>
-              {!isApp() && (
-                <p className="planilla-subtitle">Completá la planilla y guardá la compra al proveedor seleccionado</p>
-              )}
-            </div>
+            <h1 className="planilla-header-title">Nueva Compra</h1>
           </>
         }
         rightContent={<ThemeToggle />}
@@ -576,108 +571,12 @@ export default function PlanillaCompra() {
               )}
             </div>
           )}
-          {totalProductos > 0 && !isApp() && (
+          {totalProductos > 0 && (
             <p className="planilla-table-hint" aria-live="polite">
-              Deslizá la tabla a la derecha o izquierda para ver todas las columnas (Bultos, Precio, Total, etc.).
+              Deslizá la tabla a la derecha o izquierda para ver todas las columnas (Bultos, Precio, Total, etc.). Usá el dispositivo en horizontal.
             </p>
           )}
-          {totalProductos > 0 && isApp() && (
-            <ul className="planilla-mobile-list" aria-label="Lista de artículos para cargar">
-              {filas.map((f) => (
-                <li key={f.filaId} className="planilla-mobile-card">
-                  <div className="planilla-mobile-card-top">
-                    <div className="planilla-mobile-card-action">
-                      {esFilaHija(f) ? (
-                        <button
-                          type="button"
-                          className="planilla-btn-quitar planilla-mobile-btn-action"
-                          onClick={() => eliminarFilaHija(f.filaId)}
-                          title="Quitar esta fila"
-                          aria-label={`Quitar ${f.descripcion}`}
-                        >
-                          −
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="planilla-btn-duplicar planilla-mobile-btn-action"
-                          onClick={() => duplicarFila(f.filaId)}
-                          title="Duplicar artículo"
-                          aria-label={`Duplicar ${f.descripcion}`}
-                        >
-                          +
-                        </button>
-                      )}
-                    </div>
-                    <div className="planilla-mobile-card-header">
-                      <span className="planilla-mobile-card-codigo">{f.codigo}</span>
-                      <span className="planilla-mobile-card-desc">{f.descripcion}</span>
-                    </div>
-                  </div>
-                  <div className="planilla-mobile-card-fields">
-                    <div className="planilla-mobile-field">
-                      <label>Bultos</label>
-                      <input
-                        type="text"
-                        value={f.bultos}
-                        onChange={(e) => actualizarFila(f.filaId, 'bultos', e.target.value)}
-                        placeholder="—"
-                        inputMode="numeric"
-                        className="planilla-cell planilla-cell-manual"
-                      />
-                    </div>
-                    <div className="planilla-mobile-field">
-                      <label>Precio/bulto</label>
-                      <input
-                        type="text"
-                        value={f.precioPorBulto}
-                        onChange={(e) => actualizarFila(f.filaId, 'precioPorBulto', e.target.value)}
-                        placeholder="—"
-                        inputMode="numeric"
-                        className="planilla-cell planilla-cell-manual"
-                      />
-                    </div>
-                    <div className="planilla-mobile-field">
-                      <label>Peso/bulto</label>
-                      <input
-                        type="text"
-                        value={f.pesoPorBulto}
-                        onChange={(e) => actualizarFila(f.filaId, 'pesoPorBulto', e.target.value)}
-                        placeholder="—"
-                        inputMode="decimal"
-                        className="planilla-cell planilla-cell-manual"
-                      />
-                    </div>
-                    <div className="planilla-mobile-field">
-                      <label>Precio venta</label>
-                      <input
-                        type="text"
-                        value={f.precioVentaCompra}
-                        onChange={(e) => actualizarFila(f.filaId, 'precioVentaCompra', e.target.value)}
-                        placeholder="—"
-                        inputMode="numeric"
-                        className="planilla-cell planilla-cell-manual"
-                      />
-                    </div>
-                  </div>
-                  <div className="planilla-mobile-card-totals">
-                    <span className="planilla-mobile-total-label">$/kg</span>
-                    <span className="planilla-mobile-total-value">{formatNum(f.precioPorKg)}</span>
-                    <span className="planilla-mobile-total-label">Margen %</span>
-                    <span className="planilla-mobile-total-value">{formatNum(f.margenFinalPorc)}</span>
-                    <span className="planilla-mobile-total-label planilla-mobile-total-label-main">Total</span>
-                    <span className="planilla-mobile-total-value planilla-mobile-total-value-main">{formatNum(f.total)}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          {totalProductos > 0 && isApp() && (
-            <p className="planilla-mobile-list-footer">
-              Total esta compra: <strong>{formatNum(totalesCompra.bultos)}</strong> bultos · <strong>$ {formatNum(totalesCompra.monto)}</strong>
-            </p>
-          )}
-          {totalProductos > 0 && !isApp() && (
+          {totalProductos > 0 && (
           <div className="planilla-table-wrap">
             <table className="planilla-table">
               <thead>

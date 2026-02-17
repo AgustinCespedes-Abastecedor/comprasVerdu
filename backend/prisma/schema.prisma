@@ -50,6 +50,7 @@ model Producto {
 
 model Compra {
   id           String         @id @default(cuid())
+  numeroCompra Int?           @unique // Número secuencial para trazabilidad (asignado al crear)
   fecha        DateTime       @db.Date
   totalBultos  Int            @default(0)
   totalMonto   Decimal        @default(0) @db.Decimal(14, 2)

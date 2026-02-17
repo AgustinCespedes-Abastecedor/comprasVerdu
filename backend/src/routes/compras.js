@@ -98,8 +98,11 @@ router.post('/', soloComprador, async (req, res) => {
     if (detallesCrear.length === 0) {
       return res.status(400).json({ error: 'Debe haber al menos un ítem con bultos > 0' });
     }
+    const { _max } = await prisma.compra.aggregate({ _max: { numeroCompra: true } });
+    const numeroCompra = (Number(_max?.numeroCompra) || 0) + 1;
     const compra = await prisma.compra.create({
       data: {
+        numeroCompra,
         fecha: new Date(fecha),
         totalBultos,
         totalMonto,

@@ -40,23 +40,15 @@
   height: 1.125rem;
 }
 
-.gestion-usuarios-header-title-block {
-  flex: 1;
-  min-width: 0;
-}
-
-.gestion-usuarios-title {
+.gestion-usuarios-header-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: "Segoe UI", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  font-size: 1.0625rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-
-.gestion-usuarios-subtitle {
-  margin: 0.25rem 0 0;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--danger);
+  min-width: 0;
 }
 
 .gestion-usuarios-main {

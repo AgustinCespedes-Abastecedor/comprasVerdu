@@ -68,22 +68,15 @@
   height: 1.125rem;
 }
 
-.planilla-header-title-block {
-  min-width: 0;
-}
-
-.planilla-title {
+.planilla-header-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: "Segoe UI", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  font-size: 1.0625rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--planilla-text);
-}
-
-.planilla-subtitle {
-  margin: 0.25rem 0 0;
-  font-size: 0.8125rem;
-  color: var(--planilla-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--danger);
+  min-width: 0;
 }
 
 /* ----- Main ----- */
@@ -589,11 +582,11 @@
   font-style: italic;
 }
 
-/* Hint solo visible en móvil: indicar scroll horizontal */
+/* Hint: indicar scroll horizontal (móvil y APK) */
 .planilla-table-hint {
   display: none;
   margin: 0 0 0.5rem;
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.75rem;
   font-size: 0.8125rem;
   color: var(--planilla-muted);
   background: var(--planilla-input-bg);
@@ -607,6 +600,11 @@
   }
 }
 
+/* APK: hint siempre visible, scroll horizontal es el modo principal */
+html.is-native .planilla-table-hint {
+  display: block;
+}
+
 /* ----- Table wrap ----- */
 .planilla-table-wrap {
   overflow-x: auto;
@@ -617,9 +615,15 @@
   background: var(--planilla-card-bg);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   transition: opacity 0.2s ease;
-  /* Asegura que el scroll horizontal sea posible en móvil */
   max-width: 100%;
   width: 100%;
+}
+
+/* APK: scroll horizontal fluido, optimizado para landscape */
+html.is-native .planilla-table-wrap {
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
 }
 
 .planilla-section-table-busy .planilla-table-wrap {
@@ -1242,84 +1246,135 @@
   }
 }
 
-/* Android/app: mantener columna Descripción (y Código) fijas al scroll horizontal para ver artículo y 2+ columnas a la vez */
-@media (max-width: 768px) {
-  html.is-native .planilla-th-accion,
-  html.is-native .planilla-td-accion,
-  html.is-native .planilla-th-sticky-group,
-  html.is-native .planilla-th.planilla-col-codigo,
-  html.is-native .planilla-th.planilla-col-desc,
-  html.is-native .planilla-td.planilla-col-codigo,
-  html.is-native .planilla-td.planilla-col-desc {
-    position: sticky;
-    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.15);
-  }
+/* APK: grilla horizontal con columnas sticky — border-collapse: separate es obligatorio para que sticky funcione */
+html.is-native .planilla-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 1150px;
+  font-size: 0.8125rem;
+}
 
-  html.is-native .planilla-th-accion {
-    left: 0;
-    z-index: 3;
-  }
+html.is-native .planilla-th-accion,
+html.is-native .planilla-td-accion,
+html.is-native .planilla-th-sticky-group,
+html.is-native .planilla-th.planilla-col-codigo,
+html.is-native .planilla-th.planilla-col-desc,
+html.is-native .planilla-td.planilla-col-codigo,
+html.is-native .planilla-td.planilla-col-desc {
+  position: sticky;
+  z-index: 2;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.15);
+  /* Fuerza capa GPU: evita que desaparezcan al scroll en WebView móvil */
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
 
-  html.is-native .planilla-td-accion {
-    left: 0;
-    z-index: 2;
-    background: var(--planilla-cell-bd-bg);
-  }
+html.is-native .planilla-th-accion,
+html.is-native .planilla-th-sticky-group,
+html.is-native .planilla-th.planilla-col-codigo,
+html.is-native .planilla-th.planilla-col-desc {
+  z-index: 3;
+  background: var(--planilla-th-bd-bg);
+}
 
-  html.is-native .planilla-th-sticky-group {
-    left: 2.5rem;
-    z-index: 3;
-    width: 11rem;
-    min-width: 11rem;
-  }
+html.is-native .planilla-th-accion {
+  left: 0;
+}
 
-  html.is-native .planilla-th.planilla-col-codigo {
-    left: 2.5rem;
-    z-index: 3;
-  }
+html.is-native .planilla-td-accion {
+  left: 0;
+  background: var(--planilla-cell-bd-bg);
+}
 
-  html.is-native .planilla-th.planilla-col-desc {
-    left: 5.5rem;
-    z-index: 3;
-  }
+html.is-native .planilla-th-sticky-group {
+  left: 2.5rem;
+  width: 11rem;
+  min-width: 11rem;
+}
 
-  html.is-native .planilla-td.planilla-col-codigo {
-    left: 2.5rem;
-    z-index: 2;
-    background: var(--planilla-cell-bd-bg);
-  }
+html.is-native .planilla-th.planilla-col-codigo {
+  left: 2.5rem;
+}
 
-  html.is-native .planilla-td.planilla-col-desc {
-    left: 5.5rem;
-    z-index: 2;
-    background: var(--planilla-cell-bd-bg);
-  }
+html.is-native .planilla-th.planilla-col-desc {
+  left: 5.5rem;
+}
 
-  html.is-native .planilla-tbody-tr:hover .planilla-td.planilla-col-codigo,
-  html.is-native .planilla-tbody-tr:hover .planilla-td.planilla-col-desc {
-    background: var(--planilla-cell-bd-bg);
-  }
+html.is-native .planilla-td.planilla-col-codigo {
+  left: 2.5rem;
+  background: var(--planilla-cell-bd-bg);
+}
 
-  /* Anchos reducidos para sticky en app: deja espacio para 2+ columnas a la derecha */
-  html.is-native .planilla-col-codigo {
-    min-width: 2.5rem;
-    width: 3rem;
-  }
+html.is-native .planilla-td.planilla-col-desc {
+  left: 5.5rem;
+  background: var(--planilla-cell-bd-bg);
+}
 
-  html.is-native .planilla-cell-codigo {
-    min-width: 2.25rem;
-    max-width: 3rem;
-  }
+html.is-native .planilla-tbody-tr:hover .planilla-td.planilla-col-codigo,
+html.is-native .planilla-tbody-tr:hover .planilla-td.planilla-col-desc {
+  background: var(--planilla-cell-bd-bg);
+}
 
-  html.is-native .planilla-col-desc {
-    min-width: 6rem;
-    width: 8rem;
-  }
+/* APK: columnas compactas para ver artículo + 2+ columnas al scroll */
+html.is-native .planilla-col-codigo {
+  min-width: 2.5rem;
+  width: 3rem;
+}
 
-  html.is-native .planilla-cell-desc {
-    min-width: 6rem;
-    max-width: 8rem;
-  }
+html.is-native .planilla-cell-codigo {
+  min-width: 2.25rem;
+  max-width: 3rem;
+}
+
+html.is-native .planilla-col-desc {
+  min-width: 6rem;
+  width: 8rem;
+}
+
+html.is-native .planilla-cell-desc {
+  min-width: 6rem;
+  max-width: 8rem;
+}
+
+/* APK: tabla más compacta y touch-friendly */
+html.is-native .planilla-th,
+html.is-native .planilla-td {
+  padding: 0.45rem 0.4rem;
+}
+
+html.is-native .planilla-cell {
+  min-width: 2.75rem;
+  max-width: 5.5rem;
+  padding: 0.4rem 0.45rem;
+  font-size: 0.8125rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .planilla-btn-duplicar,
+html.is-native .planilla-btn-quitar {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .planilla-main {
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0));
+  padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0) + 1rem));
+}
+
+html.is-native .planilla-btn-primary {
+  min-height: 48px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .planilla-back {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .planilla-btn-spinner {
@@ -1392,7 +1447,74 @@
   word-break: break-word;
 }
 
+.planilla-mobile-card-sistema {
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--planilla-border);
+  border-bottom: 1px solid var(--planilla-border);
+}
+
+.planilla-mobile-card-sistema-title {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--planilla-th-bd-fg);
+  margin-bottom: 0.5rem;
+}
+
+.planilla-mobile-card-sistema-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.planilla-mobile-sistema-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.8125rem;
+  min-height: 1.5rem;
+}
+
+[data-theme="light"] .planilla-mobile-sistema-row {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.planilla-mobile-sistema-row:last-child {
+  border-bottom: none;
+}
+
+.planilla-mobile-sistema-label {
+  color: var(--planilla-muted);
+  flex-shrink: 0;
+  margin-right: 0.75rem;
+}
+
+.planilla-mobile-sistema-value {
+  color: var(--planilla-cell-bd-fg);
+  font-weight: 600;
+  text-align: right;
+  min-width: 4ch;
+}
+
 .planilla-mobile-card-fields {
+  padding-top: 0.5rem;
+}
+
+.planilla-mobile-card-fields-title {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--planilla-th-manual-fg);
+  margin-bottom: 0.35rem;
+}
+
+.planilla-mobile-card-fields-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 0.5rem 0.75rem;
@@ -1427,6 +1549,10 @@
   outline: none;
   border-color: var(--planilla-accent);
   box-shadow: 0 0 0 2px var(--planilla-accent-soft);
+}
+
+.planilla-mobile-card-fields .planilla-mobile-field {
+  margin-bottom: 0;
 }
 
 .planilla-mobile-card-totals {

@@ -4,14 +4,6 @@
   background: var(--bg);
 }
 
-.vercompras-header-title {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text);
-  min-width: 0;
-}
-
 .vercompras-back {
   display: flex;
   align-items: center;
@@ -46,6 +38,16 @@
   height: 1.125rem;
 }
 
+.vercompras-header-title {
+  margin: 0;
+  font-family: "Segoe UI", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--danger);
+  min-width: 0;
+}
 
 .vercompras-filtros {
   display: flex;
@@ -78,6 +80,318 @@
   min-width: 140px;
 }
 
+/* ----- Buscador de proveedores (solo APK) ----- */
+.vercompras-provider-picker-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 140px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.vercompras-provider-picker-field:hover {
+  border-color: var(--border-hover);
+}
+
+.vercompras-provider-picker-field:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.vercompras-provider-picker-field-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vercompras-provider-picker-chevron {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-muted);
+}
+
+.vercompras-provider-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  animation: vercompras-provider-backdrop-in 0.2s ease;
+}
+
+@keyframes vercompras-provider-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.vercompras-provider-picker-sheet {
+  width: 100%;
+  max-width: 28rem;
+  max-height: 85vh;
+  max-height: min(85vh, calc(100dvh - env(safe-area-inset-top, 0) - 3rem));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: vercompras-provider-sheet-in 0.25s ease;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@keyframes vercompras-provider-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vercompras-provider-picker-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.75rem;
+  padding-top: max(1rem, env(safe-area-inset-top, 0));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.vercompras-provider-picker-sheet-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vercompras-provider-picker-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.vercompras-provider-picker-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .vercompras-provider-picker-close:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.vercompras-provider-picker-close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.vercompras-provider-picker-search-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.vercompras-provider-picker-search-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+.vercompras-provider-picker-search {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vercompras-provider-picker-search:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.vercompras-provider-picker-search::placeholder {
+  color: var(--text-muted);
+}
+
+.vercompras-provider-picker-search-clear {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.vercompras-provider-picker-search-clear:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .vercompras-provider-picker-search-clear:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.vercompras-provider-picker-list-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vercompras-provider-picker-list {
+  margin: 0;
+  padding: 0.5rem 0;
+  list-style: none;
+}
+
+.vercompras-provider-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  border: none;
+  border-radius: 0;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+}
+
+.vercompras-provider-picker-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="light"] .vercompras-provider-picker-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.vercompras-provider-picker-item-selected {
+  background: var(--accent-soft, rgba(59, 130, 246, 0.15));
+  color: var(--accent);
+  font-weight: 500;
+}
+
+[data-theme="light"] .vercompras-provider-picker-item-selected {
+  color: var(--accent);
+}
+
+.vercompras-provider-picker-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vercompras-provider-picker-item-check {
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.vercompras-provider-picker-empty {
+  padding: 1.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+  list-style: none;
+}
+
+.vercompras-export {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0 max(1.5rem, env(safe-area-inset-left, 0));
+  padding-right: max(1.5rem, env(safe-area-inset-right, 0));
+  padding-bottom: 1rem;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.vercompras-btn-export {
+  padding: 0.6rem 1rem;
+  min-height: 44px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.vercompras-btn-export:hover {
+  background: var(--accent-soft, rgba(59, 130, 246, 0.15));
+  border-color: var(--accent);
+}
+
+.vercompras-btn-export:active {
+  transform: scale(0.98);
+}
+
 .vercompras-empty {
   padding: 2rem max(1.5rem, env(safe-area-inset-left, 0));
   padding-right: max(1.5rem, env(safe-area-inset-right, 0));
@@ -108,6 +422,12 @@
   padding: 0.75rem 1rem;
   background: var(--surface2);
   font-size: 0.9rem;
+}
+
+.vercompras-card-numero {
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-right: 0.25rem;
 }
 
 .vercompras-card-fecha {
@@ -167,5 +487,19 @@
   .vercompras-field select {
     min-width: 0;
     width: 100%;
+  }
+
+  /* Botones de exportación: en APK/móvil ocupan mitad del ancho cada uno o se apilan */
+  .vercompras-export {
+    gap: 0.5rem;
+    padding-left: max(1rem, env(safe-area-inset-left, 0));
+    padding-right: max(1rem, env(safe-area-inset-right, 0));
+  }
+
+  .vercompras-btn-export {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+    font-size: 0.85rem;
+    padding: 0.65rem 0.75rem;
   }
 }

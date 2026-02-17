@@ -104,10 +104,7 @@ export default function GestionUsuarios() {
                 <path d="M15 6l-6 6 6 6" />
               </svg>
             </Link>
-            <div className="gestion-usuarios-header-title-block">
-              <h1 className="gestion-usuarios-title">Gestión de usuarios</h1>
-              <p className="gestion-usuarios-subtitle">Crear, editar y asignar roles a los usuarios del sistema</p>
-            </div>
+            <h1 className="gestion-usuarios-header-title">Usuarios</h1>
           </>
         }
         rightContent={<ThemeToggle />}
