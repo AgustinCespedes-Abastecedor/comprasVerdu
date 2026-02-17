@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RolUsuario {
+  ADMIN
+  COMPRADOR
+  VISOR
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  nombre    String
+  rol       RolUsuario @default(COMPRADOR)
+  compras   Compra[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Proveedor {
+  id            String   @id @default(cuid())
+  nombre        String
+  codigoExterno String?  @unique
+  idExterno     String?  // PK del proveedor en SQL Server (articulos.proveedor puede referenciar este id)
+  compras       Compra[]
+}
+
+model Producto {
+  id              String   @id @default(cuid())
+  codigo          String   @unique
+  codigoExterno   String?  @unique
+  descripcion     String
+  stockSucursales Int      @default(0)
+  stockCD         Int      @default(0)
+  ventasN1        Int      @default(0)
+  ventasN2        Int      @default(0)
+  ventas7dias     Int      @default(0)
+  costo           Decimal  @default(0) @db.Decimal(12, 2)
+  precioVenta     Decimal  @default(0) @db.Decimal(12, 2)
+  margenPorc      Decimal  @default(0) @db.Decimal(5, 2)
+  detalles        DetalleCompra[]
+}
+
+model Compra {
+  id           String         @id @default(cuid())
+  fecha        DateTime       @db.Date
+  totalBultos  Int            @default(0)
+  totalMonto   Decimal        @default(0) @db.Decimal(14, 2)
+  userId       String
+  proveedorId  String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proveedor    Proveedor      @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  detalles     DetalleCompra[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([fecha])
+  @@index([userId])
+  @@index([proveedorId])
+}
+
+model DetalleCompra {
+  id             String   @id @default(cuid())
+  compraId       String
+  productoId     String
+  bultos         Int      @default(0)
+  precioPorBulto Decimal  @default(0) @db.Decimal(12, 2)
+  pesoPorBulto   Decimal  @default(0) @db.Decimal(8, 2)
+  precioPorKg    Decimal  @default(0) @db.Decimal(12, 2)
+  total          Decimal  @default(0) @db.Decimal(14, 2)
+  compra         Compra   @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  producto       Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+}

@@ -1,0 +1,17 @@
+# Dependencias
+node_modules/
+
+# Entorno y secretos
+.env
+.env.local
+.env.*.local
+
+# Build y cache
+frontend/dist/
+frontend/.vite/
+backend/generated/
+
+# Logs y OS
+*.log
+.DS_Store
+Thumbs.db

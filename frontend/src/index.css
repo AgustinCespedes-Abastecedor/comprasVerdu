@@ -1,0 +1,249 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --font: 'DM Sans', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+input, select, button {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* ========== DARK THEME ========== */
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --border: #21262d;
+  --border-hover: #30363d;
+  --accent: #3fb950;
+  --accent-soft: rgba(63, 185, 80, 0.15);
+  --accent-fg: #0d1117;
+  --danger: #f85149;
+  --danger-soft: rgba(248, 81, 73, 0.15);
+
+  /* Theme toggle */
+  --theme-track: rgba(255, 255, 255, 0.06);
+  --theme-border: rgba(255, 255, 255, 0.08);
+  --theme-track-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --theme-icon: #8b949e;
+  --theme-icon-hover: #c9d1d9;
+  --theme-icon-active: #e6edf3;
+  --theme-thumb: #21262d;
+  --theme-thumb-border: rgba(255, 255, 255, 0.06);
+  --theme-thumb-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --theme-focus-ring: rgba(63, 185, 80, 0.5);
+
+  /* Home */
+  --home-bg: #0d1117;
+  --home-header-bg: #161b22;
+  --home-border: #21262d;
+  --home-text: #e6edf3;
+  --home-muted: #8b949e;
+  --home-card-bg: #161b22;
+  --home-card-border: #21262d;
+  --home-card-hover-border: #30363d;
+  --home-card-hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --home-accent: #3fb950;
+  --home-accent-soft: rgba(63, 185, 80, 0.12);
+  --home-accent-hover: #56d364;
+  --home-icon-bg: rgba(255, 255, 255, 0.06);
+
+  /* Planilla */
+  --planilla-bg: #0d1117;
+  --planilla-header-bg: #161b22;
+  --planilla-border: #21262d;
+  --planilla-border-hover: #30363d;
+  --planilla-text: #e6edf3;
+  --planilla-muted: #8b949e;
+  --planilla-card-bg: #161b22;
+  --planilla-input-bg: #0d1117;
+  --planilla-accent: #3fb950;
+  --planilla-accent-soft: rgba(63, 185, 80, 0.15);
+  --planilla-accent-hover: #56d364;
+  --planilla-tfoot-bg: rgba(255, 255, 255, 0.03);
+  /* Planilla: datos del sistema - ámbar bien visible */
+  --planilla-th-bd-bg: #4a3f0a;
+  --planilla-th-bd-fg: #e6c229;
+  --planilla-cell-bd-bg: #3d3409;
+  --planilla-cell-bd-fg: #f0d43a;
+  /* Planilla: datos a completar - coral/naranja */
+  --planilla-th-manual-bg: #4a2618;
+  --planilla-th-manual-fg: #f0a070;
+  --planilla-cell-manual-bg: #3d1f12;
+  --planilla-cell-manual-fg: #e6edf3;
+  /* Planilla: calculado - verde */
+  --planilla-th-calculo-bg: #0d3320;
+  --planilla-th-calculo-fg: #3fb950;
+  --planilla-cell-calculo-bg: #0a2818;
+  --planilla-cell-calculo-fg: #56d364;
+  --planilla-th-fg: #8b949e;
+  /* Leyenda chips (mismos colores que tabla, fondos sólidos) */
+  --legend-bd-bg: #4a3f0a;
+  --legend-bd-fg: #e6c229;
+  --legend-manual-bg: #4a2618;
+  --legend-manual-fg: #f0a070;
+  --legend-calculo-bg: #0d3320;
+  --legend-calculo-fg: #56d364;
+}
+
+/* ========== LIGHT THEME ========== */
+[data-theme="light"] {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface2: #eaeef2;
+  --text: #1f2328;
+  --text-muted: #656d76;
+  --border: #d0d7de;
+  --border-hover: #afb8c1;
+  --accent: #1a7f37;
+  --accent-soft: rgba(26, 127, 55, 0.15);
+  --accent-fg: #ffffff;
+  --danger: #cf222e;
+  --danger-soft: rgba(207, 34, 46, 0.12);
+
+  /* Theme toggle */
+  --theme-track: rgba(31, 35, 40, 0.06);
+  --theme-border: rgba(31, 35, 40, 0.12);
+  --theme-track-shadow: 0 1px 2px rgba(31, 35, 40, 0.06);
+  --theme-icon: #656d76;
+  --theme-icon-hover: #424a53;
+  --theme-icon-active: #1f2328;
+  --theme-thumb: #ffffff;
+  --theme-thumb-border: rgba(31, 35, 40, 0.08);
+  --theme-thumb-shadow: 0 1px 3px rgba(31, 35, 40, 0.12), 0 1px 2px rgba(31, 35, 40, 0.08);
+  --theme-focus-ring: rgba(26, 127, 55, 0.4);
+
+  /* Home */
+  --home-bg: #f6f8fa;
+  --home-header-bg: #ffffff;
+  --home-border: #d0d7de;
+  --home-text: #1f2328;
+  --home-muted: #656d76;
+  --home-card-bg: #ffffff;
+  --home-card-border: #d0d7de;
+  --home-card-hover-border: #afb8c1;
+  --home-card-hover-shadow: 0 4px 12px rgba(31, 35, 40, 0.12);
+  --home-accent: #1a7f37;
+  --home-accent-soft: rgba(26, 127, 55, 0.12);
+  --home-accent-hover: #2da44e;
+  --home-icon-bg: rgba(31, 35, 40, 0.06);
+
+  /* Planilla */
+  --planilla-bg: #f6f8fa;
+  --planilla-header-bg: #ffffff;
+  --planilla-border: #d0d7de;
+  --planilla-border-hover: #afb8c1;
+  --planilla-text: #1f2328;
+  --planilla-muted: #656d76;
+  --planilla-card-bg: #ffffff;
+  --planilla-input-bg: #ffffff;
+  --planilla-accent: #1a7f37;
+  --planilla-accent-soft: rgba(26, 127, 55, 0.15);
+  --planilla-accent-hover: #2da44e;
+  --planilla-tfoot-bg: #f6f8fa;
+  /* Planilla: datos del sistema - ámbar */
+  --planilla-th-bd-bg: #f5e6b3;
+  --planilla-th-bd-fg: #7c5e03;
+  --planilla-cell-bd-bg: #fdf4d4;
+  --planilla-cell-bd-fg: #5c4a00;
+  /* Planilla: datos a completar - coral */
+  --planilla-th-manual-bg: #ffd4c4;
+  --planilla-th-manual-fg: #9a3b1a;
+  --planilla-cell-manual-bg: #ffe8e0;
+  --planilla-cell-manual-fg: #1f2328;
+  /* Planilla: calculado - verde */
+  --planilla-th-calculo-bg: #b8e0c4;
+  --planilla-th-calculo-fg: #0f5c2e;
+  --planilla-cell-calculo-bg: #d4eddc;
+  --planilla-cell-calculo-fg: #116329;
+  --planilla-th-fg: #656d76;
+  /* Leyenda chips */
+  --legend-bd-bg: #f5e6b3;
+  --legend-bd-fg: #7c5e03;
+  --legend-manual-bg: #ffd4c4;
+  --legend-manual-fg: #9a3b1a;
+  --legend-calculo-bg: #b8e0c4;
+  --legend-calculo-fg: #0f5c2e;
+}
+
+/* Aplicar tema al body */
+[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+[data-theme="light"] body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+a {
+  color: var(--accent);
+}
+
+.home-action-card,
+.home-action-card:hover {
+  text-decoration: none;
+}
+
+/* Campos planilla (fallback global) */
+.campo-bd {
+  background: var(--planilla-cell-bd-bg);
+  color: var(--planilla-cell-bd-fg);
+}
+.campo-manual {
+  background: var(--planilla-cell-manual-bg);
+  color: var(--planilla-cell-manual-fg);
+}
+.campo-calculo {
+  background: var(--planilla-cell-calculo-bg);
+  color: var(--planilla-cell-calculo-fg);
+}
+
+input.campo-bd,
+input.campo-manual,
+input.campo-calculo {
+  border: 1px solid transparent;
+  padding: 0.35rem 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+input.campo-bd:read-only {
+  cursor: default;
+  font-weight: 500;
+}
+
+input.campo-manual:focus,
+input.campo-calculo:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.layout-center {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+

@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: compras_verdu_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: compras_verdu
+      POSTGRES_PASSWORD: compras_verdu_secret
+      POSTGRES_DB: compras_verdu
+    ports:
+      - "5433:5432"
+    volumes:
+      - compras_verdu_pgdata:/var/lib/postgresql/data
+
+volumes:
+  compras_verdu_pgdata:
