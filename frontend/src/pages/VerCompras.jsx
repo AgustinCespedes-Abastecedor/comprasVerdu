@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { compras, proveedores as apiProveedores } from '../api/client';
+import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import './VerCompras.css';
 
@@ -48,15 +49,19 @@ export default function VerCompras() {
 
   return (
     <div className="vercompras-page">
-      <header className="vercompras-header">
-        <Link to="/" className="vercompras-back" title="Volver al panel" aria-label="Volver al panel">
-          <svg className="vercompras-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M15 6l-6 6 6 6" />
-          </svg>
-        </Link>
-        <h1>Ver Compras</h1>
-        <ThemeToggle />
-      </header>
+      <AppHeader
+        leftContent={
+          <>
+            <Link to="/" className="vercompras-back" title="Volver al panel" aria-label="Volver al panel">
+              <svg className="vercompras-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M15 6l-6 6 6 6" />
+              </svg>
+            </Link>
+            <h1 className="vercompras-header-title">Ver Compras</h1>
+          </>
+        }
+        rightContent={<ThemeToggle />}
+      />
       <div className="vercompras-filtros">
         <div className="vercompras-field">
           <label>Desde</label>

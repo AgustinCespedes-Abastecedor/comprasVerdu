@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../api/client';
+import { ROLES_REGISTRO, rolEtiqueta } from '../lib/roles';
 import ThemeToggle from '../components/ThemeToggle';
 import './Login.css';
 
@@ -76,8 +77,9 @@ export default function Login() {
               />
               <label>Rol</label>
               <select name="rol" value={form.rol} onChange={handleChange}>
-                <option value="COMPRADOR">Comprador</option>
-                <option value="VISOR">Solo ver compras</option>
+                {ROLES_REGISTRO.map((r) => (
+                  <option key={r} value={r}>{rolEtiqueta(r)}</option>
+                ))}
               </select>
             </>
           )}

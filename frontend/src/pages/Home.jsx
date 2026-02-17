@@ -1,14 +1,16 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { puedeComprar as permisoComprar, puedeGestionarUsuarios, rolEtiqueta } from '../lib/roles';
+import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import './Home.css';
 
 export default function Home() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const puedeComprar = user?.rol === 'COMPRADOR' || user?.rol === 'ADMIN';
-  const esAdmin = user?.rol === 'ADMIN';
+  const puedeComprar = permisoComprar(user?.rol);
+  const esAdmin = puedeGestionarUsuarios(user?.rol);
 
   const handleLogout = () => {
     logout();
@@ -17,32 +19,39 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <header className="home-header">
-        <div className="home-brand">
-          <span className="home-brand-name">Compras Verdu</span>
-          <span className="home-brand-meta">Gestión de compras</span>
-        </div>
-        <div className="home-user-block">
-          <ThemeToggle />
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="home-btn-logout"
-            title="Cerrar sesión"
-            aria-label="Cerrar sesión"
-          >
-            <svg className="home-btn-logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-          </button>
-        </div>
-      </header>
+      <AppHeader
+        leftContent={
+          <div className="home-brand">
+            <span className="home-brand-name">Compras Verdu</span>
+            <span className="home-brand-meta">Gestión de compras</span>
+          </div>
+        }
+        rightContent={
+          <>
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="home-btn-logout"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+            >
+              <svg className="home-btn-logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </button>
+          </>
+        }
+      />
 
       <main className="home-main">
         <section className="home-hero">
           <p className="home-hero-greeting">Bienvenido, {user?.nombre?.split(' ')[0] || user?.nombre}</p>
+          <span className="home-hero-rol" title={`Rol: ${rolEtiqueta(user?.rol)}`}>
+            {rolEtiqueta(user?.rol)}
+          </span>
           <h1 className="home-hero-title">Panel de control</h1>
           <p className="home-hero-subtitle">
             Seleccioná una acción para continuar

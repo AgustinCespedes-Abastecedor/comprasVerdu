@@ -2,11 +2,12 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { proveedores, productos, compras } from '../api/client';
 import { useResponse } from '../context/ResponseContext';
+import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import './PlanillaCompra.css';
 
 const PAGE_SIZE = 50;
-const DEBOUNCE_MS = 400;
+const DEBOUNCE_MS = 300;
 
 function formatNum(n) {
   if (n == null || n === '') return '';
@@ -57,6 +58,7 @@ export default function PlanillaCompra() {
   const [pageCache, setPageCache] = useState({});
   const [totalesDia, setTotalesDia] = useState({ totalBultos: 0, totalMonto: 0 });
   const [loading, setLoading] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [sortBy, setSortBy] = useState('descripcion');
@@ -133,7 +135,7 @@ export default function PlanillaCompra() {
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    setLoadingList(true);
     const params = { proveedorId, fecha, page: paginaActual, pageSize: PAGE_SIZE, sortBy: sortBy || 'descripcion', sortDir: sortDir || 'asc' };
     if (busquedaDebounced.trim()) params.q = busquedaDebounced.trim();
     productos.list(params).then((res) => {
@@ -142,12 +144,12 @@ export default function PlanillaCompra() {
         const newFilas = itemsToFilas(items);
         setFilas(newFilas);
         setPageCache((prev) => ({ ...prev, [paginaActual]: { filas: newFilas } }));
-        setLoading(false);
+        setLoadingList(false);
       }
     }).catch((e) => {
       if (!cancelled) {
         setMensaje({ tipo: 'error', text: e.message });
-        setLoading(false);
+        setLoadingList(false);
       }
     });
     return () => { cancelled = true; };
@@ -158,7 +160,7 @@ export default function PlanillaCompra() {
     setPageCache({});
     setPaginaActual(1);
     let cancelled = false;
-    setLoading(true);
+    setLoadingList(true);
     const params = { proveedorId, fecha, page: 1, pageSize: PAGE_SIZE, sortBy: sortBy || 'descripcion', sortDir: sortDir || 'asc' };
     if (busquedaDebounced.trim()) params.q = busquedaDebounced.trim();
     productos.list(params).then((res) => {
@@ -169,12 +171,12 @@ export default function PlanillaCompra() {
         const newFilas = itemsToFilas(items);
         setFilas(newFilas);
         setPageCache({ 1: { filas: newFilas } });
-        setLoading(false);
+        setLoadingList(false);
       }
     }).catch((e) => {
       if (!cancelled) {
         setMensaje({ tipo: 'error', text: e.message });
-        setLoading(false);
+        setLoadingList(false);
       }
     });
     return () => { cancelled = true; };
@@ -350,20 +352,22 @@ export default function PlanillaCompra() {
 
   return (
     <div className="planilla-page">
-      <header className="planilla-header">
-        <div className="planilla-header-inner">
-          <Link to="/" className="planilla-back" title="Volver al panel" aria-label="Volver al panel">
-            <svg className="planilla-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M15 6l-6 6 6 6" />
-            </svg>
-          </Link>
-          <div className="planilla-header-title-block">
-            <h1 className="planilla-title">Nueva compra</h1>
-            <p className="planilla-subtitle">Completá la planilla y guardá la compra al proveedor seleccionado</p>
-          </div>
-          <ThemeToggle />
-        </div>
-      </header>
+      <AppHeader
+        leftContent={
+          <>
+            <Link to="/" className="planilla-back" title="Volver al panel" aria-label="Volver al panel">
+              <svg className="planilla-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M15 6l-6 6 6 6" />
+              </svg>
+            </Link>
+            <div className="planilla-header-title-block">
+              <h1 className="planilla-title">Nueva compra</h1>
+              <p className="planilla-subtitle">Completá la planilla y guardá la compra al proveedor seleccionado</p>
+            </div>
+          </>
+        }
+        rightContent={<ThemeToggle />}
+      />
 
       <main className="planilla-main">
         <section className="planilla-section planilla-section-filters">
@@ -399,28 +403,41 @@ export default function PlanillaCompra() {
           </div>
         )}
 
-        <section className="planilla-section planilla-section-table">
+        <section className={`planilla-section planilla-section-table ${loadingList ? 'planilla-section-table-busy' : ''}`}>
           <div className="planilla-table-legend">
             <span className="planilla-legend-item planilla-legend-bd">Datos del sistema</span>
             <span className="planilla-legend-item planilla-legend-manual">Datos a completar</span>
             <span className="planilla-legend-item planilla-legend-calculo">Calculado</span>
           </div>
           {totalProductos > 0 && (
-            <div className="planilla-search-wrap">
+            <div className={`planilla-search-wrap ${loadingList ? 'planilla-search-wrap-busy' : ''}`}>
               <label htmlFor="planilla-buscar-articulo" className="planilla-search-label">Buscar artículo</label>
-              <input
-                id="planilla-buscar-articulo"
-                type="search"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Escribí nombre o parte del nombre (ej. limón, tomate)"
-                className="planilla-input planilla-input-search"
-                autoComplete="off"
-                aria-describedby={busqueda.trim() ? 'planilla-busqueda-resultados' : undefined}
-              />
-              {busquedaDebounced.trim() && (
+              <div className="planilla-search-input-row">
+                <input
+                  id="planilla-buscar-articulo"
+                  type="search"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  placeholder="Escribí nombre o parte del nombre (ej. limón, tomate)"
+                  className="planilla-input planilla-input-search"
+                  autoComplete="off"
+                  aria-describedby={busqueda.trim() ? 'planilla-busqueda-resultados' : undefined}
+                  aria-busy={loadingList}
+                />
+                {loadingList && (
+                  <span className="planilla-search-spinner" aria-hidden>
+                    <span className="planilla-search-spinner-dot" />
+                  </span>
+                )}
+              </div>
+              {busquedaDebounced.trim() && !loadingList && (
                 <span id="planilla-busqueda-resultados" className="planilla-search-results" aria-live="polite">
-                  Búsqueda activa · {totalProductos} {totalProductos === 1 ? 'resultado' : 'resultados'}
+                  {totalProductos} {totalProductos === 1 ? 'resultado' : 'resultados'}
+                </span>
+              )}
+              {busquedaDebounced.trim() && loadingList && (
+                <span id="planilla-busqueda-resultados" className="planilla-search-results planilla-search-results-busy" aria-live="polite">
+                  Buscando…
                 </span>
               )}
             </div>
@@ -430,7 +447,7 @@ export default function PlanillaCompra() {
               <thead>
                 <tr className="planilla-thead-row planilla-thead-row-group">
                   <th className="planilla-th planilla-th-accion" scope="col" aria-label="Duplicar fila" />
-                  <th colSpan={2} className="planilla-th planilla-th-bd">Datos del sistema</th>
+                  <th colSpan={2} className="planilla-th planilla-th-bd planilla-th-sticky-group">Datos del sistema</th>
                   <th colSpan={3} className="planilla-th planilla-th-bd">Stock en bultos</th>
                   <th colSpan={3} className="planilla-th planilla-th-bd">Ventas en unidades</th>
                   <th colSpan={3} className="planilla-th planilla-th-bd">$ unitarios vigentes</th>

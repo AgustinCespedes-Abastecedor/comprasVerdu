@@ -7,17 +7,7 @@
   background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(63, 185, 80, 0.06), transparent);
 }
 
-/* ----- Header ----- */
-.home-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2rem;
-  height: 4rem;
-  background: var(--home-header-bg);
-  border-bottom: 1px solid var(--home-border);
-}
-
+/* ----- Header content (slot dentro de AppHeader) ----- */
 .home-brand {
   display: flex;
   flex-direction: column;
@@ -37,12 +27,6 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--home-muted);
-}
-
-.home-user-block {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 .home-btn-logout {
@@ -97,6 +81,19 @@
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--home-muted);
+}
+
+.home-hero-rol {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--home-muted);
+  background: var(--home-icon-bg);
+  border-radius: 6px;
 }
 
 .home-hero-title {

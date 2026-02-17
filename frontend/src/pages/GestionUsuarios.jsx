@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { users } from '../api/client';
+import { rolEtiqueta } from '../lib/roles';
+import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import './GestionUsuarios.css';
 
-const ROLES = [
+const ROLES_FILTER = [
   { value: '', label: 'Todos los roles' },
   { value: 'ADMIN', label: 'Administrador' },
   { value: 'COMPRADOR', label: 'Comprador' },
@@ -90,22 +92,24 @@ export default function GestionUsuarios() {
     }
   };
 
-  const rolLabel = (r) => (r === 'ADMIN' ? 'Administrador' : r === 'COMPRADOR' ? 'Comprador' : 'Visor');
-
   return (
     <div className="gestion-usuarios-page">
-      <header className="gestion-usuarios-header">
-        <Link to="/" className="gestion-usuarios-back" title="Volver al panel" aria-label="Volver al panel">
-          <svg className="gestion-usuarios-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M15 6l-6 6 6 6" />
-          </svg>
-        </Link>
-        <div className="gestion-usuarios-header-title-block">
-          <h1 className="gestion-usuarios-title">Gestión de usuarios</h1>
-          <p className="gestion-usuarios-subtitle">Crear, editar y asignar roles a los usuarios del sistema</p>
-        </div>
-        <ThemeToggle />
-      </header>
+      <AppHeader
+        leftContent={
+          <>
+            <Link to="/" className="gestion-usuarios-back" title="Volver al panel" aria-label="Volver al panel">
+              <svg className="gestion-usuarios-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M15 6l-6 6 6 6" />
+              </svg>
+            </Link>
+            <div className="gestion-usuarios-header-title-block">
+              <h1 className="gestion-usuarios-title">Gestión de usuarios</h1>
+              <p className="gestion-usuarios-subtitle">Crear, editar y asignar roles a los usuarios del sistema</p>
+            </div>
+          </>
+        }
+        rightContent={<ThemeToggle />}
+      />
 
       <main className="gestion-usuarios-main">
         <div className="gestion-usuarios-toolbar">
@@ -124,7 +128,7 @@ export default function GestionUsuarios() {
               className="gestion-usuarios-select"
               aria-label="Filtrar por rol"
             >
-              {ROLES.map((r) => (
+              {ROLES_FILTER.map((r) => (
                 <option key={r.value || 'all'} value={r.value}>{r.label}</option>
               ))}
             </select>
@@ -170,7 +174,7 @@ export default function GestionUsuarios() {
                     <td>{u.email}</td>
                     <td>
                       <span className={`gestion-usuarios-rol-badge gestion-usuarios-rol-${u.rol.toLowerCase()}`}>
-                        {rolLabel(u.rol)}
+                        {rolEtiqueta(u.rol)}
                       </span>
                     </td>
                     <td>{formatDate(u.createdAt)}</td>

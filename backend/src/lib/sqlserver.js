@@ -29,7 +29,13 @@ const COL_ARTICULOS_PROVEEDOR = process.env.EXTERNAL_ARTICULOS_PROVEEDOR || 'pro
 const COL_ARTICULOS_PRECIO_COSTO = process.env.EXTERNAL_ARTICULOS_PRECIO_COSTO || 'PrecioCosto';
 const COL_ARTICULOS_PRECIO_VENTA = process.env.EXTERNAL_ARTICULOS_PRECIO_VENTA || 'PrecioVenta';
 const COL_ARTICULOS_MARGEN = process.env.EXTERNAL_ARTICULOS_MARGEN || 'Margen';
+const COL_ARTICULOS_IVA = process.env.EXTERNAL_ARTICULOS_IVA || 'IVA';
 const ARTICULOS_DEPARTAMENTO_ID = process.env.EXTERNAL_ARTICULOS_DEPARTAMENTO_ID ?? '6';
+
+/** Tabla IVA en ELABASTECEDOR: Codigo (ej. 1, 2), Porcentaje (ej. 21.000 = 21%, 10.5000 = 10.5%) */
+const TABLE_IVA = process.env.EXTERNAL_IVA_TABLE || 'TablaIVA';
+const COL_IVA_CODIGO = process.env.EXTERNAL_IVA_CODIGO || 'Codigo';
+const COL_IVA_PORCENTAJE = process.env.EXTERNAL_IVA_PORCENTAJE || 'Porcentaje';
 
 const TABLE_STOCK = process.env.EXTERNAL_STOCK_TABLE || 'Stock';
 const COL_STOCK_SUCURSAL = process.env.EXTERNAL_STOCK_SUCURSAL || 'sucursal';
@@ -162,8 +168,9 @@ function sqlNormalizarCodigoArticulos(alias = 'a') {
 }
 
 /**
- * Obtiene PrecioCosto, PrecioVenta y Margen desde la tabla articulos por código.
- * Cruce por código normalizado (misma lógica que stock/ventas).
+ * Obtiene PrecioCosto (con IVA sumado), PrecioVenta y Margen desde articulos por código.
+ * El costo se calcula como: costo_base * (1 + IVA%/100), usando TablaIVA (Codigo, Porcentaje)
+ * y articulos.IVA como FK a TablaIVA.Codigo. Porcentaje en TablaIVA: 21.000 = 21%, 10.5000 = 10.5%.
  * @param {string[]} codigos - Códigos de artículo (se normalizan internamente).
  * @returns {Promise<Object.<string, { costo: number, precioVenta: number, margenPorc: number }>>}
  */
@@ -179,14 +186,16 @@ export async function fetchPreciosDesdeArticulos(codigos) {
     const costoExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_PRECIO_COSTO}] AS DECIMAL(18,2)), 0)`;
     const ventaExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_PRECIO_VENTA}] AS DECIMAL(18,2)), 0)`;
     const margenExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_MARGEN}] AS DECIMAL(18,2)), 0)`;
+    const ivaPctExpr = `ISNULL(TRY_CAST(i.[${COL_IVA_PORCENTAJE}] AS DECIMAL(10,4)), 0)`;
     for (let i = 0; i < unicos.length; i += STOCK_BATCH_SIZE) {
       const batch = unicos.slice(i, i + STOCK_BATCH_SIZE);
       const codigosStr = batch.join(',');
       const request = pool.request();
       request.input('codigos', sql.VarChar(4000), codigosStr);
       const sqlQuery = [
-        `SELECT ${normCod} AS codigo, ${costoExpr} AS costo, ${ventaExpr} AS precioVenta, ${margenExpr} AS margenPorc`,
+        `SELECT ${normCod} AS codigo, ${costoExpr} AS costoBase, ${ivaPctExpr} AS ivaPorcentaje, ${ventaExpr} AS precioVenta, ${margenExpr} AS margenPorc`,
         `FROM [${TABLE_ARTICULOS}] a`,
+        `LEFT JOIN [${TABLE_IVA}] i ON i.[${COL_IVA_CODIGO}] = a.[${COL_ARTICULOS_IVA}]`,
         `WHERE ${normCod} IN (SELECT LTRIM(RTRIM(n.value('.', 'VARCHAR(50)'))) FROM (SELECT CAST('<r>' + REPLACE(@codigos, ',', '</r><r>') + '</r>' AS XML) AS x) t CROSS APPLY x.nodes('/r') AS a(n))`,
       ].join(' ');
       const result = await request.query(sqlQuery);
@@ -194,14 +203,17 @@ export async function fetchPreciosDesdeArticulos(codigos) {
       for (const row of rows) {
         const cod = normalizarCodigoStock(row.codigo);
         if (!cod || !(cod in map)) continue;
-        map[cod].costo = Number(row.costo) || 0;
+        const costoBase = Number(row.costoBase) || 0;
+        const ivaPct = Number(row.ivaPorcentaje) || 0;
+        const costoConIva = costoBase * (1 + ivaPct / 100);
+        map[cod].costo = Math.round(costoConIva * 100) / 100;
         map[cod].precioVenta = Number(row.precioVenta) || 0;
         map[cod].margenPorc = Number(row.margenPorc) || 0;
       }
     }
     if (process.env.NODE_ENV !== 'production') {
       const conDatos = Object.values(map).filter((m) => m.costo > 0 || m.precioVenta > 0 || m.margenPorc !== 0).length;
-      console.log(`[articulos precios] ${unicos.length} códigos → ${conDatos} con costo/venta/margen`);
+      console.log(`[articulos precios] ${unicos.length} códigos → ${conDatos} con costo+IVA/venta/margen`);
     }
     return map;
   } catch (e) {

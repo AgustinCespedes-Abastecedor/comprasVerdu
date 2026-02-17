@@ -5,16 +5,7 @@
   background: var(--bg);
 }
 
-.gestion-usuarios-header {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 0 2rem;
-  height: 4.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-
+/* Header content usa AppHeader; estilos del back y título: */
 .gestion-usuarios-back {
   display: flex;
   align-items: center;

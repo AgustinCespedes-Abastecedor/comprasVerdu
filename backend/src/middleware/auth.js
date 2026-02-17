@@ -2,6 +2,11 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev';
 
+/**
+ * Roles: ADMIN (todo), COMPRADOR (comprar + ver), VISOR (solo ver compras).
+ * Ver docs/ROLES.md para la matriz de permisos.
+ */
+
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
@@ -18,6 +23,7 @@ export function authMiddleware(req, res, next) {
   }
 }
 
+/** Solo COMPRADOR y ADMIN pueden crear/editar compras. VISOR recibe 403. */
 export function soloComprador(req, res, next) {
   if (req.rol !== 'COMPRADOR' && req.rol !== 'ADMIN') {
     return res.status(403).json({ error: 'Solo usuarios compradores o administradores pueden realizar esta acción' });
