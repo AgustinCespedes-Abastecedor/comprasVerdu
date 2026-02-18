@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { fetchArticulosExternos, fetchPreciosDesdeArticulos, fetchStockPorCodigos, fetchVentasYCostoDesdeVTAARTICULOS, normalizarCodigoStock, normalizarProveedorParaArticulos } from '../lib/sqlserver.js';
+import { fetchArticulosExternos, fetchCodigosArticulosPorDepartamento, fetchPreciosDesdeArticulos, fetchStockPorCodigos, fetchVentasYCostoDesdeVTAARTICULOS, normalizarCodigoStock, normalizarProveedorParaArticulos } from '../lib/sqlserver.js';
+
+const DEPARTAMENTO_VERDULERIA = process.env.EXTERNAL_ARTICULOS_DEPARTAMENTO_ID ?? '6';
 
 const router = Router();
 
@@ -11,65 +13,6 @@ const MAX_PAGE_SIZE = 200;
 
 router.get('/', async (req, res) => {
   try {
-    const proveedorId = req.query.proveedorId?.trim();
-    if (!proveedorId) {
-      return res.json({ total: 0, page: 1, pageSize: DEFAULT_PAGE_SIZE, items: [] });
-    }
-    const proveedor = await prisma.proveedor.findUnique({
-      where: { id: proveedorId },
-      select: { codigoExterno: true, idExterno: true },
-    });
-    if (!proveedor) return res.json({ total: 0, page: 1, pageSize: DEFAULT_PAGE_SIZE, items: [] });
-    const codigoRaw = (proveedor.codigoExterno != null && String(proveedor.codigoExterno).trim() !== '')
-      ? String(proveedor.codigoExterno).trim()
-      : '';
-    const idExternoRaw = (proveedor.idExterno != null && String(proveedor.idExterno).trim() !== '')
-      ? String(proveedor.idExterno).trim()
-      : '';
-    const codigoNorm = normalizarProveedorParaArticulos(codigoRaw);
-    const idExternoNorm = normalizarProveedorParaArticulos(idExternoRaw);
-    if (!codigoNorm && !idExternoNorm) {
-      return res.json({ total: 0, page: 1, pageSize: DEFAULT_PAGE_SIZE, items: [] });
-    }
-    const articulos = await fetchArticulosExternos(codigoNorm || null, idExternoNorm || null);
-    if (articulos.length === 0) {
-      return res.json({ total: 0, page: 1, pageSize: DEFAULT_PAGE_SIZE, items: [] });
-    }
-    const codigos = articulos.map((a) => a.codigo);
-
-    // Sync en lote: un findMany + createMany para nuevos + transacción de updates
-    const existing = await prisma.producto.findMany({
-      where: { OR: [{ codigo: { in: codigos } }, { codigoExterno: { in: codigos } }] },
-      select: { id: true, codigo: true, codigoExterno: true },
-    });
-    const existingByCodigo = new Map();
-    for (const p of existing) {
-      existingByCodigo.set(p.codigo, p);
-      if (p.codigoExterno && p.codigoExterno !== p.codigo) existingByCodigo.set(p.codigoExterno, p);
-    }
-    const toCreate = articulos.filter((a) => !existingByCodigo.has(a.codigo));
-    if (toCreate.length > 0) {
-      await prisma.producto.createMany({
-        data: toCreate.map((a) => ({
-          codigo: a.codigo,
-          codigoExterno: a.codigo,
-          descripcion: a.descripcion,
-        })),
-        skipDuplicates: true,
-      });
-    }
-    const toUpdate = articulos.filter((a) => existingByCodigo.has(a.codigo));
-    if (toUpdate.length > 0) {
-      const updates = toUpdate.map((a) => {
-        const ex = existingByCodigo.get(a.codigo);
-        return ex ? prisma.producto.update({
-          where: { id: ex.id },
-          data: { descripcion: a.descripcion, codigoExterno: a.codigo },
-        }) : null;
-      }).filter(Boolean);
-      await prisma.$transaction(updates);
-    }
-
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(req.query.pageSize, 10) || DEFAULT_PAGE_SIZE));
     let q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
@@ -78,9 +21,85 @@ router.get('/', async (req, res) => {
     const sortBy = allowedSort.includes(req.query.sortBy) ? req.query.sortBy : 'descripcion';
     const sortDir = req.query.sortDir === 'desc' ? 'desc' : 'asc';
 
-    const where = { codigo: { in: codigos } };
+    const proveedorId = req.query.proveedorId?.trim();
+    let where;
+
+    if (proveedorId) {
+      const proveedor = await prisma.proveedor.findUnique({
+        where: { id: proveedorId },
+        select: { codigoExterno: true, idExterno: true },
+      });
+      if (!proveedor) return res.json({ total: 0, page: 1, pageSize: DEFAULT_PAGE_SIZE, items: [] });
+      const codigoRaw = (proveedor.codigoExterno != null && String(proveedor.codigoExterno).trim() !== '')
+        ? String(proveedor.codigoExterno).trim()
+        : '';
+      const idExternoRaw = (proveedor.idExterno != null && String(proveedor.idExterno).trim() !== '')
+        ? String(proveedor.idExterno).trim()
+        : '';
+      const codigoNorm = normalizarProveedorParaArticulos(codigoRaw);
+      const idExternoNorm = normalizarProveedorParaArticulos(idExternoRaw);
+      if (!codigoNorm && !idExternoNorm) {
+        return res.json({ total: 0, page: 1, pageSize: DEFAULT_PAGE_SIZE, items: [] });
+      }
+      const articulos = await fetchArticulosExternos(codigoNorm || null, idExternoNorm || null);
+      if (articulos.length === 0) {
+        return res.json({ total: 0, page: 1, pageSize: DEFAULT_PAGE_SIZE, items: [] });
+      }
+      const codigos = articulos.map((a) => a.codigo);
+
+      // Sync en lote: un findMany + createMany para nuevos + transacción de updates
+      const existing = await prisma.producto.findMany({
+        where: { OR: [{ codigo: { in: codigos } }, { codigoExterno: { in: codigos } }] },
+        select: { id: true, codigo: true, codigoExterno: true },
+      });
+      const existingByCodigo = new Map();
+      for (const p of existing) {
+        existingByCodigo.set(p.codigo, p);
+        if (p.codigoExterno && p.codigoExterno !== p.codigo) existingByCodigo.set(p.codigoExterno, p);
+      }
+      const toCreate = articulos.filter((a) => !existingByCodigo.has(a.codigo));
+      if (toCreate.length > 0) {
+        await prisma.producto.createMany({
+          data: toCreate.map((a) => ({
+            codigo: a.codigo,
+            codigoExterno: a.codigo,
+            descripcion: a.descripcion,
+          })),
+          skipDuplicates: true,
+        });
+      }
+      const toUpdate = articulos.filter((a) => existingByCodigo.has(a.codigo));
+      if (toUpdate.length > 0) {
+        const updates = toUpdate.map((a) => {
+          const ex = existingByCodigo.get(a.codigo);
+          return ex ? prisma.producto.update({
+            where: { id: ex.id },
+            data: { descripcion: a.descripcion, codigoExterno: a.codigo },
+          }) : null;
+        }).filter(Boolean);
+        await prisma.$transaction(updates);
+      }
+      where = { codigo: { in: codigos } };
+    } else {
+      const codigosVerduleria = await fetchCodigosArticulosPorDepartamento(DEPARTAMENTO_VERDULERIA);
+      if (codigosVerduleria.length === 0) {
+        return res.json({ total: 0, page: 1, pageSize: pageSize, items: [] });
+      }
+      where = { codigo: { in: codigosVerduleria } };
+    }
+
     if (q.length > 0) {
-      where.descripcion = { contains: q, mode: 'insensitive' };
+      const qCondition = {
+        OR: [
+          { descripcion: { contains: q, mode: 'insensitive' } },
+          { codigo: { contains: q, mode: 'insensitive' } },
+        ],
+      };
+      if (where && Object.keys(where).length > 0) {
+        where = { AND: [where, qCondition] };
+      } else {
+        where = qCondition;
+      }
     }
 
     const sortByStock = sortBy === 'stockSucursales' || sortBy === 'stockCD';

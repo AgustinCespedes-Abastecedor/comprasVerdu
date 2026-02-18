@@ -135,11 +135,13 @@ export async function fetchArticulosExternos(codigoNormalizado, idExternoNormali
     }
     const whereProveedor = conditions.length ? `AND (${conditions.join(' OR ')})` : '';
 
+    request.input('departamentoId', sql.VarChar(10), ARTICULOS_DEPARTAMENTO_ID);
     const sqlQuery = [
       `SELECT a.[${COL_ARTICULOS_CODIGO}] AS codigo, a.[${COL_ARTICULOS_DESCRIPCION}] AS descripcion`,
       `FROM [${TABLE_ARTICULOS}] a`,
       `WHERE a.[${COL_ARTICULOS_HABILCAJAS}] = 1`,
       `AND a.[${COL_ARTICULOS_DESCRIPCION}] IS NOT NULL`,
+      `AND (CAST(a.[${COL_ARTICULOS_DEPARTAMENTO}] AS VARCHAR(10)) = @departamentoId OR a.[${COL_ARTICULOS_DEPARTAMENTO}] = TRY_CAST(@departamentoId AS INT))`,
       whereProveedor,
       `ORDER BY a.[${COL_ARTICULOS_DESCRIPCION}]`,
     ].join(' ');
@@ -155,6 +157,37 @@ export async function fetchArticulosExternos(codigoNormalizado, idExternoNormali
     return list;
   } catch (e) {
     console.error('SQL Server (articulos):', e.message);
+    return [];
+  }
+}
+
+/**
+ * Obtiene los códigos de artículos de un departamento (ej. VERDULERIA = 6).
+ * Filtro: HabilCajas = 1 y departamento = departamentoId.
+ * @param {string} departamentoId - Código del departamento (ej. '6').
+ * @returns {Promise<string[]>}
+ */
+export async function fetchCodigosArticulosPorDepartamento(departamentoId) {
+  if (!departamentoId || String(departamentoId).trim() === '') return [];
+  try {
+    const pool = await getSqlServerPool();
+    const request = pool.request();
+    request.input('departamentoId', sql.VarChar(10), String(departamentoId).trim());
+    const sqlQuery = [
+      `SELECT a.[${COL_ARTICULOS_CODIGO}] AS codigo`,
+      `FROM [${TABLE_ARTICULOS}] a`,
+      `WHERE a.[${COL_ARTICULOS_HABILCAJAS}] = 1`,
+      `AND a.[${COL_ARTICULOS_DESCRIPCION}] IS NOT NULL`,
+      `AND (CAST(a.[${COL_ARTICULOS_DEPARTAMENTO}] AS VARCHAR(10)) = @departamentoId OR a.[${COL_ARTICULOS_DEPARTAMENTO}] = TRY_CAST(@departamentoId AS INT))`,
+      `ORDER BY a.[${COL_ARTICULOS_CODIGO}]`,
+    ].join(' ');
+    const result = await request.query(sqlQuery);
+    const codigos = (result.recordset || [])
+      .map((row) => String(row.codigo ?? '').trim())
+      .filter((c) => c.length > 0);
+    return codigos;
+  } catch (e) {
+    console.error('SQL Server (articulos por departamento):', e.message);
     return [];
   }
 }

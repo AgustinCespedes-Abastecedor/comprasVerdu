@@ -59,12 +59,17 @@ router.get('/totales-dia', async (req, res) => {
       where: { fecha: { gte: inicio, lte: fin } },
       select: { totalBultos: true, totalMonto: true },
     });
-    const totalBultos = compras.reduce((a, c) => a + c.totalBultos, 0);
-    const totalMonto = compras.reduce((a, c) => a + Number(c.totalMonto), 0);
+    const totalBultos = compras.reduce((a, c) => a + (c.totalBultos ?? 0), 0);
+    const totalMonto = compras.reduce((a, c) => {
+      const m = c.totalMonto;
+      const n = typeof m === 'number' && !Number.isNaN(m) ? m : (m != null && typeof m.toString === 'function' ? parseFloat(String(m)) : 0);
+      return a + (Number.isFinite(n) ? n : 0);
+    }, 0);
     res.json({ totalBultos, totalMonto, fecha: inicio.toISOString().slice(0, 10) });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al calcular totales' });
+    console.error('GET /compras/totales-dia:', e);
+    const message = e?.message ?? String(e);
+    res.status(500).json({ error: 'Error al calcular totales', detail: message });
   }
 });
 

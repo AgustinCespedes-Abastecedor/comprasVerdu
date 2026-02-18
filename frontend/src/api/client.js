@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 
 const getApiBase = () => {
   if (Capacitor.isNativePlatform()) {
-    return import.meta.env.VITE_API_URL || 'http://192.168.1.99:4000/api';
+    return import.meta.env.VITE_API_URL || 'http://192.168.1.116:4000/api';
   }
   return '/api';
 };
@@ -22,7 +22,10 @@ export async function api(path, options = {}) {
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText || 'Error de red');
+  if (!res.ok) {
+    const msg = data.detail ? `${data.error || 'Error'}: ${data.detail}` : (data.error || res.statusText || 'Error de red');
+    throw new Error(msg);
+  }
   return data;
 }
 
@@ -37,7 +40,7 @@ export const proveedores = {
 };
 
 export const productos = {
-  /** Lista paginada: { total, page, pageSize, items }. Params: proveedorId, fecha, page, pageSize, q, sortBy, sortDir */
+  /** Lista paginada: { total, page, pageSize, items }. Params (proveedorId opcional): fecha, page, pageSize, q, sortBy, sortDir */
   list: (params) => {
     const clean = Object.fromEntries(
       Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== '')

@@ -12,14 +12,23 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Orígenes permitidos: web (dev) + Capacitor (app móvil)
+// Orígenes permitidos: web (dev) + Capacitor (app móvil) + LAN (192.168.x.x)
 const allowedOrigins = [
   FRONTEND_URL,
   'capacitor://localhost',
   'ionic://localhost',
   'http://localhost',
+  /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/,  // LAN: 192.168.x.x
+  /^https?:\/\/10\.0\.2\.\d+(:\d+)?$/,       // Emulador Android
 ];
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);  // apps nativas (Origin null)
+    const ok = allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin));
+    cb(null, ok);
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '1mb' }));
 
 app.use((err, _req, res, next) => {
@@ -48,8 +57,9 @@ app.get('/api/health/db', async (_, res) => {
   }
 });
 
-const server = app.listen(PORT, () => {
-  console.log(`Servidor en http://localhost:${PORT}`);
+const HOST = '0.0.0.0';  // Aceptar conexiones desde LAN (celular, emulador)
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Servidor en http://localhost:${PORT} (LAN: puerto ${PORT})`);
 });
 
 server.on('error', (err) => {

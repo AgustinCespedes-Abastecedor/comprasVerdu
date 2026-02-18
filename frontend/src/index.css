@@ -110,6 +110,11 @@ a {
   --planilla-cell-calculo-bg: #0a2818;
   --planilla-cell-calculo-fg: #56d364;
   --planilla-th-fg: #8b949e;
+  /* Planilla: columnas fijas (−/+, código, descripción) */
+  --planilla-sticky-th-bg: #252a36;
+  --planilla-sticky-th-fg: #adbac7;
+  --planilla-sticky-cell-bg: #1e232e;
+  --planilla-sticky-cell-fg: #e6edf3;
   /* Leyenda chips (mismos colores que tabla, fondos sólidos) */
   --legend-bd-bg: #4a3f0a;
   --legend-bd-fg: #e6c229;
@@ -198,6 +203,11 @@ a {
   --planilla-cell-calculo-bg: #d4eddc;
   --planilla-cell-calculo-fg: #116329;
   --planilla-th-fg: #656d76;
+  /* Planilla: columnas fijas (−/+, código, descripción) */
+  --planilla-sticky-th-bg: #e2e8f0;
+  --planilla-sticky-th-fg: #424a53;
+  --planilla-sticky-cell-bg: #eef2f7;
+  --planilla-sticky-cell-fg: #1f2328;
   /* Leyenda chips */
   --legend-bd-bg: #f5e6b3;
   --legend-bd-fg: #7c5e03;

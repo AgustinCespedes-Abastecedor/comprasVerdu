@@ -10,7 +10,7 @@ import './PlanillaCompra.css';
 
 const isApp = () => Capacitor.isNativePlatform();
 
-const PAGE_SIZE = 50;
+const SEARCH_PAGE_SIZE = 25;
 const DEBOUNCE_MS = 300;
 
 function formatNum(n) {
@@ -26,11 +26,10 @@ function parseNum(str) {
   return isNaN(Number(x)) ? 0 : Number(x);
 }
 
-function itemsToFilas(items) {
-  if (!Array.isArray(items)) return [];
-  return items.map((p, orden) => ({
-    filaId: p.id,
-    orden,
+function productToFila(p, filaId) {
+  return {
+    filaId,
+    orden: 0,
     productoId: p.id,
     codigo: p.codigo,
     descripcion: p.descripcion,
@@ -49,7 +48,7 @@ function itemsToFilas(items) {
     precioPorKg: '',
     margenFinalPorc: '',
     total: '',
-  }));
+  };
 }
 
 export default function PlanillaCompra() {
@@ -58,20 +57,17 @@ export default function PlanillaCompra() {
   const [proveedorId, setProveedorId] = useState('');
   const [proveedoresList, setProveedoresList] = useState([]);
   const [filas, setFilas] = useState([]);
-  const [totalProductos, setTotalProductos] = useState(0);
-  const [pageCache, setPageCache] = useState({});
   const [totalesDia, setTotalesDia] = useState({ totalBultos: 0, totalMonto: 0 });
-  const [loading, setLoading] = useState(false);
-  const [loadingList, setLoadingList] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
-  const [sortBy, setSortBy] = useState('descripcion');
-  const [sortDir, setSortDir] = useState('asc');
-  const [paginaActual, setPaginaActual] = useState(1);
-  const [busqueda, setBusqueda] = useState('');
-  const [busquedaDebounced, setBusquedaDebounced] = useState('');
+  const [busquedaArticulo, setBusquedaArticulo] = useState('');
+  const [busquedaArticuloDebounced, setBusquedaArticuloDebounced] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { showSuccess, showError } = useResponse();
-  const debounceRef = useRef(null);
+  const debounceArticuloRef = useRef(null);
+  const searchInputRef = useRef(null);
   const [providerPickerOpen, setProviderPickerOpen] = useState(false);
   const [providerSearch, setProviderSearch] = useState('');
   const providerSearchInputRef = useRef(null);
@@ -99,10 +95,7 @@ export default function PlanillaCompra() {
   useEffect(() => {
     let cancelled = false;
     proveedores.list().then((prov) => {
-      if (!cancelled) {
-        setProveedoresList(prov);
-        if (prov.length && !proveedorId) setProveedorId(prov[0].id);
-      }
+      if (!cancelled) setProveedoresList(prov);
     }).catch((e) => {
       if (!cancelled) setMensaje({ tipo: 'error', text: e.message });
     });
@@ -110,106 +103,57 @@ export default function PlanillaCompra() {
   }, []);
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => setBusquedaDebounced(busqueda), DEBOUNCE_MS);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [busqueda]);
+    if (debounceArticuloRef.current) clearTimeout(debounceArticuloRef.current);
+    debounceArticuloRef.current = setTimeout(() => setBusquedaArticuloDebounced(busquedaArticulo), DEBOUNCE_MS);
+    return () => { if (debounceArticuloRef.current) clearTimeout(debounceArticuloRef.current); };
+  }, [busquedaArticulo]);
 
   useEffect(() => {
-    if (!proveedorId) {
-      setFilas([]);
-      setTotalProductos(0);
-      setPageCache({});
-      setPaginaActual(1);
-      setLoading(false);
-      return;
-    }
-    setPageCache({});
-    setPaginaActual(1);
-    setBusqueda('');
-    setBusquedaDebounced('');
-    setLoading(true);
-    setMensaje(null);
-    let cancelled = false;
-    const params = { proveedorId, fecha, page: 1, pageSize: PAGE_SIZE, sortBy: 'descripcion', sortDir: 'asc' };
-    productos.list(params).then((res) => {
-      if (!cancelled) {
-        const items = res.items || [];
-        const total = res.total ?? 0;
-        setTotalProductos(total);
-        const newFilas = itemsToFilas(items);
-        setFilas(newFilas);
-        setPageCache({ 1: { filas: newFilas } });
-        setLoading(false);
-      }
-    }).catch((e) => {
-      if (!cancelled) {
-        setMensaje({ tipo: 'error', text: e.message });
-        setFilas([]);
-        setTotalProductos(0);
-        setPageCache({});
-        setLoading(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [proveedorId, fecha]);
-
-  useEffect(() => {
-    if (!proveedorId || paginaActual <= 1) return;
-    const cached = pageCache[paginaActual];
-    if (cached?.filas) {
-      setFilas(cached.filas);
+    if (!busquedaArticuloDebounced.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
     let cancelled = false;
-    setLoadingList(true);
-    const params = { proveedorId, fecha, page: paginaActual, pageSize: PAGE_SIZE, sortBy: sortBy || 'descripcion', sortDir: sortDir || 'asc' };
-    if (busquedaDebounced.trim()) params.q = busquedaDebounced.trim();
+    setSearchLoading(true);
+    const params = {
+      fecha,
+      page: 1,
+      pageSize: SEARCH_PAGE_SIZE,
+      sortBy: 'descripcion',
+      sortDir: 'asc',
+      q: busquedaArticuloDebounced.trim(),
+    };
     productos.list(params).then((res) => {
       if (!cancelled) {
-        const items = res.items || [];
-        const newFilas = itemsToFilas(items);
-        setFilas(newFilas);
-        setPageCache((prev) => ({ ...prev, [paginaActual]: { filas: newFilas } }));
-        setLoadingList(false);
+        setSearchResults(res.items || []);
+        setSearchLoading(false);
       }
     }).catch((e) => {
       if (!cancelled) {
         setMensaje({ tipo: 'error', text: e.message });
-        setLoadingList(false);
+        setSearchResults([]);
+        setSearchLoading(false);
       }
     });
     return () => { cancelled = true; };
-  }, [paginaActual, proveedorId, busquedaDebounced, sortBy, sortDir]);
+  }, [busquedaArticuloDebounced, fecha]);
 
-  useEffect(() => {
-    if (!proveedorId || totalProductos === 0) return;
-    setPageCache({});
-    setPaginaActual(1);
-    let cancelled = false;
-    setLoadingList(true);
-    const params = { proveedorId, fecha, page: 1, pageSize: PAGE_SIZE, sortBy: sortBy || 'descripcion', sortDir: sortDir || 'asc' };
-    if (busquedaDebounced.trim()) params.q = busquedaDebounced.trim();
-    productos.list(params).then((res) => {
-      if (!cancelled) {
-        const items = res.items || [];
-        const total = res.total ?? 0;
-        setTotalProductos(total);
-        const newFilas = itemsToFilas(items);
-        setFilas(newFilas);
-        setPageCache({ 1: { filas: newFilas } });
-        setLoadingList(false);
-      }
-    }).catch((e) => {
-      if (!cancelled) {
-        setMensaje({ tipo: 'error', text: e.message });
-        setLoadingList(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [busquedaDebounced, sortBy, sortDir]);
+  const generarFilaId = () => `row-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-  const generarFilaId = () => `dup-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  const agregarArticulo = (producto) => {
+    const nuevaFila = productToFila(producto, generarFilaId());
+    nuevaFila.orden = filas.length;
+    setFilas((prev) => [...prev, nuevaFila]);
+    setBusquedaArticulo('');
+    setBusquedaArticuloDebounced('');
+    setSearchResults([]);
+    setSearchOpen(false);
+  };
+
+  const quitarFila = (filaId) => {
+    setFilas((prev) => prev.filter((f) => f.filaId !== filaId));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -218,20 +162,6 @@ export default function PlanillaCompra() {
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [fecha]);
-
-  const handleSort = (column) => {
-    setSortBy(column);
-    setSortDir((prevDir) => (sortBy === column ? (prevDir === 'asc' ? 'desc' : 'asc') : 'asc'));
-  };
-
-  const totalPaginas = Math.max(1, Math.ceil(totalProductos / PAGE_SIZE));
-
-  const goToPage = (newPage) => {
-    const n = Math.max(1, Math.min(totalPaginas, newPage));
-    if (n === paginaActual) return;
-    setPageCache((prev) => ({ ...prev, [paginaActual]: { filas } }));
-    setPaginaActual(n);
-  };
 
   const actualizarFila = (filaId, field, value) => {
     setFilas((prev) => {
@@ -274,34 +204,15 @@ export default function PlanillaCompra() {
     });
   };
 
-  const esFilaHija = (f) => typeof f.filaId === 'string' && f.filaId.startsWith('dup-');
-
-  const eliminarFilaHija = (filaId) => {
-    setFilas((prev) => {
-      const next = prev.filter((f) => f.filaId !== filaId);
-      setPageCache((cache) => ({ ...cache, [paginaActual]: { filas: next } }));
-      return next;
-    });
-  };
-
-  const todasLasFilasCargadas = useMemo(() => {
-    const out = [...filas];
-    Object.keys(pageCache).forEach((p) => {
-      const num = Number(p);
-      if (num !== paginaActual && pageCache[p]?.filas) out.push(...pageCache[p].filas);
-    });
-    return out;
-  }, [filas, pageCache, paginaActual]);
-
   const totalesCompra = useMemo(() => {
     let bultos = 0;
     let monto = 0;
-    todasLasFilasCargadas.forEach((f) => {
+    filas.forEach((f) => {
       bultos += parseNum(f.bultos) || 0;
       monto += parseNum(f.total) || 0;
     });
     return { bultos, monto };
-  }, [todasLasFilasCargadas]);
+  }, [filas]);
 
   const totalDiaBultos = totalesDia.totalBultos + totalesCompra.bultos;
   const totalDiaMonto = (Number(totalesDia.totalMonto) || 0) + totalesCompra.monto;
@@ -311,11 +222,7 @@ export default function PlanillaCompra() {
       setMensaje({ tipo: 'error', text: 'Seleccioná un proveedor' });
       return;
     }
-    const todasFilas = [...filas];
-    Object.keys(pageCache).forEach((p) => {
-      if (Number(p) !== paginaActual && pageCache[p]?.filas) todasFilas.push(...pageCache[p].filas);
-    });
-    const detalles = todasFilas
+    const detalles = filas
       .filter((f) => parseNum(f.bultos) > 0)
       .map((f) => ({
         productoId: f.productoId,
@@ -341,38 +248,13 @@ export default function PlanillaCompra() {
         totalBultos: t.totalBultos + totalesCompra.bultos,
         totalMonto: Number(t.totalMonto) + totalesCompra.monto,
       }));
-      const clearFila = (f) => ({
-        ...f,
-        bultos: '',
-        precioPorBulto: '',
-        pesoPorBulto: '',
-        precioVentaCompra: '',
-        precioPorKg: '',
-        margenFinalPorc: '',
-        total: '',
-      });
-      setFilas((prev) => prev.map(clearFila));
-      setPageCache((prev) => {
-        const next = {};
-        Object.keys(prev).forEach((p) => {
-          next[p] = { filas: prev[p].filas.map(clearFila) };
-        });
-        return next;
-      });
+      setFilas([]);
     } catch (e) {
       showError(e?.message || 'Error al guardar la compra');
     } finally {
       setGuardando(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="planilla-page planilla-page-loading">
-        <AppLoader message="Cargando planilla..." />
-      </div>
-    );
-  }
 
   return (
     <div className="planilla-page">
@@ -402,127 +284,6 @@ export default function PlanillaCompra() {
                 className="planilla-input planilla-input-date"
               />
             </div>
-            <div className="planilla-filter-group planilla-filter-group-proveedor">
-              <label className="planilla-filter-label">Proveedor</label>
-              {isApp() ? (
-                <>
-                  <button
-                    type="button"
-                    className="planilla-provider-picker-field"
-                    onClick={() => setProviderPickerOpen(true)}
-                    aria-haspopup="dialog"
-                    aria-expanded={providerPickerOpen}
-                    aria-label="Elegir proveedor. Buscar por nombre."
-                    data-has-value={proveedorId ? 'true' : undefined}
-                  >
-                    <span className="planilla-provider-picker-field-value">
-                      {proveedorId
-                        ? (proveedoresList.find((p) => p.id === proveedorId)?.nombre ?? 'Proveedor')
-                        : 'Buscar o elegir proveedor'}
-                    </span>
-                    <svg className="planilla-provider-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                      <path d="M6 9l6 6 6-6" />
-                    </svg>
-                  </button>
-                  {providerPickerOpen && (
-                    <div
-                      className="planilla-provider-picker-backdrop"
-                      onClick={() => setProviderPickerOpen(false)}
-                      role="presentation"
-                    >
-                      <div
-                        className="planilla-provider-picker-sheet"
-                        onClick={(e) => e.stopPropagation()}
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label="Buscar proveedor"
-                      >
-                        <div className="planilla-provider-picker-sheet-header">
-                          <h2 className="planilla-provider-picker-sheet-title">Elegir proveedor</h2>
-                          <button
-                            type="button"
-                            className="planilla-provider-picker-close"
-                            onClick={() => setProviderPickerOpen(false)}
-                            aria-label="Cerrar"
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                              <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="planilla-provider-picker-search-wrap">
-                          <svg className="planilla-provider-picker-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="m21 21-4.35-4.35" />
-                          </svg>
-                          <input
-                            ref={providerSearchInputRef}
-                            type="search"
-                            value={providerSearch}
-                            onChange={(e) => setProviderSearch(e.target.value)}
-                            placeholder="Buscar por nombre..."
-                            className="planilla-provider-picker-search"
-                            autoComplete="off"
-                            autoCapitalize="off"
-                            autoCorrect="off"
-                            aria-label="Buscar proveedor"
-                          />
-                          {providerSearch && (
-                            <button
-                              type="button"
-                              className="planilla-provider-picker-search-clear"
-                              onClick={() => setProviderSearch('')}
-                              aria-label="Borrar búsqueda"
-                            >
-                              ×
-                            </button>
-                          )}
-                        </div>
-                        <div className="planilla-provider-picker-list-wrap">
-                          <ul className="planilla-provider-picker-list" role="listbox">
-                            {filteredProveedores.length === 0 ? (
-                              <li className="planilla-provider-picker-empty">
-                                {providerSearch.trim() ? 'Ningún proveedor coincide con la búsqueda.' : 'No hay proveedores cargados.'}
-                              </li>
-                            ) : (
-                              filteredProveedores.map((p) => (
-                                <li
-                                  key={p.id}
-                                  role="option"
-                                  aria-selected={proveedorId === p.id}
-                                  className={`planilla-provider-picker-item ${proveedorId === p.id ? 'planilla-provider-picker-item-selected' : ''}`}
-                                  onClick={() => {
-                                    setProveedorId(p.id);
-                                    setProviderPickerOpen(false);
-                                    setProviderSearch('');
-                                  }}
-                                >
-                                  <span className="planilla-provider-picker-item-name">{p.nombre}</span>
-                                  {proveedorId === p.id && (
-                                    <span className="planilla-provider-picker-item-check" aria-hidden>✓</span>
-                                  )}
-                                </li>
-                              ))
-                            )}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <select
-                  value={proveedorId}
-                  onChange={(e) => setProveedorId(e.target.value)}
-                  className="planilla-input planilla-input-select"
-                >
-                  <option value="">Seleccionar proveedor</option>
-                  {proveedoresList.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre}</option>
-                  ))}
-                </select>
-              )}
-            </div>
           </div>
         </section>
 
@@ -532,51 +293,72 @@ export default function PlanillaCompra() {
           </div>
         )}
 
-        <section className={`planilla-section planilla-section-table ${loadingList ? 'planilla-section-table-busy' : ''}`}>
+        <section className="planilla-section planilla-section-table">
           <div className="planilla-table-legend">
             <span className="planilla-legend-item planilla-legend-bd">Datos del sistema</span>
             <span className="planilla-legend-item planilla-legend-manual">Datos a completar</span>
             <span className="planilla-legend-item planilla-legend-calculo">Calculado</span>
           </div>
-          {totalProductos > 0 && (
-            <div className={`planilla-search-wrap ${loadingList ? 'planilla-search-wrap-busy' : ''}`}>
-              <label htmlFor="planilla-buscar-articulo" className="planilla-search-label">Buscar artículo</label>
-              <div className="planilla-search-input-row">
-                <input
-                  id="planilla-buscar-articulo"
-                  type="search"
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  placeholder="Escribí nombre o parte del nombre (ej. limón, tomate)"
-                  className="planilla-input planilla-input-search"
-                  autoComplete="off"
-                  aria-describedby={busqueda.trim() ? 'planilla-busqueda-resultados' : undefined}
-                  aria-busy={loadingList}
-                />
-                {loadingList && (
-                  <span className="planilla-search-spinner" aria-hidden>
-                    <span className="planilla-search-spinner-dot" />
-                  </span>
-                )}
-              </div>
-              {busquedaDebounced.trim() && !loadingList && (
-                <span id="planilla-busqueda-resultados" className="planilla-search-results" aria-live="polite">
-                  {totalProductos} {totalProductos === 1 ? 'resultado' : 'resultados'}
-                </span>
-              )}
-              {busquedaDebounced.trim() && loadingList && (
-                <span id="planilla-busqueda-resultados" className="planilla-search-results planilla-search-results-busy" aria-live="polite">
-                  Buscando…
+          <div className={`planilla-add-article-wrap ${searchLoading ? 'planilla-add-article-wrap-busy' : ''}`}>
+            <label htmlFor="planilla-buscar-articulo" className="planilla-search-label">Agregar artículo a la grilla</label>
+            <div className="planilla-add-article-row">
+              <input
+                id="planilla-buscar-articulo"
+                ref={searchInputRef}
+                type="search"
+                value={busquedaArticulo}
+                onChange={(e) => {
+                  setBusquedaArticulo(e.target.value);
+                  setSearchOpen(true);
+                }}
+                onFocus={() => setSearchOpen(true)}
+                placeholder="Busca por nombre o código"
+                className="planilla-input planilla-input-search"
+                autoComplete="off"
+                aria-label="Buscar artículo para agregar"
+                aria-expanded={searchOpen && searchResults.length > 0}
+                aria-describedby={busquedaArticulo.trim() ? 'planilla-busqueda-articulo-resultados' : undefined}
+                aria-busy={searchLoading}
+              />
+              {searchLoading && (
+                <span className="planilla-search-spinner" aria-hidden>
+                  <span className="planilla-search-spinner-dot" />
                 </span>
               )}
             </div>
-          )}
-          {totalProductos > 0 && (
-            <p className="planilla-table-hint" aria-live="polite">
-              Deslizá la tabla a la derecha o izquierda para ver todas las columnas (Bultos, Precio, Total, etc.). Usá el dispositivo en horizontal.
-            </p>
-          )}
-          {totalProductos > 0 && (
+            {busquedaArticulo.trim() && (
+              <span id="planilla-busqueda-articulo-resultados" className="planilla-search-results" aria-live="polite">
+                {searchLoading ? 'Buscando…' : `${searchResults.length} ${searchResults.length === 1 ? 'resultado' : 'resultados'}. Clic para agregar.`}
+              </span>
+            )}
+            {searchOpen && busquedaArticulo.trim() && (
+              <>
+                <div className="planilla-search-backdrop" onClick={() => setSearchOpen(false)} role="presentation" aria-hidden />
+                <ul className="planilla-search-results-list" role="listbox">
+                  {searchLoading && searchResults.length === 0 ? (
+                    <li className="planilla-search-result-item planilla-search-result-empty">Buscando…</li>
+                  ) : searchResults.length === 0 ? (
+                    <li className="planilla-search-result-item planilla-search-result-empty">Ningún artículo coincide.</li>
+                  ) : (
+                    searchResults.map((p) => (
+                      <li
+                        key={p.id}
+                        role="option"
+                        className="planilla-search-result-item"
+                        onClick={() => agregarArticulo(p)}
+                      >
+                        <span className="planilla-search-result-codigo">{p.codigo}</span>
+                        <span className="planilla-search-result-desc">{p.descripcion}</span>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </>
+            )}
+          </div>
+          <p className="planilla-table-hint" aria-live="polite">
+            Agregá artículos con el buscador de arriba. Deslizá la tabla para ver todas las columnas. Usá − para quitar y + para duplicar la fila.
+          </p>
           <div className="planilla-table-wrap">
             <table className="planilla-table">
               <thead>
@@ -590,33 +372,13 @@ export default function PlanillaCompra() {
                   <th colSpan={3} className="planilla-th planilla-th-calculo">Total</th>
                 </tr>
                 <tr className="planilla-thead-row">
-                  <th className="planilla-th planilla-th-accion">
-                    <span className="planilla-col-accion-label">+</span>
+                  <th className="planilla-th planilla-th-accion" scope="col">
+                    <span className="planilla-col-accion-label">− / +</span>
                   </th>
-                  <th className="planilla-th planilla-th-bd planilla-col-codigo planilla-th-sortable">
-                    <button type="button" className="planilla-th-sort-btn" onClick={() => handleSort('codigo')} aria-label={sortBy === 'codigo' ? `Ordenar por Código ${sortDir === 'asc' ? 'ascendente' : 'descendente'}` : 'Ordenar por Código'}>
-                      <span>Código</span>
-                      {sortBy === 'codigo' && <span className="planilla-sort-icon" aria-hidden>{sortDir === 'asc' ? '↑' : '↓'}</span>}
-                    </button>
-                  </th>
-                  <th className="planilla-th planilla-th-bd planilla-col-desc planilla-th-sortable">
-                    <button type="button" className="planilla-th-sort-btn" onClick={() => handleSort('descripcion')} aria-label={sortBy === 'descripcion' ? `Ordenar por Descripción ${sortDir === 'asc' ? 'ascendente' : 'descendente'}` : 'Ordenar por Descripción'}>
-                      <span>Descripción</span>
-                      {sortBy === 'descripcion' && <span className="planilla-sort-icon" aria-hidden>{sortDir === 'asc' ? '↑' : '↓'}</span>}
-                    </button>
-                  </th>
-                  <th className="planilla-th planilla-th-bd planilla-th-sortable">
-                    <button type="button" className="planilla-th-sort-btn" onClick={() => handleSort('stockSucursales')} aria-label={sortBy === 'stockSucursales' ? `Ordenar por Sucursal ${sortDir === 'asc' ? 'ascendente' : 'descendente'}` : 'Ordenar por Sucursal'}>
-                      <span>Sucursal</span>
-                      {sortBy === 'stockSucursales' && <span className="planilla-sort-icon" aria-hidden>{sortDir === 'asc' ? '↑' : '↓'}</span>}
-                    </button>
-                  </th>
-                  <th className="planilla-th planilla-th-bd planilla-th-sortable">
-                    <button type="button" className="planilla-th-sort-btn" onClick={() => handleSort('stockCD')} aria-label={sortBy === 'stockCD' ? `Ordenar por CD ${sortDir === 'asc' ? 'ascendente' : 'descendente'}` : 'Ordenar por CD'}>
-                      <span>CD</span>
-                      {sortBy === 'stockCD' && <span className="planilla-sort-icon" aria-hidden>{sortDir === 'asc' ? '↑' : '↓'}</span>}
-                    </button>
-                  </th>
+                  <th className="planilla-th planilla-th-bd planilla-col-codigo">Código</th>
+                  <th className="planilla-th planilla-th-bd planilla-col-desc">Descripción</th>
+                  <th className="planilla-th planilla-th-bd">Sucursal</th>
+                  <th className="planilla-th planilla-th-bd">CD</th>
                   <th className="planilla-th planilla-th-bd">Total</th>
                   <th className="planilla-th planilla-th-bd">N-1</th>
                   <th className="planilla-th planilla-th-bd">N-2</th>
@@ -637,27 +399,26 @@ export default function PlanillaCompra() {
                 {filas.map((f) => (
                   <tr key={f.filaId} className="planilla-tbody-tr">
                     <td className="planilla-td planilla-td-accion">
-                      {esFilaHija(f) ? (
+                      <span className="planilla-accion-btns">
                         <button
                           type="button"
                           className="planilla-btn-quitar"
-                          onClick={() => eliminarFilaHija(f.filaId)}
-                          title="Quitar esta fila (acuerdo duplicado)"
-                          aria-label={`Quitar fila de ${f.descripcion}`}
+                          onClick={() => quitarFila(f.filaId)}
+                          title="Quitar esta fila"
+                          aria-label={`Quitar ${f.descripcion}`}
                         >
                           −
                         </button>
-                      ) : (
                         <button
                           type="button"
                           className="planilla-btn-duplicar"
                           onClick={() => duplicarFila(f.filaId)}
-                          title="Duplicar artículo para cargar otro acuerdo"
-                          aria-label={`Duplicar fila de ${f.descripcion}`}
+                          title="Duplicar fila"
+                          aria-label={`Duplicar ${f.descripcion}`}
                         >
                           +
                         </button>
-                      )}
+                      </span>
                     </td>
                     <td className="planilla-td planilla-td-bd planilla-col-codigo"><input type="text" className="planilla-cell planilla-cell-bd planilla-cell-codigo" value={f.codigo} readOnly /></td>
                     <td className="planilla-td planilla-td-bd planilla-col-desc"><input type="text" className="planilla-cell planilla-cell-bd planilla-cell-desc" value={f.descripcion} readOnly /></td>
@@ -699,37 +460,6 @@ export default function PlanillaCompra() {
               </tfoot>
             </table>
           </div>
-          )}
-          {totalProductos > PAGE_SIZE && (
-            <nav className="planilla-pagination" aria-label="Paginación de artículos">
-              <span className="planilla-pagination-info">
-                Mostrando {(paginaActual - 1) * PAGE_SIZE + 1}–{Math.min(paginaActual * PAGE_SIZE, totalProductos)} de {totalProductos} artículos
-              </span>
-              <div className="planilla-pagination-controls">
-                <button
-                  type="button"
-                  className="planilla-pagination-btn"
-                  onClick={() => goToPage(paginaActual - 1)}
-                  disabled={paginaActual <= 1}
-                  aria-label="Página anterior"
-                >
-                  Anterior
-                </button>
-                <span className="planilla-pagination-page" aria-live="polite">
-                  Página {paginaActual} de {totalPaginas}
-                </span>
-                <button
-                  type="button"
-                  className="planilla-pagination-btn"
-                  onClick={() => goToPage(paginaActual + 1)}
-                  disabled={paginaActual >= totalPaginas}
-                  aria-label="Página siguiente"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </nav>
-          )}
         </section>
 
         <section className="planilla-section planilla-section-totals">
@@ -748,6 +478,167 @@ export default function PlanillaCompra() {
                 <span className="planilla-totals-number">$ {formatNum(totalDiaMonto)}</span>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="planilla-section planilla-section-proveedor">
+          <div className="planilla-proveedor-asignar">
+            <label className="planilla-proveedor-label">Proveedor de la compra</label>
+            {isApp() ? (
+              <>
+                <button
+                  type="button"
+                  className="planilla-provider-picker-field planilla-provider-picker-field-bottom"
+                  onClick={() => setProviderPickerOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={providerPickerOpen}
+                  aria-label="Elegir proveedor. Buscar por nombre."
+                  data-has-value={proveedorId ? 'true' : undefined}
+                >
+                  <span className="planilla-provider-picker-field-value">
+                    {proveedorId
+                      ? (proveedoresList.find((p) => p.id === proveedorId)?.nombre ?? 'Proveedor')
+                      : 'Buscar proveedor para asignar a esta compra'}
+                  </span>
+                  <svg className="planilla-provider-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                {providerPickerOpen && (
+                  <div
+                    className="planilla-provider-picker-backdrop"
+                    onClick={() => setProviderPickerOpen(false)}
+                    role="presentation"
+                  >
+                    <div
+                      className="planilla-provider-picker-sheet"
+                      onClick={(e) => e.stopPropagation()}
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Buscar proveedor"
+                    >
+                      <div className="planilla-provider-picker-sheet-header">
+                        <h2 className="planilla-provider-picker-sheet-title">Elegir proveedor</h2>
+                        <button
+                          type="button"
+                          className="planilla-provider-picker-close"
+                          onClick={() => setProviderPickerOpen(false)}
+                          aria-label="Cerrar"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="planilla-provider-picker-search-wrap">
+                        <svg className="planilla-provider-picker-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <circle cx="11" cy="11" r="8" />
+                          <path d="m21 21-4.35-4.35" />
+                        </svg>
+                        <input
+                          ref={providerSearchInputRef}
+                          type="search"
+                          value={providerSearch}
+                          onChange={(e) => setProviderSearch(e.target.value)}
+                          placeholder="Buscar por nombre..."
+                          className="planilla-provider-picker-search"
+                          autoComplete="off"
+                          autoCapitalize="off"
+                          autoCorrect="off"
+                          aria-label="Buscar proveedor"
+                        />
+                        {providerSearch && (
+                          <button
+                            type="button"
+                            className="planilla-provider-picker-search-clear"
+                            onClick={() => setProviderSearch('')}
+                            aria-label="Borrar búsqueda"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                      <div className="planilla-provider-picker-list-wrap">
+                        <ul className="planilla-provider-picker-list" role="listbox">
+                          {filteredProveedores.length === 0 ? (
+                            <li className="planilla-provider-picker-empty">
+                              {providerSearch.trim() ? 'Ningún proveedor coincide con la búsqueda.' : 'No hay proveedores cargados.'}
+                            </li>
+                          ) : (
+                            filteredProveedores.map((p) => (
+                              <li
+                                key={p.id}
+                                role="option"
+                                aria-selected={proveedorId === p.id}
+                                className={`planilla-provider-picker-item ${proveedorId === p.id ? 'planilla-provider-picker-item-selected' : ''}`}
+                                onClick={() => {
+                                  setProveedorId(p.id);
+                                  setProviderPickerOpen(false);
+                                  setProviderSearch('');
+                                }}
+                              >
+                                <span className="planilla-provider-picker-item-name">{p.nombre}</span>
+                                {proveedorId === p.id && (
+                                  <span className="planilla-provider-picker-item-check" aria-hidden>✓</span>
+                                )}
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="planilla-proveedor-search-wrap">
+                <input
+                  id="planilla-buscar-proveedor"
+                  type="search"
+                  value={providerSearch}
+                  onChange={(e) => setProviderSearch(e.target.value)}
+                  onFocus={() => setProviderPickerOpen(true)}
+                  placeholder="Buscar proveedor por nombre..."
+                  className="planilla-input planilla-input-search planilla-proveedor-search"
+                  autoComplete="off"
+                  aria-label="Buscar proveedor"
+                  aria-expanded={providerPickerOpen}
+                />
+                {providerPickerOpen && (
+                  <>
+                    <div className="planilla-provider-picker-backdrop planilla-provider-picker-backdrop-inline" onClick={() => setProviderPickerOpen(false)} role="presentation" />
+                    <ul className="planilla-proveedor-dropdown" role="listbox">
+                      {filteredProveedores.length === 0 ? (
+                        <li className="planilla-provider-picker-empty">
+                          {providerSearch.trim() ? 'Ningún proveedor coincide.' : 'No hay proveedores.'}
+                        </li>
+                      ) : (
+                        filteredProveedores.map((p) => (
+                          <li
+                            key={p.id}
+                            role="option"
+                            aria-selected={proveedorId === p.id}
+                            className={`planilla-provider-picker-item ${proveedorId === p.id ? 'planilla-provider-picker-item-selected' : ''}`}
+                            onClick={() => {
+                              setProveedorId(p.id);
+                              setProviderPickerOpen(false);
+                              setProviderSearch(proveedoresList.find((x) => x.id === p.id)?.nombre ?? '');
+                            }}
+                          >
+                            {p.nombre}
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  </>
+                )}
+                {proveedorId && (
+                  <p className="planilla-proveedor-selected" aria-live="polite">
+                    Proveedor asignado: <strong>{proveedoresList.find((p) => p.id === proveedorId)?.nombre}</strong>
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
