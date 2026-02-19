@@ -21,7 +21,7 @@ export async function api(path, options = {}) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-  const data = await res.json().catch(() => ({}));
+  const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
   if (!res.ok) {
     let msg = data.error || data.message || res.statusText || 'Error de red';
     if (data.detail) msg = `${msg}: ${data.detail}`;
@@ -88,9 +88,16 @@ export const infoFinalArticulos = {
 
 export const users = {
   list: (params) => {
-    const q = new URLSearchParams(params).toString();
+    const q = new URLSearchParams(params || {}).toString();
     return api(`/users${q ? `?${q}` : ''}`);
   },
   create: (body) => api('/users', { method: 'POST', body: JSON.stringify(body) }),
   update: (id, body) => api(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+};
+
+export const roles = {
+  list: () => api('/roles'),
+  create: (body) => api('/roles', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id, body) => api(`/roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  delete: (id) => api(`/roles/${id}`, { method: 'DELETE' }),
 };

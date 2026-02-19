@@ -1,53 +1,17 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { puedeComprar as permisoComprar, puedeGestionarUsuarios, rolEtiqueta } from '../lib/roles';
+import { puedeGestionarUsuarios, puedeAcceder, rolEtiqueta } from '../lib/roles';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import './Home.css';
 
 const actions = [
-  {
-    to: '/comprar',
-    title: 'Nueva compra',
-    desc: 'Cargar compra a proveedores desde la planilla',
-    cta: 'Ir a comprar',
-    icon: 'cart',
-    variant: 'compras',
-    requireComprador: true,
-  },
-  {
-    to: '/recepcion',
-    title: 'Recepción de compras',
-    desc: 'Elegir compra por fecha y cargar cantidades recibidas',
-    cta: 'Ir a recepción',
-    icon: 'download',
-    variant: 'recepcion',
-  },
-  {
-    to: '/ver-compras',
-    title: 'Ver compras',
-    desc: 'Consultar y filtrar historial de compras',
-    cta: 'Ver listado',
-    icon: 'doc',
-    variant: 'compras',
-  },
-  {
-    to: '/ver-recepciones',
-    title: 'Ver recepciones',
-    desc: 'Consultar historial de recepciones',
-    cta: 'Ver listado',
-    icon: 'inbox',
-    variant: 'recepcion',
-  },
-  {
-    to: '/info-final-articulos',
-    title: 'Info Final de Artículos',
-    desc: 'Artículos por fecha con Tecnolar y costo ponderado',
-    cta: 'Ver info',
-    icon: 'clipboard',
-    variant: 'info',
-  },
+  { to: '/comprar', permiso: 'comprar', title: 'Nueva compra', desc: 'Cargar compra a proveedores desde la planilla', cta: 'Ir a comprar', icon: 'cart', variant: 'compras' },
+  { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', desc: 'Elegir compra por fecha y cargar cantidades recibidas', cta: 'Ir a recepción', icon: 'download', variant: 'recepcion' },
+  { to: '/ver-compras', permiso: 'ver-compras', title: 'Ver compras', desc: 'Consultar y filtrar historial de compras', cta: 'Ver listado', icon: 'doc', variant: 'compras' },
+  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', desc: 'Consultar historial de recepciones', cta: 'Ver listado', icon: 'inbox', variant: 'recepcion' },
+  { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', desc: 'Artículos por fecha con Tecnolar y costo ponderado', cta: 'Ver info', icon: 'clipboard', variant: 'info' },
 ];
 
 const icons = {
@@ -101,8 +65,7 @@ const icons = {
 export default function Home() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const puedeComprar = permisoComprar(user?.rol);
-  const esAdmin = puedeGestionarUsuarios(user?.rol);
+  const esAdmin = puedeGestionarUsuarios(user);
   const nombreCorto = user?.nombre?.split(' ')[0] || user?.nombre || '';
 
   const handleLogout = () => {
@@ -110,7 +73,7 @@ export default function Home() {
     navigate('/login', { replace: true });
   };
 
-  const visibleActions = actions.filter((a) => !a.requireComprador || puedeComprar);
+  const visibleActions = actions.filter((a) => puedeAcceder(user, a.permiso));
 
   return (
     <div className="home">
@@ -146,8 +109,8 @@ export default function Home() {
           <p className="home-welcome-greeting">
             Hola, <strong>{nombreCorto}</strong>
           </p>
-          <span className="home-welcome-rol" title={`Rol: ${rolEtiqueta(user?.rol)}`}>
-            {rolEtiqueta(user?.rol)}
+          <span className="home-welcome-rol" title={`Rol: ${rolEtiqueta(user)}`}>
+            {rolEtiqueta(user)}
           </span>
         </header>
 

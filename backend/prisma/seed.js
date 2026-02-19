@@ -3,18 +3,38 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+const ROLES_DEFAULT = [
+  { nombre: 'Administrador', descripcion: 'Acceso total', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos', 'gestion-usuarios', 'gestion-roles'] },
+  { nombre: 'Comprador', descripcion: 'Cargar compras y ver historial', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'] },
+  { nombre: 'Visor', descripcion: 'Solo lectura', permisos: ['home', 'ver-compras', 'ver-recepciones', 'info-final-articulos'] },
+];
+
 async function main() {
   const hashAdmin = await bcrypt.hash('admin123', 10);
   const hashDevAdmin = await bcrypt.hash('admin1234', 10);
 
+  // Asegurar que existan los 3 roles por defecto (por si se corre seed sin migración previa o se borraron)
+  for (const r of ROLES_DEFAULT) {
+    await prisma.role.upsert({
+      where: { nombre: r.nombre },
+      update: { descripcion: r.descripcion, permisos: r.permisos },
+      create: { nombre: r.nombre, descripcion: r.descripcion, permisos: r.permisos },
+    });
+  }
+
+  const roleAdmin = await prisma.role.findUnique({ where: { nombre: 'Administrador' } });
+  const roleComprador = await prisma.role.findUnique({ where: { nombre: 'Comprador' } });
+  const roleVisor = await prisma.role.findUnique({ where: { nombre: 'Visor' } });
+  if (!roleAdmin || !roleComprador || !roleVisor) throw new Error('Roles por defecto no encontrados');
+
   await prisma.user.upsert({
     where: { email: 'a.cespedes@elabastecedor.com.ar' },
-    update: { password: hashDevAdmin, nombre: 'Dev El Abastecedor', rol: 'ADMIN' },
+    update: { password: hashDevAdmin, nombre: 'Dev El Abastecedor', roleId: roleAdmin.id },
     create: {
       email: 'a.cespedes@elabastecedor.com.ar',
       password: hashDevAdmin,
       nombre: 'Dev El Abastecedor',
-      rol: 'ADMIN',
+      roleId: roleAdmin.id,
     },
   });
 
@@ -25,7 +45,7 @@ async function main() {
       email: 'comprador@comprasverdu.com',
       password: hashAdmin,
       nombre: 'Usuario Comprador',
-      rol: 'COMPRADOR',
+      roleId: roleComprador.id,
     },
   });
 
@@ -36,7 +56,7 @@ async function main() {
       email: 'visor@comprasverdu.com',
       password: hashAdmin,
       nombre: 'Usuario Visor',
-      rol: 'VISOR',
+      roleId: roleVisor.id,
     },
   });
 

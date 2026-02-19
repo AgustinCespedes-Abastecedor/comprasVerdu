@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -12,15 +13,39 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     const saved = localStorage.getItem(USER_KEY);
-    if (token && saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-      }
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    let cancelled = false;
+    auth
+      .me()
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.id) {
+          setUser(data);
+          localStorage.setItem(USER_KEY, JSON.stringify(data));
+        } else if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed?.role?.permisos) setUser(parsed);
+            else setUser(null);
+          } catch {
+            setUser(null);
+          }
+        } else setUser(null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, []);
 
   const login = (userData, token) => {

@@ -1,12 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
+import { tienePermiso } from '../lib/permisos.js';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev';
 
 /**
- * Roles: ADMIN (todo), COMPRADOR (comprar + ver), VISOR (solo ver compras).
- * Ver docs/ROLES.md para la matriz de permisos.
+ * Carga usuario con rol y permisos. Asigna req.userId, req.rol (objeto Role), req.permisos (array de códigos).
  */
-
 export async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
@@ -21,13 +21,24 @@ export async function authMiddleware(req, res, next) {
     }
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, rol: true },
+      select: {
+        id: true,
+        role: {
+          select: {
+            id: true,
+            nombre: true,
+            permisos: true,
+          },
+        },
+      },
     });
     if (!user) {
       return res.status(401).json({ error: 'Usuario ya no existe. Iniciá sesión de nuevo.' });
     }
     req.userId = user.id;
-    req.rol = user.rol;
+    req.rol = user.role;
+    const raw = user.role?.permisos;
+    req.permisos = Array.isArray(raw) ? raw : (typeof raw === 'string' ? [] : []);
     next();
   } catch (e) {
     if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError') {
@@ -37,16 +48,35 @@ export async function authMiddleware(req, res, next) {
   }
 }
 
-/** Solo COMPRADOR y ADMIN pueden crear/editar compras. VISOR recibe 403. */
-export function soloComprador(req, res, next) {
-  if (req.rol !== 'COMPRADOR' && req.rol !== 'ADMIN') {
-    return res.status(403).json({ error: 'Solo usuarios compradores o administradores pueden realizar esta acción' });
-  }
-  next();
+/** Exige que el usuario tenga el permiso indicado. Usar después de authMiddleware. */
+export function requierePermiso(codigo) {
+  return (req, res, next) => {
+    if (!req.permisos || !tienePermiso(req.permisos, codigo)) {
+      return res.status(403).json({ error: 'No tenés permiso para acceder a esta función' });
+    }
+    next();
+  };
 }
 
+/** Solo quien tiene permiso "gestion-roles" (típicamente Administrador). */
+export const soloGestionRoles = requierePermiso('gestion-roles');
+
+/** Solo quien tiene permiso "gestion-usuarios". */
+export const soloGestionUsuarios = requierePermiso('gestion-usuarios');
+
+/** Listar roles: quien tenga gestion-usuarios o gestion-roles. */
+export function soloGestionUsuariosOroles(req, res, next) {
+  if (!req.permisos) return res.status(403).json({ error: 'No tenés permiso para acceder' });
+  if (tienePermiso(req.permisos, 'gestion-usuarios') || tienePermiso(req.permisos, 'gestion-roles')) return next();
+  return res.status(403).json({ error: 'No tenés permiso para acceder' });
+}
+
+/** Solo quien tiene permiso "comprar" (crear compras). */
+export const soloComprador = requierePermiso('comprar');
+
+/** Solo administrador: quien tiene "gestion-roles" (acceso total). */
 export function soloAdmin(req, res, next) {
-  if (req.rol !== 'ADMIN') {
+  if (!req.permisos || !tienePermiso(req.permisos, 'gestion-roles')) {
     return res.status(403).json({ error: 'Solo administradores pueden acceder' });
   }
   next();
@@ -55,6 +85,17 @@ export function soloAdmin(req, res, next) {
 export async function getUser(req) {
   return prisma.user.findUnique({
     where: { id: req.userId },
-    select: { id: true, email: true, nombre: true, rol: true },
+    select: {
+      id: true,
+      email: true,
+      nombre: true,
+      role: {
+        select: {
+          id: true,
+          nombre: true,
+          permisos: true,
+        },
+      },
+    },
   });
 }

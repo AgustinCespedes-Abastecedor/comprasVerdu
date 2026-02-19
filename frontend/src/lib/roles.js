@@ -1,47 +1,52 @@
 /**
- * Definición de roles y permisos del sistema.
- * Fuente única de verdad para qué puede hacer cada rol en el frontend.
- *
- * Matriz de acciones:
- * - ADMIN: todo (comprar, ver compras, gestión de usuarios).
- * - COMPRADOR: nueva compra y ver compras (no gestión de usuarios).
- * - VISOR: solo ver compras (lectura); no puede cargar compras ni gestionar usuarios.
+ * Roles y permisos: basado en user.role.permisos (array de códigos desde el backend).
+ * Si el usuario tiene role.permisos, se usan esas pantallas permitidas.
+ * Ver también lib/permisos.js para PANTALLAS y puedeAcceder.
  */
 
-export const ROLES = {
-  ADMIN: 'ADMIN',
-  COMPRADOR: 'COMPRADOR',
-  VISOR: 'VISOR',
-};
+import { puedeAcceder as tienePermisoPantalla } from './permisos.js';
 
 /** Puede acceder a /comprar y guardar compras */
-export function puedeComprar(rol) {
-  return rol === ROLES.ADMIN || rol === ROLES.COMPRADOR;
+export function puedeComprar(user) {
+  if (!user) return false;
+  if (Array.isArray(user.role?.permisos)) return user.role.permisos.includes('comprar');
+  return false;
 }
 
 /** Puede acceder a /gestion-usuarios (listar, crear, editar usuarios) */
-export function puedeGestionarUsuarios(rol) {
-  return rol === ROLES.ADMIN;
+export function puedeGestionarUsuarios(user) {
+  if (!user) return false;
+  if (Array.isArray(user.role?.permisos)) return user.role.permisos.includes('gestion-usuarios');
+  return false;
 }
 
-/** Puede ver el listado de compras (/ver-compras). Todos los roles autenticados. */
-export function puedeVerCompras(rol) {
-  return !!rol;
+/** Puede gestionar roles (ABM de roles). Típicamente solo Administrador. */
+export function puedeGestionarRoles(user) {
+  if (!user) return false;
+  if (Array.isArray(user.role?.permisos)) return user.role.permisos.includes('gestion-roles');
+  return false;
 }
+
+/** Puede ver el listado de compras (/ver-compras) */
+export function puedeVerCompras(user) {
+  return tienePermisoPantalla(user, 'ver-compras');
+}
+
+/** Valores permitidos en registro público (el backend mapea a roles por nombre). */
+export const ROLES_REGISTRO = ['COMPRADOR', 'VISOR'];
 
 /** Etiqueta legible del rol para la UI */
-export function rolEtiqueta(rol) {
-  switch (rol) {
-    case ROLES.ADMIN:
-      return 'Administrador';
-    case ROLES.COMPRADOR:
-      return 'Comprador';
-    case ROLES.VISOR:
-      return 'Visor';
-    default:
-      return rol || '';
+export function rolEtiqueta(roleOrUser) {
+  if (roleOrUser == null) return '';
+  const role = typeof roleOrUser === 'object' && roleOrUser.role ? roleOrUser.role : roleOrUser;
+  if (typeof role === 'string') {
+    if (role === 'COMPRADOR') return 'Comprador';
+    if (role === 'VISOR') return 'Visor';
+    if (role === 'ADMIN') return 'Administrador';
+    return role;
   }
+  return role?.nombre ?? '';
 }
 
-/** Roles que se pueden elegir en el registro público (no incluye ADMIN) */
-export const ROLES_REGISTRO = [ROLES.COMPRADOR, ROLES.VISOR];
+/** Re-exportar puedeAcceder desde permisos para rutas */
+export { puedeAcceder } from './permisos.js';

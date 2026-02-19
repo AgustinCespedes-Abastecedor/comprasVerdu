@@ -5,7 +5,7 @@ import { App as CapApp } from '@capacitor/app';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ResponseProvider } from './context/ResponseContext';
-import { puedeComprar, puedeGestionarUsuarios } from './lib/roles';
+import { puedeAcceder } from './lib/roles';
 import AppLoader from './components/AppLoader';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -29,12 +29,12 @@ function BackButtonHandler() {
   return null;
 }
 
-function PrivateRoute({ children, compradorOnly, adminOnly }) {
+/** Ruta privada: exige login y, si se indica, el permiso para esa pantalla (sin permiso → redirect a /). */
+function PrivateRoute({ children, permiso }) {
   const { user, loading } = useAuth();
   if (loading) return <AppLoader message="Cargando..." />;
   if (!user) return <Navigate to="/login" replace />;
-  if (compradorOnly && !puedeComprar(user.rol)) return <Navigate to="/" replace />;
-  if (adminOnly && !puedeGestionarUsuarios(user.rol)) return <Navigate to="/" replace />;
+  if (permiso && !puedeAcceder(user, permiso)) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -45,7 +45,7 @@ function AppRoutes() {
       <Route
         path="/"
         element={
-          <PrivateRoute>
+          <PrivateRoute permiso="home">
             <Home />
           </PrivateRoute>
         }
@@ -53,7 +53,7 @@ function AppRoutes() {
       <Route
         path="/comprar"
         element={
-          <PrivateRoute compradorOnly>
+          <PrivateRoute permiso="comprar">
             <PlanillaCompra />
           </PrivateRoute>
         }
@@ -61,7 +61,7 @@ function AppRoutes() {
       <Route
         path="/recepcion"
         element={
-          <PrivateRoute>
+          <PrivateRoute permiso="recepcion">
             <RecepcionListado />
           </PrivateRoute>
         }
@@ -69,7 +69,7 @@ function AppRoutes() {
       <Route
         path="/ver-compras"
         element={
-          <PrivateRoute>
+          <PrivateRoute permiso="ver-compras">
             <VerCompras />
           </PrivateRoute>
         }
@@ -77,7 +77,7 @@ function AppRoutes() {
       <Route
         path="/ver-recepciones"
         element={
-          <PrivateRoute>
+          <PrivateRoute permiso="ver-recepciones">
             <VerRecepciones />
           </PrivateRoute>
         }
@@ -85,7 +85,7 @@ function AppRoutes() {
       <Route
         path="/info-final-articulos"
         element={
-          <PrivateRoute>
+          <PrivateRoute permiso="info-final-articulos">
             <InfoFinalArticulos />
           </PrivateRoute>
         }
@@ -93,7 +93,7 @@ function AppRoutes() {
       <Route
         path="/gestion-usuarios"
         element={
-          <PrivateRoute adminOnly>
+          <PrivateRoute permiso="gestion-usuarios">
             <GestionUsuarios />
           </PrivateRoute>
         }

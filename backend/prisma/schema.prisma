@@ -7,22 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum RolUsuario {
-  ADMIN
-  COMPRADOR
-  VISOR
+// Roles configurables con permisos por pantalla (ABM en gestión de usuarios).
+model Role {
+  id          String   @id @default(cuid())
+  nombre      String   @unique
+  descripcion String?
+  permisos    Json     @default("[]") // array de códigos: "home", "comprar", "ver-compras", etc.
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model User {
-  id         String     @id @default(cuid())
-  email      String     @unique
-  password   String
-  nombre     String
-  rol        RolUsuario @default(COMPRADOR)
-  compras    Compra[]
-  recepciones Recepcion[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id           String     @id @default(cuid())
+  email        String     @unique
+  password     String
+  nombre       String
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  compras      Compra[]
+  recepciones  Recepcion[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Proveedor {

@@ -8,6 +8,7 @@ import { comprasRouter } from './routes/compras.js';
 import { recepcionesRouter } from './routes/recepciones.js';
 import { infoFinalArticulosRouter } from './routes/infoFinalArticulos.js';
 import { usersRouter } from './routes/users.js';
+import { rolesRouter } from './routes/roles.js';
 import { authMiddleware } from './middleware/auth.js';
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/compras', runAsync(authMiddleware), comprasRouter);
 app.use('/api/recepciones', runAsync(authMiddleware), recepcionesRouter);
 app.use('/api/info-final-articulos', runAsync(authMiddleware), infoFinalArticulosRouter);
 app.use('/api/users', runAsync(authMiddleware), usersRouter);
+app.use('/api/roles', runAsync(authMiddleware), rolesRouter);
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 
