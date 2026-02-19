@@ -6,110 +6,182 @@ import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import './Home.css';
 
+const actions = [
+  {
+    to: '/comprar',
+    title: 'Nueva compra',
+    desc: 'Cargar compra a proveedores desde la planilla',
+    cta: 'Ir a comprar',
+    icon: 'cart',
+    variant: 'compras',
+    requireComprador: true,
+  },
+  {
+    to: '/recepcion',
+    title: 'Recepción de compras',
+    desc: 'Elegir compra por fecha y cargar cantidades recibidas',
+    cta: 'Ir a recepción',
+    icon: 'download',
+    variant: 'recepcion',
+  },
+  {
+    to: '/ver-compras',
+    title: 'Ver compras',
+    desc: 'Consultar y filtrar historial de compras',
+    cta: 'Ver listado',
+    icon: 'doc',
+    variant: 'compras',
+  },
+  {
+    to: '/ver-recepciones',
+    title: 'Ver recepciones',
+    desc: 'Consultar historial de recepciones',
+    cta: 'Ver listado',
+    icon: 'inbox',
+    variant: 'recepcion',
+  },
+  {
+    to: '/info-final-articulos',
+    title: 'Info Final de Artículos',
+    desc: 'Artículos por fecha con Tecnolar y costo ponderado',
+    cta: 'Ver info',
+    icon: 'clipboard',
+    variant: 'info',
+  },
+];
+
+const icons = {
+  cart: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </svg>
+  ),
+  download: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10 12 5" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
+  doc: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <polyline points="10 9 9 9 8 9" />
+    </svg>
+  ),
+  inbox: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  ),
+  clipboard: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+      <rect x="9" y="3" width="6" height="4" rx="2" />
+      <line x1="9" y1="12" x2="15" y2="12" />
+      <line x1="9" y1="16" x2="15" y2="16" />
+    </svg>
+  ),
+  users: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+};
+
 export default function Home() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const puedeComprar = permisoComprar(user?.rol);
   const esAdmin = puedeGestionarUsuarios(user?.rol);
+  const nombreCorto = user?.nombre?.split(' ')[0] || user?.nombre || '';
 
   const handleLogout = () => {
     logout();
     navigate('/login', { replace: true });
   };
 
+  const visibleActions = actions.filter((a) => !a.requireComprador || puedeComprar);
+
   return (
-    <div className="home-page">
+    <div className="home">
       <AppHeader
         leftContent={
-          <div className="home-brand">
-            <span className="home-brand-name">Compras Verdu</span>
-            <span className="home-brand-meta">Gestión de compras</span>
+          <div className="home-header-brand">
+            <span className="home-header-app">Compras Verdu</span>
+            <span className="home-header-tagline">Gestión de compras</span>
           </div>
         }
         rightContent={
-          <>
+          <div className="home-header-actions">
             <ThemeToggle />
             <button
               type="button"
               onClick={handleLogout}
-              className="home-btn-logout"
+              className="home-header-logout"
               title="Cerrar sesión"
               aria-label="Cerrar sesión"
             >
-              <svg className="home-btn-logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                 <polyline points="16 17 21 12 16 7" />
                 <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
             </button>
-          </>
+          </div>
         }
       />
 
       <main className="home-main">
-        <section className="home-hero">
-          <p className="home-hero-greeting">Bienvenido, {user?.nombre?.split(' ')[0] || user?.nombre}</p>
-          <span className="home-hero-rol" title={`Rol: ${rolEtiqueta(user?.rol)}`}>
+        <header className="home-welcome">
+          <p className="home-welcome-greeting">
+            Hola, <strong>{nombreCorto}</strong>
+          </p>
+          <span className="home-welcome-rol" title={`Rol: ${rolEtiqueta(user?.rol)}`}>
             {rolEtiqueta(user?.rol)}
           </span>
-          <h1 className="home-hero-title">Panel de control</h1>
-          <p className="home-hero-subtitle">
-            Seleccioná una acción para continuar
-          </p>
-        </section>
+        </header>
 
-        <section className="home-actions" aria-label="Acciones principales">
-          {puedeComprar && (
-            <Link to="/comprar" className="home-action-card home-action-primary">
-              <div className="home-action-icon-wrap home-action-icon-primary">
-                <svg className="home-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="9" cy="21" r="1" />
-                  <circle cx="20" cy="21" r="1" />
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                </svg>
-              </div>
-              <div className="home-action-body">
-                <h2 className="home-action-title">Nueva compra</h2>
-                <p className="home-action-desc">Cargar una compra a proveedores desde la planilla</p>
-              </div>
-              <span className="home-action-cta">Ir a comprar</span>
-            </Link>
-          )}
-          <Link to="/ver-compras" className="home-action-card">
-            <div className="home-action-icon-wrap">
-              <svg className="home-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              </svg>
-            </div>
-            <div className="home-action-body">
-              <h2 className="home-action-title">Ver compras</h2>
-              <p className="home-action-desc">Consultar y filtrar el historial de compras guardadas</p>
-            </div>
-            <span className="home-action-cta">Ver listado</span>
-          </Link>
-        </section>
+        <nav className="home-nav" aria-label="Acciones principales">
+          <ul className="home-nav-list">
+            {visibleActions.map((action) => (
+              <li key={action.to}>
+                <Link to={action.to} className={`home-nav-card home-nav-card--${action.variant}`}>
+                  <span className="home-nav-card-icon" aria-hidden>
+                    {icons[action.icon]}
+                  </span>
+                  <span className="home-nav-card-content">
+                    <span className="home-nav-card-title">{action.title}</span>
+                    <span className="home-nav-card-desc">{action.desc}</span>
+                  </span>
+                  <span className="home-nav-card-cta">{action.cta}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         {esAdmin && (
           <section className="home-config" aria-label="Configuración">
-            <h2 className="home-config-title">Configuración</h2>
-            <Link to="/gestion-usuarios" className="home-config-link">
-              <svg className="home-config-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-              <span className="home-config-link-text">Gestión de usuarios</span>
-              <span className="home-config-link-chevron" aria-hidden>→</span>
+            <Link to="/gestion-usuarios" className="home-config-card">
+              <span className="home-config-icon" aria-hidden>{icons.users}</span>
+              <span className="home-config-label">Gestión de usuarios</span>
+              <span className="home-config-arrow" aria-hidden>→</span>
             </Link>
           </section>
         )}
 
         <footer className="home-footer">
-          <span className="home-footer-text">El Abastecedor</span>
+          <span className="home-footer-brand">El Abastecedor</span>
         </footer>
       </main>
     </div>

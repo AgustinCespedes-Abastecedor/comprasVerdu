@@ -5,6 +5,8 @@ import { authRouter } from './routes/auth.js';
 import { proveedoresRouter } from './routes/proveedores.js';
 import { productosRouter } from './routes/productos.js';
 import { comprasRouter } from './routes/compras.js';
+import { recepcionesRouter } from './routes/recepciones.js';
+import { infoFinalArticulosRouter } from './routes/infoFinalArticulos.js';
 import { usersRouter } from './routes/users.js';
 import { authMiddleware } from './middleware/auth.js';
 
@@ -38,11 +40,15 @@ app.use((err, _req, res, next) => {
   next(err);
 });
 
+const runAsync = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
 app.use('/api/auth', authRouter);
-app.use('/api/proveedores', authMiddleware, proveedoresRouter);
-app.use('/api/productos', authMiddleware, productosRouter);
-app.use('/api/compras', authMiddleware, comprasRouter);
-app.use('/api/users', authMiddleware, usersRouter);
+app.use('/api/proveedores', runAsync(authMiddleware), proveedoresRouter);
+app.use('/api/productos', runAsync(authMiddleware), productosRouter);
+app.use('/api/compras', runAsync(authMiddleware), comprasRouter);
+app.use('/api/recepciones', runAsync(authMiddleware), recepcionesRouter);
+app.use('/api/info-final-articulos', runAsync(authMiddleware), infoFinalArticulosRouter);
+app.use('/api/users', runAsync(authMiddleware), usersRouter);
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 
@@ -57,9 +63,26 @@ app.get('/api/health/db', async (_, res) => {
   }
 });
 
+// Handler global: errores no capturados devuelven JSON 500
+app.use((err, _req, res, _next) => {
+  console.error('Error no capturado:', err);
+  res.status(500).json({
+    error: process.env.NODE_ENV === 'production' ? 'Error del servidor' : (err.message || String(err)),
+  });
+});
+
 const HOST = '0.0.0.0';  // Aceptar conexiones desde LAN (celular, emulador)
-const server = app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, async () => {
   console.log(`Servidor en http://localhost:${PORT} (LAN: puerto ${PORT})`);
+  // Verificar conexión a la base al iniciar
+  try {
+    const { prisma } = await import('./lib/prisma.js');
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('Base de datos: OK');
+  } catch (e) {
+    console.error('ERROR: No se pudo conectar a la base de datos:', e.message);
+    console.error('Verificá que PostgreSQL esté corriendo (docker-compose up -d db) y que DATABASE_URL en .env sea correcto.');
+  }
 });
 
 server.on('error', (err) => {

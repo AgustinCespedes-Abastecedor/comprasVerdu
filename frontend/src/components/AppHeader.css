@@ -30,7 +30,7 @@
   justify-content: flex-end;
 }
 
-/* Logo centrado en el eje X */
+/* Logo centrado en el eje X; click lleva al inicio */
 .app-header-logo {
   position: absolute;
   left: 50%;
@@ -41,6 +41,14 @@
   justify-content: center;
   padding: 0.25rem;
   pointer-events: auto;
+}
+
+.app-header-logo-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
 }
 
 .app-logo-img {
@@ -101,6 +109,7 @@ html.is-native .app-header h1,
 html.is-native .app-header .home-brand-name,
 html.is-native .app-header .vercompras-header-title,
 html.is-native .app-header .planilla-header-title,
+html.is-native .app-header .recepcion-listado-header-title,
 html.is-native .app-header .gestion-usuarios-header-title {
   font-size: 0.8125rem;
   font-weight: 600;
@@ -112,12 +121,21 @@ html.is-native .app-header .home-brand-meta {
   margin-top: 0.125rem;
 }
 
+/* Touch targets mínimo 44px (Material / Android) en APK */
 html.is-native .app-header .planilla-back,
 html.is-native .app-header .vercompras-back,
-html.is-native .app-header .gestion-usuarios-back,
-html.is-native .app-header .home-btn-logout {
-  width: 2.25rem;
-  height: 2.25rem;
-  min-width: 2.25rem;
-  min-height: 2.25rem;
+html.is-native .app-header .recepcion-listado-back,
+html.is-native .app-header .gestion-usuarios-back {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+}
+
+html.is-native .app-header .home-btn-logout,
+html.is-native .app-header .home-header-logout {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
 }

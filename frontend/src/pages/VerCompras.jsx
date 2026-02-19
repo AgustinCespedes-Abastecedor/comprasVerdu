@@ -24,6 +24,20 @@ function getNumeroCompra(c) {
   return c.numeroCompra != null ? c.numeroCompra : '—';
 }
 
+/** Costo por unidad = precioPorBulto / uxb cuando uxb > 0 (datos de recepción). */
+function costoPorUnidad(precioPorBulto, uxb) {
+  const u = Number(uxb) || 0;
+  if (u <= 0) return null;
+  const p = Number(precioPorBulto) || 0;
+  return p / u;
+}
+
+/** Para cada detalle de compra, devuelve el detalle de recepción si existe. */
+function getDetalleRecepcion(detalleCompraId, recepcion) {
+  if (!recepcion?.detalles?.length) return null;
+  return recepcion.detalles.find((dr) => dr.detalleCompraId === detalleCompraId) || null;
+}
+
 const EXCEL_SHEET_NAME_MAX = 31;
 const INVALID_SHEET_CHARS = /[:\\/?*[\]]/g;
 
@@ -45,45 +59,59 @@ function nombreHojaUnico(base, usados) {
   return candidato;
 }
 
-/** Exporta un libro Excel con una hoja por compra (por proveedor). */
+/** Exporta un libro Excel con una hoja por compra (por proveedor). Incluye columnas de recepción si existen. */
 function exportarPorProveedor(comprasList) {
   const wb = XLSX.utils.book_new();
   const nombresUsados = new Set();
   comprasList.forEach((c) => {
     const base = `Compra ${getNumeroCompra(c)}`;
     const nombreHoja = nombreHojaUnico(base, nombresUsados);
-    const encabezados = ['Código', 'Descripción', 'Bultos', 'Precio/Bulto', 'Peso/Bulto', '$/KG', 'Total'];
-    const filas = (c.detalles || []).map((d) => [
-      d.producto?.codigo ?? '',
-      d.producto?.descripcion ?? '',
-      d.bultos ?? 0,
-      d.precioPorBulto ?? 0,
-      d.pesoPorBulto ?? 0,
-      d.precioPorKg ?? 0,
-      d.total ?? 0,
-    ]);
-    const ws = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
+    const nombreProveedor = c.proveedor?.nombre ?? '—';
+    const encabezados = ['Código', 'Descripción', 'Bultos Comp.', 'Bultos Recib.', 'Costo unidad', 'Costo total', 'UxB', 'Precio Venta', 'Margen %'];
+    const filas = (c.detalles || []).map((d) => {
+      const dr = getDetalleRecepcion(d.id, c.recepcion);
+      const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb) : null;
+      const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0 ? (Number(dr.cantidad) * costoUnidad) : null;
+      return [
+        d.producto?.codigo ?? '',
+        d.producto?.descripcion ?? '',
+        d.bultos ?? 0,
+        dr != null ? (dr.cantidad ?? '') : '',
+        costoUnidad != null ? costoUnidad : '',
+        costoTotal != null ? costoTotal : '',
+        dr != null ? (dr.uxb ?? '') : '',
+        dr?.precioVenta != null ? dr.precioVenta : '',
+        dr?.margenPorc != null ? dr.margenPorc : '',
+      ];
+    });
+    const filaProveedor = ['Proveedor', nombreProveedor];
+    const ws = XLSX.utils.aoa_to_sheet([filaProveedor, encabezados, ...filas]);
     XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
   });
   XLSX.writeFile(wb, 'compras-por-proveedor.xlsx');
 }
 
-/** Exporta una sola hoja con todas las líneas de todas las compras (por artículo). */
+/** Exporta una sola hoja con todas las líneas de todas las compras (por artículo). Incluye columnas de recepción si existen. */
 function exportarPorArticulo(comprasList) {
-  const encabezados = ['Nº Compra', 'Fecha', 'Código', 'Descripción', 'Bultos', 'Precio/Bulto', 'Peso/Bulto', '$/KG', 'Total'];
+  const encabezados = ['Nº Compra', 'Fecha', 'Código', 'Descripción', 'Bultos Comp.', 'Bultos Recib.', 'Costo unidad', 'Costo total', 'UxB', 'Precio Venta', 'Margen %'];
   const filas = [];
   comprasList.forEach((c) => {
     (c.detalles || []).forEach((d) => {
+      const dr = getDetalleRecepcion(d.id, c.recepcion);
+      const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb) : null;
+      const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0 ? (Number(dr.cantidad) * costoUnidad) : null;
       filas.push([
         getNumeroCompra(c),
         formatDate(c.fecha),
         d.producto?.codigo ?? '',
         d.producto?.descripcion ?? '',
         d.bultos ?? 0,
-        d.precioPorBulto ?? 0,
-        d.pesoPorBulto ?? 0,
-        d.precioPorKg ?? 0,
-        d.total ?? 0,
+        dr != null ? (dr.cantidad ?? '') : '',
+        costoUnidad != null ? costoUnidad : '',
+        costoTotal != null ? costoTotal : '',
+        dr != null ? (dr.uxb ?? '') : '',
+        dr?.precioVenta != null ? dr.precioVenta : '',
+        dr?.margenPorc != null ? dr.margenPorc : '',
       ]);
     });
   });
@@ -100,9 +128,14 @@ export default function VerCompras() {
   const [filtroHasta, setFiltroHasta] = useState('');
   const [proveedorId, setProveedorId] = useState('');
   const [proveedoresList, setProveedoresList] = useState([]);
+  const [expandidoKey, setExpandidoKey] = useState(null);
   const [providerPickerOpen, setProviderPickerOpen] = useState(false);
   const [providerSearch, setProviderSearch] = useState('');
   const providerSearchInputRef = useRef(null);
+
+  const toggleExpandir = (id) => {
+    setExpandidoKey((prev) => (prev === id ? null : id));
+  };
 
   const filteredProveedores = useMemo(() => {
     if (!providerSearch.trim()) return proveedoresList;
@@ -334,50 +367,75 @@ export default function VerCompras() {
         <div className="vercompras-empty">No hay compras con los filtros elegidos.</div>
       ) : (
         <div className="vercompras-list">
-          {list.map((c) => (
-            <article key={c.id} className="vercompras-card">
-              <div className="vercompras-card-head">
-                <span className="vercompras-card-numero" title="Número de compra">Nº {getNumeroCompra(c)}</span>
-                <span className="vercompras-card-fecha">{formatDate(c.fecha)}</span>
-                <span className="vercompras-card-proveedor">{c.proveedor?.nombre}</span>
-                <span className="vercompras-card-user">{c.user?.nombre}</span>
-              </div>
-              <div className="vercompras-card-totales">
-                <span>{formatNum(c.totalBultos)} bultos</span>
-                <span>$ {formatNum(c.totalMonto)}</span>
-              </div>
-              {c.detalles?.length > 0 && (
-                <div className="vercompras-detalle-wrap">
-                  <table className="vercompras-detalle">
-                  <thead>
-                    <tr>
-                      <th>Código</th>
-                      <th>Descripción</th>
-                      <th>Bultos</th>
-                      <th>Precio/Bulto</th>
-                      <th>Peso/Bulto</th>
-                      <th>$/KG</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {c.detalles.map((d) => (
-                      <tr key={d.id}>
-                        <td>{d.producto?.codigo}</td>
-                        <td>{d.producto?.descripcion}</td>
-                        <td>{formatNum(d.bultos)}</td>
-                        <td>{formatNum(d.precioPorBulto)}</td>
-                        <td>{formatNum(d.pesoPorBulto)}</td>
-                        <td>{formatNum(d.precioPorKg)}</td>
-                        <td>{formatNum(d.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
-              )}
-            </article>
-          ))}
+          {list.map((c) => {
+            const expandido = expandidoKey === c.id;
+            return (
+              <article key={c.id} className={`vercompras-card ${expandido ? 'vercompras-card--open' : ''}`}>
+                <button
+                  type="button"
+                  className="vercompras-card-head vercompras-card-head--btn"
+                  onClick={() => toggleExpandir(c.id)}
+                  aria-expanded={expandido}
+                  aria-controls={`vercomp-detalle-${c.id}`}
+                >
+                  <span className="vercompras-card-numero" title="Número de compra">Nº {getNumeroCompra(c)}</span>
+                  <span className="vercompras-card-fecha">{formatDate(c.fecha)}</span>
+                  <span className="vercompras-card-proveedor">{c.proveedor?.nombre}</span>
+                  <span className="vercompras-card-user">{c.user?.nombre}</span>
+                  <span className="vercompras-card-chevron" aria-hidden>{expandido ? '▼' : '▶'}</span>
+                </button>
+                {expandido && (
+                  <div id={`vercomp-detalle-${c.id}`} className="vercompras-card-body">
+                    <div className="vercompras-card-totales">
+                      <span>{formatNum(c.totalBultos)} bultos</span>
+                      <span>$ {formatNum(c.totalMonto)}</span>
+                    </div>
+                    {c.detalles?.length > 0 && (
+                      <div className="vercompras-detalle-wrap">
+                        <table className="vercompras-detalle">
+                          <thead>
+                            <tr>
+                              <th>Código</th>
+                              <th>Descripción</th>
+                              <th>Bultos Comp.</th>
+                              <th>Bultos Recib.</th>
+                              <th>Costo unidad</th>
+                              <th>Costo total</th>
+                              <th>UxB</th>
+                              <th>Precio Venta</th>
+                              <th>Margen %</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {c.detalles.map((d) => {
+                              const dr = getDetalleRecepcion(d.id, c.recepcion);
+                              const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb) : null;
+                              const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0
+                                ? (Number(dr.cantidad) * costoUnidad)
+                                : null;
+                              return (
+                                <tr key={d.id}>
+                                  <td>{d.producto?.codigo}</td>
+                                  <td>{d.producto?.descripcion}</td>
+                                  <td>{formatNum(d.bultos)}</td>
+                                  <td>{dr != null ? formatNum(dr.cantidad) : '—'}</td>
+                                  <td>{costoUnidad != null ? formatNum(costoUnidad) : '—'}</td>
+                                  <td>{costoTotal != null ? formatNum(costoTotal) : '—'}</td>
+                                  <td>{dr != null ? formatNum(dr.uxb) : '—'}</td>
+                                  <td>{dr?.precioVenta != null ? formatNum(dr.precioVenta) : '—'}</td>
+                                  <td>{dr?.margenPorc != null ? `${formatNum(dr.margenPorc)} %` : '—'}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

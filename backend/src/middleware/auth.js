@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev';
  * Ver docs/ROLES.md para la matriz de permisos.
  */
 
-export function authMiddleware(req, res, next) {
+export async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Token no proporcionado' });
@@ -15,10 +15,24 @@ export function authMiddleware(req, res, next) {
   const token = authHeader.slice(7);
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    req.userId = payload.userId;
-    req.rol = payload.rol;
+    const userId = payload.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, rol: true },
+    });
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario ya no existe. Iniciá sesión de nuevo.' });
+    }
+    req.userId = user.id;
+    req.rol = user.rol;
     next();
-  } catch {
+  } catch (e) {
+    if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
     return res.status(401).json({ error: 'Token inválido o expirado' });
   }
 }

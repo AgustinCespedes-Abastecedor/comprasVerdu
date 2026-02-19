@@ -96,7 +96,312 @@
   width: 100%;
 }
 
-/* ----- Filters ----- */
+/* ----- Top bar: solo Fecha ----- */
+.planilla-top-bar {
+  padding: 0.75rem 1rem;
+  background: var(--planilla-card-bg);
+  border: 1px solid var(--planilla-border);
+  border-radius: 12px;
+}
+
+.planilla-top-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--planilla-muted);
+  margin-bottom: 0.375rem;
+}
+
+.planilla-top-fecha .planilla-input-date {
+  min-width: 10rem;
+  max-width: 14rem;
+}
+
+/* ----- Agregar artículo (búsqueda) ----- */
+.planilla-section-add {
+  margin-top: 0.25rem;
+}
+
+.planilla-add-article-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.planilla-search-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--planilla-text);
+}
+
+.planilla-add-article-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.planilla-input-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.planilla-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--planilla-muted);
+}
+
+/* ----- Lista de ítems (cards) ----- */
+.planilla-section-items {
+  flex: 1;
+  min-height: 0;
+}
+
+.planilla-items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.planilla-item-card {
+  background: var(--planilla-card-bg);
+  border: 1px solid var(--planilla-border);
+  border-radius: 12px;
+  padding: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.planilla-item-card:focus-within {
+  border-color: var(--planilla-accent);
+  box-shadow: 0 0 0 2px var(--planilla-accent-soft);
+}
+
+.planilla-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.planilla-item-codigo {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--planilla-muted);
+  padding: 0.2rem 0.5rem;
+  background: var(--planilla-input-bg);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.planilla-item-desc {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--planilla-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planilla-item-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.planilla-item-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid var(--planilla-border);
+  border-radius: 8px;
+  background: var(--planilla-input-bg);
+  color: var(--planilla-text);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.planilla-item-btn:hover {
+  border-color: var(--planilla-border-hover);
+  background: var(--planilla-surface2);
+}
+
+.planilla-item-btn-dup {
+  color: var(--planilla-accent);
+}
+
+.planilla-item-btn-dup:hover {
+  background: var(--planilla-accent-soft);
+  border-color: var(--planilla-accent);
+}
+
+.planilla-item-btn-del:hover {
+  color: var(--danger);
+  border-color: var(--danger-soft);
+  background: var(--danger-soft);
+}
+
+/* Bloque de referencia ELABASTECEDOR (stocks, ventas, $ unitarios) */
+.planilla-item-ref-block {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--planilla-th-bd-bg, rgba(74, 63, 10, 0.25));
+  border: 1px solid var(--planilla-th-bd-fg, rgba(230, 194, 41, 0.2));
+  border-radius: 8px;
+}
+
+[data-theme="light"] .planilla-item-ref-block {
+  background: var(--planilla-th-bd-bg);
+  border-color: rgba(124, 94, 3, 0.2);
+}
+
+.planilla-item-ref-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--planilla-th-bd-fg, #e6c229);
+}
+
+.planilla-item-ref-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem 1rem;
+}
+
+@media (max-width: 420px) {
+  .planilla-item-ref-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.planilla-item-ref-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.planilla-item-ref-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--planilla-muted);
+}
+
+.planilla-item-ref-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--planilla-text);
+}
+
+.planilla-item-compra-title {
+  margin-bottom: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--planilla-muted);
+}
+
+.planilla-item-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+@media (max-width: 380px) {
+  .planilla-item-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .planilla-item-field-total {
+    grid-column: span 2;
+  }
+}
+
+.planilla-item-field-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--planilla-muted);
+  margin-bottom: 0.25rem;
+}
+
+.planilla-item-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--planilla-text);
+  background: var(--planilla-input-bg);
+  border: 1px solid var(--planilla-border);
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.planilla-item-input:focus {
+  outline: none;
+  border-color: var(--planilla-accent);
+  box-shadow: 0 0 0 2px var(--planilla-accent-soft);
+}
+
+.planilla-item-field-total .planilla-item-total {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--planilla-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.planilla-items-empty {
+  margin: 0;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--planilla-muted);
+}
+
+/* ----- Totales ----- */
+.planilla-section-totales {
+  padding: 0.75rem 1rem;
+  background: var(--planilla-card-bg);
+  border: 1px solid var(--planilla-border);
+  border-radius: 12px;
+}
+
+.planilla-totales-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.planilla-totales-monto {
+  font-variant-numeric: tabular-nums;
+  color: var(--planilla-accent);
+}
+
+/* ----- Filters (legacy, keep for any refs) ----- */
 .planilla-section-filters {
   margin-bottom: 0.25rem;
 }
@@ -449,6 +754,35 @@
 /* ----- Sección proveedor de la compra (arriba del botón Guardar) ----- */
 .planilla-section-proveedor {
   margin-top: 0.5rem;
+  padding: 1rem;
+  background: var(--planilla-card-bg);
+  border: 1px solid var(--planilla-border);
+  border-radius: 12px;
+}
+
+.planilla-section-proveedor .planilla-proveedor-label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.planilla-proveedor-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--planilla-muted);
+}
+
+.planilla-section-proveedor .planilla-provider-picker-field,
+.planilla-section-proveedor .planilla-provider-picker-field-bottom {
+  width: 100%;
+  max-width: none;
+}
+
+.planilla-section-proveedor .planilla-proveedor-search-wrap {
+  width: 100%;
+}
+
+.planilla-section-proveedor .planilla-proveedor-search {
+  width: 100%;
 }
 
 .planilla-proveedor-asignar {
@@ -516,6 +850,183 @@
 
 .planilla-proveedor-selected strong {
   color: var(--planilla-text);
+}
+
+/* ========== APK: Nueva compra optimizada para móvil ========== */
+html.is-native .planilla-main {
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0));
+  padding-right: max(0.75rem, env(safe-area-inset-right, 0));
+  padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0) + 4rem));
+  -webkit-overflow-scrolling: touch;
+}
+
+html.is-native .planilla-top-bar {
+  padding: max(0.75rem, env(safe-area-inset-top, 0)) 1rem 0.75rem;
+  padding-left: max(1rem, env(safe-area-inset-left, 0));
+  padding-right: max(1rem, env(safe-area-inset-right, 0));
+}
+
+html.is-native .planilla-top-fecha .planilla-input-date {
+  min-height: 48px;
+  font-size: max(1rem, 16px);
+  padding: 0.75rem 1rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .planilla-add-article-wrap {
+  display: flex !important;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0;
+  min-height: auto;
+  visibility: visible;
+}
+
+html.is-native .planilla-add-article-wrap .planilla-add-article-row {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+html.is-native .planilla-add-article-wrap .planilla-input-search,
+html.is-native .planilla-add-article-wrap .planilla-input {
+  min-height: 48px;
+  font-size: max(1rem, 16px);
+  padding: 0.75rem 1rem;
+  width: 100%;
+  max-width: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .planilla-add-article-wrap .planilla-search-label {
+  font-size: 0.875rem;
+  display: block;
+}
+
+html.is-native .planilla-search-results-list {
+  max-height: min(18rem, 50vh);
+  z-index: 1100;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.is-native .planilla-search-result-item {
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Lista de ítems: scroll táctil */
+html.is-native .planilla-section-items {
+  min-height: 0;
+  overflow: visible;
+}
+
+html.is-native .planilla-items-list {
+  -webkit-overflow-scrolling: touch;
+}
+
+html.is-native .planilla-item-card {
+  padding: 1rem;
+}
+
+/* Bloque referencia ELABASTECEDOR: legible en APK */
+html.is-native .planilla-item-ref-block {
+  padding: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+html.is-native .planilla-item-ref-title {
+  font-size: 0.75rem;
+}
+
+html.is-native .planilla-item-ref-label {
+  font-size: 0.75rem;
+}
+
+html.is-native .planilla-item-ref-value {
+  font-size: 0.9375rem;
+}
+
+html.is-native .planilla-item-ref-grid {
+  gap: 0.5rem 0.75rem;
+}
+
+/* Inputs de compra (bultos, precio): táctiles y sin zoom */
+html.is-native .planilla-item-input {
+  min-height: 48px;
+  font-size: max(1rem, 16px);
+  padding: 0.75rem 1rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .planilla-item-btn {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Totales */
+html.is-native .planilla-section-totales {
+  padding-left: max(1rem, env(safe-area-inset-left, 0));
+  padding-right: max(1rem, env(safe-area-inset-right, 0));
+}
+
+html.is-native .planilla-totales-bar {
+  font-size: 1.0625rem;
+}
+
+/* Proveedor: arriba de Guardar, full width y táctil */
+html.is-native .planilla-section-proveedor {
+  display: block !important;
+  visibility: visible;
+  margin-top: 1rem;
+  padding: 1rem;
+  padding-left: max(1rem, env(safe-area-inset-left, 0));
+  padding-right: max(1rem, env(safe-area-inset-right, 0));
+}
+
+html.is-native .planilla-proveedor-hint {
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+}
+
+html.is-native .planilla-provider-picker-field-bottom {
+  display: flex !important;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  font-size: max(1rem, 16px);
+  width: 100%;
+  max-width: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .planilla-section-proveedor .planilla-proveedor-search {
+  min-height: 48px;
+  font-size: max(1rem, 16px);
+}
+
+html.is-native .planilla-proveedor-label {
+  font-size: 0.875rem;
+  display: block;
+  margin-bottom: 0.375rem;
+}
+
+/* Botón Guardar compra */
+html.is-native .planilla-section-actions {
+  margin-top: 0.75rem;
+  padding-top: 1rem;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0));
+}
+
+html.is-native .planilla-btn-primary {
+  min-height: 48px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  width: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ----- Alert ----- */
@@ -783,7 +1294,7 @@ html.is-native .planilla-table-hint {
   width: 100%;
 }
 
-/* APK: scroll horizontal fluido, optimizado para landscape */
+/* APK: scroll horizontal fluido, optimizado para landscape; no recortar columnas fijas */
 html.is-native .planilla-table-wrap {
   scroll-behavior: smooth;
   overscroll-behavior-x: contain;
@@ -1182,6 +1693,17 @@ html.is-native .planilla-table-wrap {
   opacity: 0.7;
 }
 
+/* Costo Total: calculado, solo lectura, grisado */
+.planilla-cell-costo-total {
+  background: var(--planilla-cell-bd-bg, #e9ecef);
+  color: var(--planilla-cell-bd-fg, #495057);
+  cursor: default;
+  font-weight: 500;
+}
+.planilla-cell-costo-total:read-only {
+  border-color: transparent;
+}
+
 /* Columna Costo más ancha para no cortar decimales */
 .planilla-col-costo {
   min-width: 7rem;
@@ -1462,36 +1984,57 @@ html.is-native .planilla-th.planilla-col-desc {
   color: var(--planilla-sticky-th-fg);
 }
 
+/* APK: columna de acciones más ancha para que − y + no se corten */
 html.is-native .planilla-th-accion {
   left: 0;
+  width: 6rem;
+  min-width: 6rem;
+  max-width: 6rem;
+  padding: 0.5rem 0.4rem;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 html.is-native .planilla-td-accion {
   left: 0;
+  width: 6rem;
+  min-width: 6rem;
+  max-width: 6rem;
+  padding: 0.5rem 0.4rem;
+  box-sizing: border-box;
+  overflow: visible;
   background: var(--planilla-sticky-cell-bg);
 }
 
+html.is-native .planilla-td-accion .planilla-accion-btns {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
 html.is-native .planilla-th-sticky-group {
-  left: 4.25rem;
+  left: 6rem;
   width: 11rem;
   min-width: 11rem;
 }
 
 html.is-native .planilla-th.planilla-col-codigo {
-  left: 4.25rem;
+  left: 6rem;
 }
 
 html.is-native .planilla-th.planilla-col-desc {
-  left: 7.25rem;
+  left: 9rem;
 }
 
 html.is-native .planilla-td.planilla-col-codigo {
-  left: 4.25rem;
+  left: 6rem;
   background: var(--planilla-sticky-cell-bg);
 }
 
 html.is-native .planilla-td.planilla-col-desc {
-  left: 7.25rem;
+  left: 9rem;
   background: var(--planilla-sticky-cell-bg);
 }
 
@@ -1537,19 +2080,11 @@ html.is-native .planilla-cell {
 
 html.is-native .planilla-btn-duplicar,
 html.is-native .planilla-btn-quitar {
-  min-width: 2.25rem;
-  min-height: 2.25rem;
-  -webkit-tap-highlight-color: transparent;
-}
-
-html.is-native .planilla-main {
-  padding-left: max(0.75rem, env(safe-area-inset-left, 0));
-  padding-right: max(0.75rem, env(safe-area-inset-right, 0));
-  padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0) + 1rem));
-}
-
-html.is-native .planilla-btn-primary {
-  min-height: 48px;
+  min-width: 2.5rem;
+  width: 2.5rem;
+  min-height: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
 }
 

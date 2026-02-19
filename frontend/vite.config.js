@@ -9,6 +9,17 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:4000',
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', (err, req, res) => {
+            if (!res.headersSent) {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 503;
+              res.end(JSON.stringify({
+                error: 'Backend no disponible. Ejecutá en otra terminal: npm run dev:backend',
+              }));
+            }
+          });
+        },
       },
     },
   },

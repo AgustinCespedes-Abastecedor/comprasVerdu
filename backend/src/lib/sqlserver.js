@@ -16,7 +16,8 @@ const config = {
 };
 
 const TABLE = process.env.EXTERNAL_PROVEEDORES_TABLE || 'proveedores';
-const COL_PROVEEDORES_PK = process.env.EXTERNAL_PROVEEDORES_PK || 'Id'; // PK en SQL Server (por si articulos.proveedor lo usa)
+// PK: en muchas instalaciones la tabla no tiene 'Id'; usar 'codigo' como identificador
+const COL_PROVEEDORES_PK = process.env.EXTERNAL_PROVEEDORES_PK || 'codigo';
 const COL_ID = process.env.EXTERNAL_PROVEEDORES_ID || 'codigo';
 const COL_NOMBRE = process.env.EXTERNAL_PROVEEDORES_NOMBRE || 'Nombre';
 
@@ -30,6 +31,7 @@ const COL_ARTICULOS_PRECIO_COSTO = process.env.EXTERNAL_ARTICULOS_PRECIO_COSTO |
 const COL_ARTICULOS_PRECIO_VENTA = process.env.EXTERNAL_ARTICULOS_PRECIO_VENTA || 'PrecioVenta';
 const COL_ARTICULOS_MARGEN = process.env.EXTERNAL_ARTICULOS_MARGEN || 'Margen';
 const COL_ARTICULOS_IVA = process.env.EXTERNAL_ARTICULOS_IVA || 'IVA';
+const COL_ARTICULOS_UXB = process.env.EXTERNAL_ARTICULOS_UXB || 'UxB';
 const ARTICULOS_DEPARTAMENTO_ID = process.env.EXTERNAL_ARTICULOS_DEPARTAMENTO_ID ?? '6';
 
 /** Tabla IVA en ELABASTECEDOR: Codigo (ej. 1, 2), Porcentaje (ej. 21.000 = 21%, 10.5000 = 10.5%) */
@@ -193,6 +195,41 @@ export async function fetchCodigosArticulosPorDepartamento(departamentoId) {
 }
 
 /**
+ * Obtiene la lista de artículos (codigo, descripcion) de un departamento desde ELABASTECEDOR.
+ * Filtro: HabilCajas = 1 y departamento = departamentoId. Independiente de proveedores.
+ * @param {string} departamentoId - Código del departamento (ej. '6' = verdulería).
+ * @returns {Promise<Array<{ codigo: string, descripcion: string }>>}
+ */
+export async function fetchArticulosPorDepartamento(departamentoId) {
+  if (!departamentoId || String(departamentoId).trim() === '') return [];
+  try {
+    const pool = await getSqlServerPool();
+    const request = pool.request();
+    request.input('departamentoId', sql.VarChar(10), String(departamentoId).trim());
+    const sqlQuery = [
+      `SELECT a.[${COL_ARTICULOS_CODIGO}] AS codigo, a.[${COL_ARTICULOS_DESCRIPCION}] AS descripcion`,
+      `FROM [${TABLE_ARTICULOS}] a`,
+      `WHERE a.[${COL_ARTICULOS_HABILCAJAS}] = 1`,
+      `AND a.[${COL_ARTICULOS_DESCRIPCION}] IS NOT NULL`,
+      `AND (CAST(a.[${COL_ARTICULOS_DEPARTAMENTO}] AS VARCHAR(10)) = @departamentoId OR a.[${COL_ARTICULOS_DEPARTAMENTO}] = TRY_CAST(@departamentoId AS INT))`,
+      `ORDER BY a.[${COL_ARTICULOS_DESCRIPCION}]`,
+    ].join(' ');
+    const result = await request.query(sqlQuery);
+    const list = (result.recordset || []).map((row) => ({
+      codigo: String(row.codigo ?? '').trim(),
+      descripcion: String(row.descripcion ?? '').trim(),
+    })).filter((a) => a.codigo.length > 0);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[articulos por departamento] depto=${departamentoId} → ${list.length} artículos`);
+    }
+    return list;
+  } catch (e) {
+    console.error('SQL Server (articulos por departamento):', e.message);
+    return [];
+  }
+}
+
+/**
  * Normaliza código de artículo en SQL para comparación (quitar puntos/comas y trim).
  */
 function sqlNormalizarCodigoArticulos(alias = 'a') {
@@ -251,6 +288,99 @@ export async function fetchPreciosDesdeArticulos(codigos) {
     return map;
   } catch (e) {
     console.error('SQL Server (articulos precios):', e.message);
+    return {};
+  }
+}
+
+/**
+ * Obtiene info "Sistema Tecnolar" por código: UxB, PrecioCosto, Margen, PrecioVenta desde articulos.
+ * @param {string[]} codigos - Códigos de artículo (se normalizan con normalizarCodigoStock).
+ * @returns {Promise<Object.<string, { uxb: number|null, precioCosto: number, margen: number, precioVenta: number }>>}
+ */
+export async function fetchInfoTecnolarPorCodigos(codigos) {
+  if (!Array.isArray(codigos) || codigos.length === 0) return {};
+  const unicos = [...new Set(codigos.map((c) => normalizarCodigoStock(c)).filter(Boolean))];
+  if (unicos.length === 0) return {};
+  const map = {};
+  for (const cod of unicos) {
+    map[cod] = { uxb: null, precioCosto: 0, margen: 0, precioVenta: 0 };
+  }
+  try {
+    const pool = await getSqlServerPool();
+    const normCod = sqlNormalizarCodigoArticulos('a');
+    const uxbExpr = `TRY_CAST(a.[${COL_ARTICULOS_UXB}] AS DECIMAL(10,2))`;
+    const costoExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_PRECIO_COSTO}] AS DECIMAL(18,2)), 0)`;
+    const ventaExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_PRECIO_VENTA}] AS DECIMAL(18,2)), 0)`;
+    const margenExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_MARGEN}] AS DECIMAL(18,2)), 0)`;
+    for (let i = 0; i < unicos.length; i += STOCK_BATCH_SIZE) {
+      const batch = unicos.slice(i, i + STOCK_BATCH_SIZE);
+      const codigosStr = batch.join(',');
+      const request = pool.request();
+      request.input('codigos', sql.VarChar(4000), codigosStr);
+      const sqlQuery = [
+        `SELECT ${normCod} AS codigo, ${uxbExpr} AS uxb, ${costoExpr} AS precioCosto, ${margenExpr} AS margen, ${ventaExpr} AS precioVenta`,
+        `FROM [${TABLE_ARTICULOS}] a`,
+        `WHERE ${normCod} IN (SELECT LTRIM(RTRIM(n.value('.', 'VARCHAR(50)'))) FROM (SELECT CAST('<r>' + REPLACE(@codigos, ',', '</r><r>') + '</r>' AS XML) AS x) t CROSS APPLY x.nodes('/r') AS a(n))`,
+      ].join(' ');
+      const result = await request.query(sqlQuery);
+      const rows = result.recordset || [];
+      for (const row of rows) {
+        const cod = normalizarCodigoStock(row.codigo);
+        if (!cod || !(cod in map)) continue;
+        const uxb = row.uxb != null && !Number.isNaN(Number(row.uxb)) ? Number(row.uxb) : null;
+        map[cod] = {
+          uxb,
+          precioCosto: Number(row.precioCosto) || 0,
+          margen: Number(row.margen) || 0,
+          precioVenta: Number(row.precioVenta) || 0,
+        };
+      }
+    }
+    return map;
+  } catch (e) {
+    console.error('SQL Server (info Tecnolar):', e.message);
+    return {};
+  }
+}
+
+/**
+ * Obtiene el porcentaje de IVA por código de artículo desde ELABASTECEDOR.
+ * articulos.IVA referencia TablaIVA.Codigo; TablaIVA.Porcentaje es ej. 21.000 = 21%, 10.5000 = 10.5%.
+ * @param {string[]} codigos - Códigos de artículo (se normalizan con normalizarCodigoStock).
+ * @returns {Promise<Object.<string, number>>} Map codigoNormalizado -> ivaPorcentaje (ej. 21, 10.5).
+ */
+export async function fetchIvaPorcentajePorCodigos(codigos) {
+  if (!Array.isArray(codigos) || codigos.length === 0) return {};
+  const unicos = [...new Set(codigos.map((c) => normalizarCodigoStock(c)).filter(Boolean))];
+  if (unicos.length === 0) return {};
+  const map = {};
+  for (const cod of unicos) map[cod] = 0;
+  try {
+    const pool = await getSqlServerPool();
+    const ivaPctExpr = `ISNULL(TRY_CAST(i.[${COL_IVA_PORCENTAJE}] AS DECIMAL(10,4)), 0)`;
+    const normCod = sqlNormalizarCodigoArticulos('a');
+    for (let i = 0; i < unicos.length; i += STOCK_BATCH_SIZE) {
+      const batch = unicos.slice(i, i + STOCK_BATCH_SIZE);
+      const codigosStr = batch.join(',');
+      const request = pool.request();
+      request.input('codigos', sql.VarChar(4000), codigosStr);
+      const sqlQuery = [
+        `SELECT ${normCod} AS codigo, ${ivaPctExpr} AS ivaPorcentaje`,
+        `FROM [${TABLE_ARTICULOS}] a`,
+        `LEFT JOIN [${TABLE_IVA}] i ON i.[${COL_IVA_CODIGO}] = a.[${COL_ARTICULOS_IVA}]`,
+        `WHERE ${normCod} IN (SELECT LTRIM(RTRIM(n.value('.', 'VARCHAR(50)'))) FROM (SELECT CAST('<r>' + REPLACE(@codigos, ',', '</r><r>') + '</r>' AS XML) AS x) t CROSS APPLY x.nodes('/r') AS a(n))`,
+      ].join(' ');
+      const result = await request.query(sqlQuery);
+      const rows = result.recordset || [];
+      for (const row of rows) {
+        const cod = normalizarCodigoStock(row.codigo);
+        if (!cod || !(cod in map)) continue;
+        map[cod] = Number(row.ivaPorcentaje) || 0;
+      }
+    }
+    return map;
+  } catch (e) {
+    console.error('SQL Server (IVA por códigos):', e.message);
     return {};
   }
 }

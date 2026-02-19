@@ -3,7 +3,7 @@ import { Capacitor } from '@capacitor/core';
 
 const getApiBase = () => {
   if (Capacitor.isNativePlatform()) {
-    return import.meta.env.VITE_API_URL || 'http://192.168.1.116:4000/api';
+    return import.meta.env.VITE_API_URL || 'http://192.168.1.110:4000/api';
   }
   return '/api';
 };
@@ -23,7 +23,11 @@ export async function api(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const msg = data.detail ? `${data.error || 'Error'}: ${data.detail}` : (data.error || res.statusText || 'Error de red');
+    let msg = data.error || data.message || res.statusText || 'Error de red';
+    if (data.detail) msg = `${msg}: ${data.detail}`;
+    if ((res.status === 500 || res.status === 502 || res.status === 503) && !data.error && !data.message) {
+      msg = 'Servidor no disponible. ¿Ejecutaste el backend? (npm run dev:backend en la raíz del proyecto)';
+    }
     throw new Error(msg);
   }
   return data;
@@ -48,6 +52,12 @@ export const productos = {
     const q = new URLSearchParams(clean).toString();
     return api(`/productos${q ? `?${q}` : ''}`);
   },
+  /** Porcentaje IVA por código desde ELABASTECEDOR. codigos: string[] → { [codigo]: number } */
+  getIva: (codigos) => {
+    if (!Array.isArray(codigos) || codigos.length === 0) return Promise.resolve({});
+    const q = new URLSearchParams({ codigos: codigos.join(',') }).toString();
+    return api(`/productos/iva?${q}`);
+  },
 };
 
 export const compras = {
@@ -58,6 +68,22 @@ export const compras = {
   totalesDia: (fecha) => api(`/compras/totales-dia?fecha=${fecha || ''}`),
   create: (body) => api('/compras', { method: 'POST', body: JSON.stringify(body) }),
   get: (id) => api(`/compras/${id}`),
+  getRecepcion: (compraId) => api(`/compras/${compraId}/recepcion`),
+};
+
+export const recepciones = {
+  list: (params) => {
+    const q = new URLSearchParams(params || {}).toString();
+    return api(`/recepciones${q ? `?${q}` : ''}`);
+  },
+  save: (body) => api('/recepciones', { method: 'POST', body: JSON.stringify(body) }),
+  /** Actualizar precio de venta por detalle; body: { detalles: [{ id: detalleRecepcionId, precioVenta }] } */
+  updatePrecios: (id, body) => api(`/recepciones/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+};
+
+export const infoFinalArticulos = {
+  /** Lista artículos recepcionados en la fecha (YYYY-MM-DD), con info Tecnolar y costo ponderado */
+  list: (fecha) => api(`/info-final-articulos?fecha=${encodeURIComponent(fecha || '')}`),
 };
 
 export const users = {

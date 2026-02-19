@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { fetchArticulosExternos, fetchCodigosArticulosPorDepartamento, fetchPreciosDesdeArticulos, fetchStockPorCodigos, fetchVentasYCostoDesdeVTAARTICULOS, normalizarCodigoStock, normalizarProveedorParaArticulos } from '../lib/sqlserver.js';
+import { fetchArticulosExternos, fetchArticulosPorDepartamento, fetchIvaPorcentajePorCodigos, fetchPreciosDesdeArticulos, fetchStockPorCodigos, fetchVentasYCostoDesdeVTAARTICULOS, normalizarCodigoStock, normalizarProveedorParaArticulos } from '../lib/sqlserver.js';
 
 const DEPARTAMENTO_VERDULERIA = process.env.EXTERNAL_ARTICULOS_DEPARTAMENTO_ID ?? '6';
 
@@ -10,6 +10,20 @@ export const productosRouter = router;
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 200;
+
+/** GET /productos/iva?codigos=1,2,3 - Porcentaje IVA por código (desde ELABASTECEDOR TablaIVA). */
+router.get('/iva', async (req, res) => {
+  try {
+    const raw = typeof req.query.codigos === 'string' ? req.query.codigos.trim() : '';
+    const codigos = raw ? raw.split(/[\s,]+/).filter(Boolean) : [];
+    if (codigos.length === 0) return res.json({});
+    const map = await fetchIvaPorcentajePorCodigos(codigos);
+    return res.json(map);
+  } catch (e) {
+    console.error('GET /productos/iva:', e);
+    res.status(500).json({ error: e?.message || 'Error al obtener IVA' });
+  }
+});
 
 router.get('/', async (req, res) => {
   try {
@@ -81,11 +95,72 @@ router.get('/', async (req, res) => {
       }
       where = { codigo: { in: codigos } };
     } else {
-      const codigosVerduleria = await fetchCodigosArticulosPorDepartamento(DEPARTAMENTO_VERDULERIA);
-      if (codigosVerduleria.length === 0) {
-        return res.json({ total: 0, page: 1, pageSize: pageSize, items: [] });
+      // Sin proveedor: lista desde ELABASTECEDOR por departamento verdulería (independiente de proveedores)
+      const articulosVerduleria = await fetchArticulosPorDepartamento(DEPARTAMENTO_VERDULERIA);
+      if (articulosVerduleria.length === 0) {
+        return res.json({ total: 0, page: 1, pageSize, items: [] });
       }
-      where = { codigo: { in: codigosVerduleria } };
+      let listBase = articulosVerduleria;
+      if (q.length > 0) {
+        const qLower = q.toLowerCase();
+        listBase = listBase.filter(
+          (a) =>
+            (a.descripcion && a.descripcion.toLowerCase().includes(qLower)) ||
+            (a.codigo && String(a.codigo).toLowerCase().includes(qLower))
+        );
+      }
+      const allCodigos = listBase.map((a) => a.codigo);
+      const fechaPlanilla = typeof req.query.fecha === 'string' ? req.query.fecha.trim() : '';
+      const [stockMap, preciosMap, ventasMap] = await Promise.all([
+        fetchStockPorCodigos(allCodigos),
+        fetchPreciosDesdeArticulos(allCodigos),
+        fechaPlanilla ? fetchVentasYCostoDesdeVTAARTICULOS(allCodigos, fechaPlanilla) : Promise.resolve({}),
+      ]);
+      let listConStock = listBase.map((a) => {
+        const codNorm = normalizarCodigoStock(a.codigo);
+        const st = stockMap[codNorm];
+        const stockSucursales = st != null ? st.stockSucursales : 0;
+        const stockCD = st != null ? st.stockCD : 0;
+        const precios = preciosMap[codNorm];
+        const costo = precios != null ? precios.costo : 0;
+        const precioVenta = precios != null ? precios.precioVenta : 0;
+        const margenPorc = precios != null ? precios.margenPorc : 0;
+        const ventas = ventasMap[codNorm];
+        const ventasN1 = ventas != null ? ventas.ventasN1 : 0;
+        const ventasN2 = ventas != null ? ventas.ventasN2 : 0;
+        const ventas7dias = ventas != null ? ventas.ventas7dias : 0;
+        return {
+          id: a.codigo,
+          codigo: a.codigo,
+          codigoExterno: a.codigo,
+          descripcion: a.descripcion,
+          stockSucursales,
+          stockCD,
+          ventasN1,
+          ventasN2,
+          ventas7dias,
+          costo,
+          precioVenta,
+          margenPorc,
+        };
+      });
+      const mul = sortDir === 'asc' ? 1 : -1;
+      listConStock.sort((a, b) => {
+        let va = a[sortBy];
+        let vb = b[sortBy];
+        if (sortBy === 'stockSucursales' || sortBy === 'stockCD') {
+          va = sortBy === 'stockSucursales' ? (a.stockSucursales ?? 0) : (a.stockCD ?? 0);
+          vb = sortBy === 'stockSucursales' ? (b.stockSucursales ?? 0) : (b.stockCD ?? 0);
+        } else {
+          va = va ?? (typeof a[sortBy] === 'string' ? '' : 0);
+          vb = vb ?? (typeof b[sortBy] === 'string' ? '' : 0);
+        }
+        if (typeof va === 'string') return va.localeCompare(vb, undefined, { sensitivity: 'base' }) * mul;
+        return va === vb ? 0 : (va < vb ? -mul : mul);
+      });
+      const total = listConStock.length;
+      const list = listConStock.slice((page - 1) * pageSize, page * pageSize);
+      return res.json({ total, page, pageSize, items: list });
     }
 
     if (q.length > 0) {

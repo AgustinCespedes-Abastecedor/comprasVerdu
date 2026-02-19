@@ -10,6 +10,7 @@ body {
   margin: 0;
   font-family: var(--font);
   min-height: 100vh;
+  min-height: 100dvh;
   /* Áreas seguras: no superponer con barra de estado ni botones de navegación (APK/móvil) */
   padding-top: env(safe-area-inset-top, 0);
   padding-bottom: env(safe-area-inset-bottom, 0);
@@ -19,7 +20,27 @@ body {
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
   min-height: calc(100vh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+}
+
+/* ========== APK / WebView nativo (Capacitor) ========== */
+html.is-native {
+  /* Evitar zoom automático en iOS al enfocar inputs; scroll suave */
+  -webkit-text-size-adjust: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.is-native body {
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+}
+
+/* Inputs/select mínimo 16px en APK para evitar zoom al enfocar (iOS) */
+html.is-native input,
+html.is-native select,
+html.is-native textarea {
+  font-size: max(1rem, 16px);
 }
 
 input, select, button {
@@ -80,6 +101,14 @@ a {
   --home-accent-soft: rgba(63, 185, 80, 0.12);
   --home-accent-hover: #56d364;
   --home-icon-bg: rgba(255, 255, 255, 0.06);
+  /* Home: recepción (amarillo / mostaza) */
+  --home-recepcion: #c9a227;
+  --home-recepcion-soft: rgba(201, 162, 39, 0.15);
+  --home-recepcion-hover: #dbb32e;
+  /* Home: info artículos (rojo / salmón) */
+  --home-info: #e07a7a;
+  --home-info-soft: rgba(224, 122, 122, 0.15);
+  --home-info-hover: #e9967a;
 
   /* Planilla */
   --planilla-bg: #0d1117;
@@ -173,6 +202,14 @@ a {
   --home-accent-soft: rgba(26, 127, 55, 0.12);
   --home-accent-hover: #2da44e;
   --home-icon-bg: rgba(31, 35, 40, 0.06);
+  /* Home: recepción (amarillo / mostaza) */
+  --home-recepcion: #b8860b;
+  --home-recepcion-soft: rgba(184, 134, 11, 0.12);
+  --home-recepcion-hover: #9a7209;
+  /* Home: info artículos (rojo / salmón) */
+  --home-info: #cf222e;
+  --home-info-soft: rgba(207, 34, 46, 0.12);
+  --home-info-hover: #a41e28;
 
   /* Planilla */
   --planilla-bg: #f6f8fa;

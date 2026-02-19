@@ -7,7 +7,10 @@
     "dev": "npm run dev --prefix frontend",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
+    "start": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1",
+    "start:all": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1",
     "build": "npm run build --prefix frontend",
+    "apk": "npm run apk --prefix frontend",
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend"
   }
 }

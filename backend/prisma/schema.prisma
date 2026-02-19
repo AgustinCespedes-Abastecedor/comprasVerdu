@@ -14,14 +14,15 @@ enum RolUsuario {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  password  String
-  nombre    String
-  rol       RolUsuario @default(COMPRADOR)
-  compras   Compra[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id         String     @id @default(cuid())
+  email      String     @unique
+  password   String
+  nombre     String
+  rol        RolUsuario @default(COMPRADOR)
+  compras    Compra[]
+  recepciones Recepcion[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 }
 
 model Proveedor {
@@ -59,6 +60,7 @@ model Compra {
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   proveedor    Proveedor      @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
   detalles     DetalleCompra[]
+  recepcion    Recepcion?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -68,14 +70,46 @@ model Compra {
 }
 
 model DetalleCompra {
-  id             String   @id @default(cuid())
-  compraId       String
-  productoId     String
-  bultos         Int      @default(0)
-  precioPorBulto Decimal  @default(0) @db.Decimal(12, 2)
-  pesoPorBulto   Decimal  @default(0) @db.Decimal(8, 2)
-  precioPorKg    Decimal  @default(0) @db.Decimal(12, 2)
-  total          Decimal  @default(0) @db.Decimal(14, 2)
-  compra         Compra   @relation(fields: [compraId], references: [id], onDelete: Cascade)
-  producto       Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  id                String            @id @default(cuid())
+  compraId          String
+  productoId        String
+  bultos            Int               @default(0)
+  precioPorBulto     Decimal           @default(0) @db.Decimal(12, 2)
+  pesoPorBulto      Decimal           @default(0) @db.Decimal(8, 2)
+  precioPorKg       Decimal           @default(0) @db.Decimal(12, 2)
+  total             Decimal           @default(0) @db.Decimal(14, 2)
+  compra            Compra            @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  producto          Producto          @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  detallesRecepcion DetalleRecepcion[]
+}
+
+model Recepcion {
+  id              String             @id @default(cuid())
+  numeroRecepcion Int?               @unique
+  compraId        String             @unique
+  userId          String
+  completa        Boolean            @default(false) // true cuando se guardó precio de venta (fin del proceso)
+  compra          Compra             @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  detalles        DetalleRecepcion[]
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([compraId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model DetalleRecepcion {
+  id              String        @id @default(cuid())
+  recepcionId     String
+  detalleCompraId String        @unique
+  cantidad        Int           @default(0)
+  uxb             Int           @default(0)
+  precioVenta     Decimal?      @db.Decimal(12, 2)  // Precio de venta por unidad (permite calcular MarkUP)
+  margenPorc     Decimal?      @db.Decimal(5, 2)   // Margen % = (precioVenta - costo) / costo * 100
+  recepcion       Recepcion     @relation(fields: [recepcionId], references: [id], onDelete: Cascade)
+  detalleCompra   DetalleCompra @relation(fields: [detalleCompraId], references: [id], onDelete: Cascade)
+
+  @@index([recepcionId])
 }

@@ -42,12 +42,8 @@ function productToFila(p, filaId) {
     precioVenta: p.precioVenta,
     margenPorc: p.margenPorc,
     bultos: '',
-    precioPorBulto: '',
-    pesoPorBulto: '',
-    precioVentaCompra: '',
-    precioPorKg: '',
-    margenFinalPorc: '',
-    total: '',
+    costoUnidad: '',
+    costoTotal: '',
   };
 }
 
@@ -170,14 +166,8 @@ export default function PlanillaCompra() {
       const next = [...prev];
       const row = { ...next[idx], [field]: value };
       const bultos = parseNum(row.bultos);
-      const precioBulto = parseNum(row.precioPorBulto);
-      const pesoBulto = parseNum(row.pesoPorBulto);
-      const precioVentaCompra = parseNum(row.precioVentaCompra);
-      row.precioPorKg = pesoBulto > 0 ? precioBulto / pesoBulto : '';
-      row.total = bultos > 0 && precioBulto >= 0 ? bultos * precioBulto : '';
-      row.margenFinalPorc = precioBulto > 0 && precioVentaCompra >= 0
-        ? ((precioVentaCompra - precioBulto) / precioBulto) * 100
-        : '';
+      const costoUnidad = parseNum(row.costoUnidad);
+      row.costoTotal = bultos > 0 && costoUnidad >= 0 ? bultos * costoUnidad : '';
       next[idx] = row;
       return next;
     });
@@ -193,12 +183,8 @@ export default function PlanillaCompra() {
         filaId: generarFilaId(),
         orden: (original.orden ?? idx) + 0.5,
         bultos: '',
-        precioPorBulto: '',
-        pesoPorBulto: '',
-        precioVentaCompra: '',
-        precioPorKg: '',
-        margenFinalPorc: '',
-        total: '',
+        costoUnidad: '',
+        costoTotal: '',
       };
       return [...prev.slice(0, idx + 1), nuevaFila, ...prev.slice(idx + 1)];
     });
@@ -209,13 +195,10 @@ export default function PlanillaCompra() {
     let monto = 0;
     filas.forEach((f) => {
       bultos += parseNum(f.bultos) || 0;
-      monto += parseNum(f.total) || 0;
+      monto += parseNum(f.costoTotal) || 0;
     });
     return { bultos, monto };
   }, [filas]);
-
-  const totalDiaBultos = totalesDia.totalBultos + totalesCompra.bultos;
-  const totalDiaMonto = (Number(totalesDia.totalMonto) || 0) + totalesCompra.monto;
 
   const handleGuardar = async () => {
     if (!proveedorId) {
@@ -224,12 +207,18 @@ export default function PlanillaCompra() {
     }
     const detalles = filas
       .filter((f) => parseNum(f.bultos) > 0)
-      .map((f) => ({
-        productoId: f.productoId,
-        bultos: parseNum(f.bultos),
-        precioPorBulto: parseNum(f.precioPorBulto),
-        pesoPorBulto: parseNum(f.pesoPorBulto),
-      }));
+      .map((f) => {
+        const bultos = parseNum(f.bultos);
+        const costoUnidad = parseNum(f.costoUnidad);
+        return {
+          productoId: f.productoId,
+          codigo: f.codigo,
+          descripcion: f.descripcion,
+          bultos,
+          precioPorBulto: costoUnidad,
+          pesoPorBulto: 1,
+        };
+      });
     if (detalles.length === 0) {
       setMensaje({ tipo: 'error', text: 'Completá al menos un ítem con cantidad de bultos' });
       return;
@@ -273,17 +262,16 @@ export default function PlanillaCompra() {
       />
 
       <main className="planilla-main">
-        <section className="planilla-section planilla-section-filters">
-          <div className="planilla-filters">
-            <div className="planilla-filter-group">
-              <label className="planilla-filter-label">Fecha</label>
-              <input
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
-                className="planilla-input planilla-input-date"
-              />
-            </div>
+        <section className="planilla-top-bar">
+          <div className="planilla-top-fecha">
+            <label className="planilla-top-label" htmlFor="planilla-fecha">Fecha de la compra</label>
+            <input
+              id="planilla-fecha"
+              type="date"
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="planilla-input planilla-input-date"
+            />
           </div>
         </section>
 
@@ -293,14 +281,9 @@ export default function PlanillaCompra() {
           </div>
         )}
 
-        <section className="planilla-section planilla-section-table">
-          <div className="planilla-table-legend">
-            <span className="planilla-legend-item planilla-legend-bd">Datos del sistema</span>
-            <span className="planilla-legend-item planilla-legend-manual">Datos a completar</span>
-            <span className="planilla-legend-item planilla-legend-calculo">Calculado</span>
-          </div>
+        <section className="planilla-section planilla-section-add">
           <div className={`planilla-add-article-wrap ${searchLoading ? 'planilla-add-article-wrap-busy' : ''}`}>
-            <label htmlFor="planilla-buscar-articulo" className="planilla-search-label">Agregar artículo a la grilla</label>
+            <label htmlFor="planilla-buscar-articulo" className="planilla-search-label">Agregar artículo</label>
             <div className="planilla-add-article-row">
               <input
                 id="planilla-buscar-articulo"
@@ -312,7 +295,7 @@ export default function PlanillaCompra() {
                   setSearchOpen(true);
                 }}
                 onFocus={() => setSearchOpen(true)}
-                placeholder="Busca por nombre o código"
+                placeholder="Buscar por nombre o código"
                 className="planilla-input planilla-input-search"
                 autoComplete="off"
                 aria-label="Buscar artículo para agregar"
@@ -328,7 +311,7 @@ export default function PlanillaCompra() {
             </div>
             {busquedaArticulo.trim() && (
               <span id="planilla-busqueda-articulo-resultados" className="planilla-search-results" aria-live="polite">
-                {searchLoading ? 'Buscando…' : `${searchResults.length} ${searchResults.length === 1 ? 'resultado' : 'resultados'}. Clic para agregar.`}
+                {searchLoading ? 'Buscando…' : `${searchResults.length} ${searchResults.length === 1 ? 'resultado' : 'resultados'}. Tocá para agregar.`}
               </span>
             )}
             {searchOpen && busquedaArticulo.trim() && (
@@ -356,290 +339,286 @@ export default function PlanillaCompra() {
               </>
             )}
           </div>
-          <p className="planilla-table-hint" aria-live="polite">
-            Agregá artículos con el buscador de arriba. Deslizá la tabla para ver todas las columnas. Usá − para quitar y + para duplicar la fila.
+          <p className="planilla-hint" aria-live="polite">
+            Agregá artículos con el buscador. En cada ítem podés editar bultos y precio, duplicar o quitar.
           </p>
-          <div className="planilla-table-wrap">
-            <table className="planilla-table">
-              <thead>
-                <tr className="planilla-thead-row planilla-thead-row-group">
-                  <th className="planilla-th planilla-th-accion" scope="col" aria-label="Duplicar fila" />
-                  <th colSpan={2} className="planilla-th planilla-th-bd planilla-th-sticky-group">Datos del sistema</th>
-                  <th colSpan={3} className="planilla-th planilla-th-bd">Stock en bultos</th>
-                  <th colSpan={3} className="planilla-th planilla-th-bd">Ventas en unidades</th>
-                  <th colSpan={3} className="planilla-th planilla-th-bd">$ unitarios vigentes</th>
-                  <th colSpan={4} className="planilla-th planilla-th-manual">Compra</th>
-                  <th colSpan={3} className="planilla-th planilla-th-calculo">Total</th>
-                </tr>
-                <tr className="planilla-thead-row">
-                  <th className="planilla-th planilla-th-accion" scope="col">
-                    <span className="planilla-col-accion-label">− / +</span>
-                  </th>
-                  <th className="planilla-th planilla-th-bd planilla-col-codigo">Código</th>
-                  <th className="planilla-th planilla-th-bd planilla-col-desc">Descripción</th>
-                  <th className="planilla-th planilla-th-bd">Sucursal</th>
-                  <th className="planilla-th planilla-th-bd">CD</th>
-                  <th className="planilla-th planilla-th-bd">Total</th>
-                  <th className="planilla-th planilla-th-bd">N-1</th>
-                  <th className="planilla-th planilla-th-bd">N-2</th>
-                  <th className="planilla-th planilla-th-bd">7 días</th>
-                  <th className="planilla-th planilla-th-bd planilla-col-costo">Costo</th>
-                  <th className="planilla-th planilla-th-bd">Venta</th>
-                  <th className="planilla-th planilla-th-bd">Margen %</th>
-                  <th className="planilla-th planilla-th-manual">Bultos</th>
-                  <th className="planilla-th planilla-th-manual">Precio/bulto</th>
-                  <th className="planilla-th planilla-th-manual">Peso/bulto</th>
-                  <th className="planilla-th planilla-th-manual">Precio Venta</th>
-                  <th className="planilla-th planilla-th-calculo planilla-col-precio-kg">$/kg</th>
-                  <th className="planilla-th planilla-th-calculo planilla-col-margen-final">Margen Final %</th>
-                  <th className="planilla-th planilla-th-calculo planilla-col-total">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filas.map((f) => (
-                  <tr key={f.filaId} className="planilla-tbody-tr">
-                    <td className="planilla-td planilla-td-accion">
-                      <span className="planilla-accion-btns">
-                        <button
-                          type="button"
-                          className="planilla-btn-quitar"
-                          onClick={() => quitarFila(f.filaId)}
-                          title="Quitar esta fila"
-                          aria-label={`Quitar ${f.descripcion}`}
-                        >
-                          −
-                        </button>
-                        <button
-                          type="button"
-                          className="planilla-btn-duplicar"
-                          onClick={() => duplicarFila(f.filaId)}
-                          title="Duplicar fila"
-                          aria-label={`Duplicar ${f.descripcion}`}
-                        >
-                          +
-                        </button>
-                      </span>
-                    </td>
-                    <td className="planilla-td planilla-td-bd planilla-col-codigo"><input type="text" className="planilla-cell planilla-cell-bd planilla-cell-codigo" value={f.codigo} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd planilla-col-desc"><input type="text" className="planilla-cell planilla-cell-bd planilla-cell-desc" value={f.descripcion} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd"><input type="text" className="planilla-cell planilla-cell-bd" value={formatNum(f.stockSucursales)} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd"><input type="text" className="planilla-cell planilla-cell-bd" value={formatNum(f.stockCD)} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd"><input type="text" className="planilla-cell planilla-cell-bd" value={formatNum((f.stockSucursales ?? 0) + (f.stockCD ?? 0))} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd"><input type="text" className="planilla-cell planilla-cell-bd" value={formatNum(f.ventasN1)} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd"><input type="text" className="planilla-cell planilla-cell-bd" value={formatNum(f.ventasN2)} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd"><input type="text" className="planilla-cell planilla-cell-bd" value={formatNum(f.ventas7dias)} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd planilla-col-costo"><input type="text" className="planilla-cell planilla-cell-bd planilla-cell-costo" value={formatNum(f.costo)} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd"><input type="text" className="planilla-cell planilla-cell-bd" value={formatNum(f.precioVenta)} readOnly /></td>
-                    <td className="planilla-td planilla-td-bd"><input type="text" className="planilla-cell planilla-cell-bd" value={formatNum(f.margenPorc)} readOnly /></td>
-                    <td className="planilla-td planilla-td-manual">
-                      <input type="text" className="planilla-cell planilla-cell-manual" value={f.bultos} onChange={(e) => actualizarFila(f.filaId, 'bultos', e.target.value)} placeholder="—" inputMode="numeric" />
-                    </td>
-                    <td className="planilla-td planilla-td-manual">
-                      <input type="text" className="planilla-cell planilla-cell-manual" value={f.precioPorBulto} onChange={(e) => actualizarFila(f.filaId, 'precioPorBulto', e.target.value)} placeholder="—" inputMode="numeric" />
-                    </td>
-                    <td className="planilla-td planilla-td-manual">
-                      <input type="text" className="planilla-cell planilla-cell-manual" value={f.pesoPorBulto} onChange={(e) => actualizarFila(f.filaId, 'pesoPorBulto', e.target.value)} placeholder="—" inputMode="decimal" />
-                    </td>
-                    <td className="planilla-td planilla-td-manual">
-                      <input type="text" className="planilla-cell planilla-cell-manual" value={f.precioVentaCompra} onChange={(e) => actualizarFila(f.filaId, 'precioVentaCompra', e.target.value)} placeholder="—" inputMode="numeric" />
-                    </td>
-                    <td className="planilla-td planilla-td-calculo planilla-col-precio-kg"><input type="text" className="planilla-cell planilla-cell-calculo planilla-cell-precio-kg" value={formatNum(f.precioPorKg)} readOnly /></td>
-                    <td className="planilla-td planilla-td-calculo planilla-col-margen-final"><input type="text" className="planilla-cell planilla-cell-calculo planilla-cell-margen-final" value={formatNum(f.margenFinalPorc)} readOnly /></td>
-                    <td className="planilla-td planilla-td-calculo planilla-col-total"><input type="text" className="planilla-cell planilla-cell-calculo planilla-cell-total" value={formatNum(f.total)} readOnly /></td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="planilla-tfoot-tr">
-                  <td colSpan={13} className="planilla-tfoot-label">Total esta compra</td>
-                  <td className="planilla-td planilla-td-manual planilla-tfoot-value">{formatNum(totalesCompra.bultos)}</td>
-                  <td colSpan={3} className="planilla-td" />
-                  <td className="planilla-td planilla-td-calculo" />
-                  <td className="planilla-td planilla-td-calculo planilla-col-total planilla-tfoot-value">{formatNum(totalesCompra.monto)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
         </section>
 
-        <section className="planilla-section planilla-section-totals">
-          <div className="planilla-totals-card">
-            <div className="planilla-totals-header">
-              <span className="planilla-totals-title">Resumen del día</span>
-              <span className="planilla-totals-date">{new Date(fecha).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-            </div>
-            <div className="planilla-totals-grid">
-              <div className="planilla-totals-item">
-                <span className="planilla-totals-label">Bultos totales</span>
-                <span className="planilla-totals-number">{formatNum(totalDiaBultos)}</span>
-              </div>
-              <div className="planilla-totals-item">
-                <span className="planilla-totals-label">Monto total</span>
-                <span className="planilla-totals-number">$ {formatNum(totalDiaMonto)}</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="planilla-section planilla-section-proveedor">
-          <div className="planilla-proveedor-asignar">
-            <label className="planilla-proveedor-label">Proveedor de la compra</label>
-            {isApp() ? (
-              <>
-                <button
-                  type="button"
-                  className="planilla-provider-picker-field planilla-provider-picker-field-bottom"
-                  onClick={() => setProviderPickerOpen(true)}
-                  aria-haspopup="dialog"
-                  aria-expanded={providerPickerOpen}
-                  aria-label="Elegir proveedor. Buscar por nombre."
-                  data-has-value={proveedorId ? 'true' : undefined}
-                >
-                  <span className="planilla-provider-picker-field-value">
-                    {proveedorId
-                      ? (proveedoresList.find((p) => p.id === proveedorId)?.nombre ?? 'Proveedor')
-                      : 'Buscar proveedor para asignar a esta compra'}
-                  </span>
-                  <svg className="planilla-provider-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
-                </button>
-                {providerPickerOpen && (
-                  <div
-                    className="planilla-provider-picker-backdrop"
-                    onClick={() => setProviderPickerOpen(false)}
-                    role="presentation"
-                  >
-                    <div
-                      className="planilla-provider-picker-sheet"
-                      onClick={(e) => e.stopPropagation()}
-                      role="dialog"
-                      aria-modal="true"
-                      aria-label="Buscar proveedor"
+        <section className="planilla-section planilla-section-items">
+          <ul className="planilla-items-list">
+            {filas.map((f) => (
+              <li key={f.filaId} className="planilla-item-card">
+                <div className="planilla-item-head">
+                  <span className="planilla-item-codigo">{f.codigo}</span>
+                  <span className="planilla-item-desc" title={f.descripcion}>{f.descripcion}</span>
+                  <div className="planilla-item-actions">
+                    <button
+                      type="button"
+                      className="planilla-item-btn planilla-item-btn-dup"
+                      onClick={() => duplicarFila(f.filaId)}
+                      title="Duplicar"
+                      aria-label={`Duplicar ${f.descripcion}`}
                     >
-                      <div className="planilla-provider-picker-sheet-header">
-                        <h2 className="planilla-provider-picker-sheet-title">Elegir proveedor</h2>
-                        <button
-                          type="button"
-                          className="planilla-provider-picker-close"
-                          onClick={() => setProviderPickerOpen(false)}
-                          aria-label="Cerrar"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                            <path d="M18 6L6 18M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="planilla-provider-picker-search-wrap">
-                        <svg className="planilla-provider-picker-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <circle cx="11" cy="11" r="8" />
-                          <path d="m21 21-4.35-4.35" />
-                        </svg>
-                        <input
-                          ref={providerSearchInputRef}
-                          type="search"
-                          value={providerSearch}
-                          onChange={(e) => setProviderSearch(e.target.value)}
-                          placeholder="Buscar por nombre..."
-                          className="planilla-provider-picker-search"
-                          autoComplete="off"
-                          autoCapitalize="off"
-                          autoCorrect="off"
-                          aria-label="Buscar proveedor"
-                        />
-                        {providerSearch && (
-                          <button
-                            type="button"
-                            className="planilla-provider-picker-search-clear"
-                            onClick={() => setProviderSearch('')}
-                            aria-label="Borrar búsqueda"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                      <div className="planilla-provider-picker-list-wrap">
-                        <ul className="planilla-provider-picker-list" role="listbox">
-                          {filteredProveedores.length === 0 ? (
-                            <li className="planilla-provider-picker-empty">
-                              {providerSearch.trim() ? 'Ningún proveedor coincide con la búsqueda.' : 'No hay proveedores cargados.'}
-                            </li>
-                          ) : (
-                            filteredProveedores.map((p) => (
-                              <li
-                                key={p.id}
-                                role="option"
-                                aria-selected={proveedorId === p.id}
-                                className={`planilla-provider-picker-item ${proveedorId === p.id ? 'planilla-provider-picker-item-selected' : ''}`}
-                                onClick={() => {
-                                  setProveedorId(p.id);
-                                  setProviderPickerOpen(false);
-                                  setProviderSearch('');
-                                }}
-                              >
-                                <span className="planilla-provider-picker-item-name">{p.nombre}</span>
-                                {proveedorId === p.id && (
-                                  <span className="planilla-provider-picker-item-check" aria-hidden>✓</span>
-                                )}
-                              </li>
-                            ))
-                          )}
-                        </ul>
-                      </div>
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      className="planilla-item-btn planilla-item-btn-del"
+                      onClick={() => quitarFila(f.filaId)}
+                      title="Quitar"
+                      aria-label={`Quitar ${f.descripcion}`}
+                    >
+                      −
+                    </button>
+                  </div>
+                </div>
+                <div className="planilla-item-ref-block" aria-label="Datos de referencia ELABASTECEDOR">
+                  <p className="planilla-item-ref-title">Datos de referencia (ELABASTECEDOR)</p>
+                  <div className="planilla-item-ref-grid">
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Stock Suc.</span>
+                      <span className="planilla-item-ref-value">{formatNum(f.stockSucursales) || '—'}</span>
+                    </div>
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Stock CD</span>
+                      <span className="planilla-item-ref-value">{formatNum(f.stockCD) || '—'}</span>
+                    </div>
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Stock total</span>
+                      <span className="planilla-item-ref-value">{formatNum((f.stockSucursales ?? 0) + (f.stockCD ?? 0)) || '—'}</span>
+                    </div>
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Ventas N-1</span>
+                      <span className="planilla-item-ref-value">{formatNum(f.ventasN1) || '—'}</span>
+                    </div>
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Ventas N-2</span>
+                      <span className="planilla-item-ref-value">{formatNum(f.ventasN2) || '—'}</span>
+                    </div>
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Ventas 7 días</span>
+                      <span className="planilla-item-ref-value">{formatNum(f.ventas7dias) || '—'}</span>
+                    </div>
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Costo</span>
+                      <span className="planilla-item-ref-value">{formatNum(f.costo) || '—'}</span>
+                    </div>
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Venta</span>
+                      <span className="planilla-item-ref-value">{formatNum(f.precioVenta) || '—'}</span>
+                    </div>
+                    <div className="planilla-item-ref-group">
+                      <span className="planilla-item-ref-label">Margen %</span>
+                      <span className="planilla-item-ref-value">{formatNum(f.margenPorc) != null && formatNum(f.margenPorc) !== '' ? `${formatNum(f.margenPorc)} %` : '—'}</span>
                     </div>
                   </div>
-                )}
-              </>
-            ) : (
-              <div className="planilla-proveedor-search-wrap">
-                <input
-                  id="planilla-buscar-proveedor"
-                  type="search"
-                  value={providerSearch}
-                  onChange={(e) => setProviderSearch(e.target.value)}
-                  onFocus={() => setProviderPickerOpen(true)}
-                  placeholder="Buscar proveedor por nombre..."
-                  className="planilla-input planilla-input-search planilla-proveedor-search"
-                  autoComplete="off"
-                  aria-label="Buscar proveedor"
-                  aria-expanded={providerPickerOpen}
-                />
-                {providerPickerOpen && (
-                  <>
-                    <div className="planilla-provider-picker-backdrop planilla-provider-picker-backdrop-inline" onClick={() => setProviderPickerOpen(false)} role="presentation" />
-                    <ul className="planilla-proveedor-dropdown" role="listbox">
-                      {filteredProveedores.length === 0 ? (
-                        <li className="planilla-provider-picker-empty">
-                          {providerSearch.trim() ? 'Ningún proveedor coincide.' : 'No hay proveedores.'}
-                        </li>
-                      ) : (
-                        filteredProveedores.map((p) => (
-                          <li
-                            key={p.id}
-                            role="option"
-                            aria-selected={proveedorId === p.id}
-                            className={`planilla-provider-picker-item ${proveedorId === p.id ? 'planilla-provider-picker-item-selected' : ''}`}
-                            onClick={() => {
-                              setProveedorId(p.id);
-                              setProviderPickerOpen(false);
-                              setProviderSearch(proveedoresList.find((x) => x.id === p.id)?.nombre ?? '');
-                            }}
-                          >
-                            {p.nombre}
-                          </li>
-                        ))
+                </div>
+                <div className="planilla-item-compra-title">Datos a cargar (compra)</div>
+                <div className="planilla-item-fields">
+                  <div className="planilla-item-field">
+                    <label className="planilla-item-field-label" htmlFor={`planilla-bultos-${f.filaId}`}>Bultos</label>
+                    <input
+                      id={`planilla-bultos-${f.filaId}`}
+                      type="text"
+                      className="planilla-item-input"
+                      value={f.bultos}
+                      onChange={(e) => actualizarFila(f.filaId, 'bultos', e.target.value)}
+                      placeholder="0"
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <div className="planilla-item-field">
+                    <label className="planilla-item-field-label" htmlFor={`planilla-costo-${f.filaId}`}>Precio por bulto</label>
+                    <input
+                      id={`planilla-costo-${f.filaId}`}
+                      type="text"
+                      className="planilla-item-input"
+                      value={f.costoUnidad}
+                      onChange={(e) => actualizarFila(f.filaId, 'costoUnidad', e.target.value)}
+                      placeholder="0"
+                      inputMode="decimal"
+                    />
+                  </div>
+                  <div className="planilla-item-field planilla-item-field-total">
+                    <span className="planilla-item-field-label">Total</span>
+                    <span className="planilla-item-total" aria-label="Costo total calculado">{formatNum(f.costoTotal) || '—'}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {filas.length === 0 && (
+            <p className="planilla-items-empty">Aún no hay artículos. Usá el buscador de arriba para agregar.</p>
+          )}
+        </section>
+
+        {filas.length > 0 && (
+          <section className="planilla-section planilla-section-totales">
+            <div className="planilla-totales-bar">
+              <span className="planilla-totales-bultos">{formatNum(totalesCompra.bultos)} bultos</span>
+              <span className="planilla-totales-monto">$ {formatNum(totalesCompra.monto)}</span>
+            </div>
+          </section>
+        )}
+
+        <section className="planilla-section planilla-section-proveedor">
+          <label className="planilla-proveedor-label">Proveedor de la compra</label>
+          <p className="planilla-proveedor-hint">Asigná el proveedor antes de guardar (último paso).</p>
+          {isApp() ? (
+            <>
+              <button
+                type="button"
+                className="planilla-provider-picker-field planilla-provider-picker-field-bottom"
+                onClick={() => setProviderPickerOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={providerPickerOpen}
+                aria-label="Elegir proveedor. Buscar por nombre."
+                data-has-value={proveedorId ? 'true' : undefined}
+              >
+                <span className="planilla-provider-picker-field-value">
+                  {proveedorId
+                    ? (proveedoresList.find((p) => p.id === proveedorId)?.nombre ?? 'Proveedor')
+                    : 'Elegir proveedor'}
+                </span>
+                <svg className="planilla-provider-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              {providerPickerOpen && (
+                <div
+                  className="planilla-provider-picker-backdrop"
+                  onClick={() => setProviderPickerOpen(false)}
+                  role="presentation"
+                >
+                  <div
+                    className="planilla-provider-picker-sheet"
+                    onClick={(e) => e.stopPropagation()}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Buscar proveedor"
+                  >
+                    <div className="planilla-provider-picker-sheet-header">
+                      <h2 className="planilla-provider-picker-sheet-title">Elegir proveedor</h2>
+                      <button
+                        type="button"
+                        className="planilla-provider-picker-close"
+                        onClick={() => setProviderPickerOpen(false)}
+                        aria-label="Cerrar"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="planilla-provider-picker-search-wrap">
+                      <svg className="planilla-provider-picker-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
+                      </svg>
+                      <input
+                        ref={providerSearchInputRef}
+                        type="search"
+                        value={providerSearch}
+                        onChange={(e) => setProviderSearch(e.target.value)}
+                        placeholder="Buscar por nombre..."
+                        className="planilla-provider-picker-search"
+                        autoComplete="off"
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        aria-label="Buscar proveedor"
+                      />
+                      {providerSearch && (
+                        <button
+                          type="button"
+                          className="planilla-provider-picker-search-clear"
+                          onClick={() => setProviderSearch('')}
+                          aria-label="Borrar búsqueda"
+                        >
+                          ×
+                        </button>
                       )}
-                    </ul>
-                  </>
-                )}
-                {proveedorId && (
-                  <p className="planilla-proveedor-selected" aria-live="polite">
-                    Proveedor asignado: <strong>{proveedoresList.find((p) => p.id === proveedorId)?.nombre}</strong>
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+                    </div>
+                    <div className="planilla-provider-picker-list-wrap">
+                      <ul className="planilla-provider-picker-list" role="listbox">
+                        {filteredProveedores.length === 0 ? (
+                          <li className="planilla-provider-picker-empty">
+                            {providerSearch.trim() ? 'Ningún proveedor coincide con la búsqueda.' : 'No hay proveedores cargados.'}
+                          </li>
+                        ) : (
+                          filteredProveedores.map((p) => (
+                            <li
+                              key={p.id}
+                              role="option"
+                              aria-selected={proveedorId === p.id}
+                              className={`planilla-provider-picker-item ${proveedorId === p.id ? 'planilla-provider-picker-item-selected' : ''}`}
+                              onClick={() => {
+                                setProveedorId(p.id);
+                                setProviderPickerOpen(false);
+                                setProviderSearch('');
+                              }}
+                            >
+                              <span className="planilla-provider-picker-item-name">{p.nombre}</span>
+                              {proveedorId === p.id && (
+                                <span className="planilla-provider-picker-item-check" aria-hidden>✓</span>
+                              )}
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="planilla-proveedor-search-wrap">
+              <input
+                id="planilla-buscar-proveedor"
+                type="search"
+                value={providerSearch}
+                onChange={(e) => setProviderSearch(e.target.value)}
+                onFocus={() => setProviderPickerOpen(true)}
+                placeholder="Buscar proveedor por nombre..."
+                className="planilla-input planilla-input-search planilla-proveedor-search"
+                autoComplete="off"
+                aria-label="Buscar proveedor"
+                aria-expanded={providerPickerOpen}
+              />
+              {providerPickerOpen && (
+                <>
+                  <div className="planilla-provider-picker-backdrop planilla-provider-picker-backdrop-inline" onClick={() => setProviderPickerOpen(false)} role="presentation" />
+                  <ul className="planilla-proveedor-dropdown" role="listbox">
+                    {filteredProveedores.length === 0 ? (
+                      <li className="planilla-provider-picker-empty">
+                        {providerSearch.trim() ? 'Ningún proveedor coincide.' : 'No hay proveedores.'}
+                      </li>
+                    ) : (
+                      filteredProveedores.map((p) => (
+                        <li
+                          key={p.id}
+                          role="option"
+                          aria-selected={proveedorId === p.id}
+                          className={`planilla-provider-picker-item ${proveedorId === p.id ? 'planilla-provider-picker-item-selected' : ''}`}
+                          onClick={() => {
+                            setProveedorId(p.id);
+                            setProviderPickerOpen(false);
+                            setProviderSearch(proveedoresList.find((x) => x.id === p.id)?.nombre ?? '');
+                          }}
+                        >
+                          {p.nombre}
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </>
+              )}
+              {proveedorId && (
+                <p className="planilla-proveedor-selected" aria-live="polite">
+                  Proveedor asignado: <strong>{proveedoresList.find((p) => p.id === proveedorId)?.nombre}</strong>
+                </p>
+              )}
+            </div>
+          )}
         </section>
 
         <section className="planilla-section planilla-section-actions">
