@@ -26,6 +26,7 @@ export const RUTA_A_PERMISO = {
   'POST:/api/roles': PERMISOS.GESTION_ROLES,
   'PATCH:/api/roles': PERMISOS.GESTION_ROLES,
   'DELETE:/api/roles': PERMISOS.GESTION_ROLES,
+  'GET:/api/logs': PERMISOS.GESTION_USUARIOS,
 };
 
 export function tienePermiso(permisos, codigo) {

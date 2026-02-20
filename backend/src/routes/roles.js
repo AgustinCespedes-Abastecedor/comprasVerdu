@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { soloGestionRoles, soloGestionUsuariosOroles } from '../middleware/auth.js';
 import { TODOS_LOS_PERMISOS } from '../lib/permisos.js';
+import { sendError, MSG } from '../lib/errors.js';
+import { createLog } from '../lib/logs.js';
 
 const router = Router();
 
@@ -25,8 +27,7 @@ router.get('/', soloGestionUsuariosOroles, async (req, res) => {
     }));
     res.json(list);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al listar roles' });
+    sendError(res, 500, MSG.ROLES_LISTAR, 'ROLES_001', e);
   }
 });
 
@@ -36,11 +37,11 @@ router.post('/', soloGestionRoles, async (req, res) => {
     const { nombre, descripcion, permisos } = req.body;
     const nombreTrim = typeof nombre === 'string' ? nombre.trim() : '';
     if (!nombreTrim) {
-      return res.status(400).json({ error: 'El nombre del rol es obligatorio' });
+      return sendError(res, 400, MSG.ROLES_NOMBRE_OBLIGATORIO, 'ROLES_002');
     }
     const existente = await prisma.role.findUnique({ where: { nombre: nombreTrim } });
     if (existente) {
-      return res.status(400).json({ error: 'Ya existe un rol con ese nombre' });
+      return sendError(res, 400, MSG.ROLES_NOMBRE_DUPLICADO, 'ROLES_003');
     }
     const permisosValidos = Array.isArray(permisos)
       ? permisos.filter((p) => typeof p === 'string' && TODOS_LOS_PERMISOS.includes(p))
@@ -52,6 +53,15 @@ router.post('/', soloGestionRoles, async (req, res) => {
         permisos: permisosValidos,
       },
     });
+    if (req.userId) {
+      await createLog(prisma, {
+        userId: req.userId,
+        action: 'crear',
+        entity: 'rol',
+        entityId: role.id,
+        details: { nombre: role.nombre },
+      });
+    }
     res.status(201).json({
       id: role.id,
       nombre: role.nombre,
@@ -61,8 +71,7 @@ router.post('/', soloGestionRoles, async (req, res) => {
       updatedAt: role.updatedAt,
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al crear el rol' });
+    sendError(res, 500, MSG.ROLES_CREAR, 'ROLES_004', e);
   }
 });
 
@@ -73,14 +82,14 @@ router.patch('/:id', soloGestionRoles, async (req, res) => {
     const { nombre, descripcion, permisos } = req.body;
     const role = await prisma.role.findUnique({ where: { id } });
     if (!role) {
-      return res.status(404).json({ error: 'Rol no encontrado' });
+      return sendError(res, 404, MSG.ROLES_NO_ENCONTRADO, 'ROLES_005');
     }
     const data = {};
     if (typeof nombre === 'string') {
       const nombreTrim = nombre.trim();
-      if (!nombreTrim) return res.status(400).json({ error: 'El nombre no puede estar vacío' });
+      if (!nombreTrim) return sendError(res, 400, MSG.ROLES_NOMBRE_VACIO, 'ROLES_006');
       const otro = await prisma.role.findFirst({ where: { nombre: nombreTrim, id: { not: id } } });
-      if (otro) return res.status(400).json({ error: 'Ya existe otro rol con ese nombre' });
+      if (otro) return sendError(res, 400, MSG.ROLES_NOMBRE_DUPLICADO, 'ROLES_007');
       data.nombre = nombreTrim;
     }
     if (descripcion !== undefined) data.descripcion = typeof descripcion === 'string' ? descripcion.trim() || null : null;
@@ -101,6 +110,15 @@ router.patch('/:id', soloGestionRoles, async (req, res) => {
       where: { id },
       data,
     });
+    if (req.userId) {
+      await createLog(prisma, {
+        userId: req.userId,
+        action: 'actualizar',
+        entity: 'rol',
+        entityId: updated.id,
+        details: { nombre: updated.nombre },
+      });
+    }
     res.json({
       id: updated.id,
       nombre: updated.nombre,
@@ -110,8 +128,7 @@ router.patch('/:id', soloGestionRoles, async (req, res) => {
       updatedAt: updated.updatedAt,
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al actualizar el rol' });
+    sendError(res, 500, MSG.ROLES_ACTUALIZAR, 'ROLES_008', e);
   }
 });
 
@@ -124,18 +141,24 @@ router.delete('/:id', soloGestionRoles, async (req, res) => {
       include: { _count: { select: { users: true } } },
     });
     if (!role) {
-      return res.status(404).json({ error: 'Rol no encontrado' });
+      return sendError(res, 404, MSG.ROLES_NO_ENCONTRADO, 'ROLES_009');
     }
     if (role._count.users > 0) {
-      return res.status(400).json({
-        error: `No se puede eliminar el rol porque tiene ${role._count.users} usuario(s) asignado(s). Reasigná otro rol a esos usuarios primero.`,
-      });
+      return sendError(res, 400, MSG.ROLES_TIENE_USUARIOS, 'ROLES_010');
     }
     await prisma.role.delete({ where: { id } });
+    if (req.userId) {
+      await createLog(prisma, {
+        userId: req.userId,
+        action: 'eliminar',
+        entity: 'rol',
+        entityId: id,
+        details: { nombre: role.nombre },
+      });
+    }
     res.status(204).send();
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al eliminar el rol' });
+    sendError(res, 500, MSG.ROLES_ELIMINAR, 'ROLES_011', e);
   }
 });
 

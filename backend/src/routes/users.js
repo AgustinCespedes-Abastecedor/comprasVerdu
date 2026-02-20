@@ -2,12 +2,14 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma.js';
 import { soloGestionUsuarios } from '../middleware/auth.js';
+import { sendError, MSG } from '../lib/errors.js';
+import { createLog } from '../lib/logs.js';
 
 const router = Router();
 
 router.get('/', soloGestionUsuarios, async (req, res) => {
   try {
-    const { q, roleId } = req.query;
+    const { q, roleId, activo } = req.query;
     const where = {};
     if (q && typeof q === 'string' && q.trim()) {
       where.OR = [
@@ -31,19 +33,32 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
         _count: { select: { compras: true } },
       },
     });
-    const list = users.map((u) => ({
+    let withActivo = users.map((u) => ({ ...u, activo: true }));
+    try {
+      const activoRows = await prisma.user.findMany({
+        where: { id: { in: users.map((u) => u.id) } },
+        select: { id: true, activo: true },
+      });
+      const activoMap = Object.fromEntries(activoRows.map((r) => [r.id, r.activo]));
+      withActivo = users.map((u) => ({ ...u, activo: activoMap[u.id] !== false }));
+    } catch (_) {
+      /* columna activo puede no existir aún */
+    }
+    if (activo === 'true' || activo === '1') withActivo = withActivo.filter((u) => u.activo !== false);
+    else if (activo === 'false' || activo === '0') withActivo = withActivo.filter((u) => u.activo === false);
+    const list = withActivo.map((u) => ({
       id: u.id,
       email: u.email,
       nombre: u.nombre,
       roleId: u.roleId,
       rol: u.role?.nombre ?? '',
+      activo: u.activo !== false,
       createdAt: u.createdAt,
       _count: u._count,
     }));
     res.json(list);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al listar usuarios' });
+    sendError(res, 500, MSG.USERS_LISTAR, 'USERS_001', e);
   }
 });
 
@@ -51,17 +66,17 @@ router.post('/', soloGestionUsuarios, async (req, res) => {
   try {
     const { email, password, nombre, roleId } = req.body;
     if (!email || !password || !nombre) {
-      return res.status(400).json({ error: 'Email, contraseña y nombre son obligatorios' });
+      return sendError(res, 400, MSG.USERS_NOMBRE_EMAIL_PASSWORD, 'USERS_002');
     }
     const emailNorm = String(email).trim().toLowerCase();
-    if (!emailNorm) return res.status(400).json({ error: 'Email inválido' });
+    if (!emailNorm) return sendError(res, 400, MSG.USERS_EMAIL_INVALIDO, 'USERS_003');
     const existe = await prisma.user.findUnique({ where: { email: emailNorm } });
-    if (existe) return res.status(400).json({ error: 'Ya existe un usuario con ese email' });
+    if (existe) return sendError(res, 400, MSG.USERS_EMAIL_DUPLICADO, 'USERS_004');
     if (!roleId || typeof roleId !== 'string') {
-      return res.status(400).json({ error: 'Debe seleccionar un rol' });
+      return sendError(res, 400, MSG.USERS_ROL_OBLIGATORIO, 'USERS_005');
     }
     const role = await prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) return res.status(400).json({ error: 'Rol no válido' });
+    if (!role) return sendError(res, 400, MSG.USERS_ROL_INVALIDO, 'USERS_006');
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
@@ -79,6 +94,15 @@ router.post('/', soloGestionUsuarios, async (req, res) => {
         createdAt: true,
       },
     });
+    if (req.userId) {
+      await createLog(prisma, {
+        userId: req.userId,
+        action: 'crear',
+        entity: 'usuario',
+        entityId: user.id,
+        details: { nombre: user.nombre, email: user.email, rol: user.role?.nombre },
+      });
+    }
     res.status(201).json({
       id: user.id,
       email: user.email,
@@ -88,25 +112,34 @@ router.post('/', soloGestionUsuarios, async (req, res) => {
       createdAt: user.createdAt,
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al crear usuario' });
+    sendError(res, 500, MSG.USERS_CREAR, 'USERS_007', e);
   }
 });
 
 router.patch('/:id', soloGestionUsuarios, async (req, res) => {
   try {
     const { id } = req.params;
-    const { nombre, roleId, password } = req.body;
+    const { nombre, email, roleId, password, activo } = req.body;
     const user = await prisma.user.findUnique({
       where: { id },
       include: { role: { select: { id: true, nombre: true } } },
     });
-    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!user) return sendError(res, 404, MSG.USERS_NO_ENCONTRADO, 'USERS_008');
     const data = {};
     if (nombre !== undefined) data.nombre = String(nombre).trim();
+    if (email !== undefined) {
+      const emailNorm = String(email).trim().toLowerCase();
+      if (!emailNorm) return sendError(res, 400, MSG.USERS_EMAIL_INVALIDO, 'USERS_009');
+      if (emailNorm !== user.email) {
+        const existe = await prisma.user.findUnique({ where: { email: emailNorm } });
+        if (existe) return sendError(res, 400, MSG.USERS_EMAIL_DUPLICADO, 'USERS_010');
+        data.email = emailNorm;
+      }
+    }
+    if (activo !== undefined) data.activo = Boolean(activo);
     if (roleId !== undefined && typeof roleId === 'string') {
       const role = await prisma.role.findUnique({ where: { id: roleId } });
-      if (!role) return res.status(400).json({ error: 'Rol no válido' });
+      if (!role) return sendError(res, 400, MSG.USERS_ROL_INVALIDO, 'USERS_011');
       data.roleId = roleId;
     }
     if (password !== undefined && String(password).length > 0) {
@@ -119,6 +152,7 @@ router.patch('/:id', soloGestionUsuarios, async (req, res) => {
         nombre: user.nombre,
         roleId: user.roleId,
         rol: user.role?.nombre ?? '',
+        activo: user.activo,
         createdAt: user.createdAt,
       });
     }
@@ -130,21 +164,36 @@ router.patch('/:id', soloGestionUsuarios, async (req, res) => {
         email: true,
         nombre: true,
         roleId: true,
+        activo: true,
         role: { select: { id: true, nombre: true } },
         createdAt: true,
       },
     });
+    if (req.userId) {
+      await createLog(prisma, {
+        userId: req.userId,
+        action: 'actualizar',
+        entity: 'usuario',
+        entityId: updated.id,
+        details: {
+          nombre: updated.nombre,
+          email: updated.email,
+          rol: updated.role?.nombre,
+          activo: updated.activo,
+        },
+      });
+    }
     res.json({
       id: updated.id,
       email: updated.email,
       nombre: updated.nombre,
       roleId: updated.roleId,
       rol: updated.role?.nombre ?? '',
+      activo: updated.activo,
       createdAt: updated.createdAt,
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al actualizar usuario' });
+    sendError(res, 500, MSG.USERS_ACTUALIZAR, 'USERS_012', e);
   }
 });
 

@@ -870,6 +870,16 @@ html.is-native .vercompras-list.info-final-list {
   border-bottom: 1px solid var(--border);
 }
 
+.info-final-card-head--con-diferencias {
+  background: rgba(180, 55, 60, 0.2) !important;
+  border-left: 4px solid rgba(200, 50, 55, 0.85);
+}
+
+[data-theme="light"] .info-final-card-head--con-diferencias {
+  background: rgba(180, 55, 60, 0.18) !important;
+  border-left-color: rgba(180, 55, 60, 0.7);
+}
+
 .info-final-card-codigo {
   display: inline-flex;
   align-items: center;
@@ -889,6 +899,13 @@ html.is-native .vercompras-list.info-final-list {
   min-width: 0;
   font-weight: 500;
   color: var(--text);
+}
+
+.info-final-card-rec-compra {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .info-final-card-uxb {
@@ -985,6 +1002,16 @@ html.is-native .vercompras-list.info-final-list {
   font-size: 0.9375rem;
 }
 
+.info-final-row--diferencia {
+  background: rgba(180, 55, 60, 0.18);
+  outline: 2px solid rgba(200, 50, 55, 0.5);
+}
+
+[data-theme="light"] .info-final-row--diferencia {
+  background: rgba(180, 55, 60, 0.15);
+  outline: 2px solid rgba(180, 55, 60, 0.45);
+}
+
 .info-final-label {
   color: var(--text-muted);
   font-weight: 500;
@@ -1012,13 +1039,63 @@ html.is-native .vercompras-list.info-final-list {
 
 .info-final-value--input {
   min-width: 7.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .info-final-value--input .info-final-input-uxb {
   width: 100%;
   max-width: 5.5rem;
-  margin-left: auto;
+  margin-left: 0;
   text-align: right;
+}
+
+.info-final-row--uxb-guardar .info-final-value--input {
+  min-width: 0;
+}
+
+.info-final-btn-guardar {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.2s ease;
+}
+
+.info-final-btn-guardar:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.info-final-btn-guardar:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.info-final-btn-guardar--guardado {
+  background: var(--text-muted);
+  color: var(--surface);
+  cursor: default;
+}
+
+.info-final-input-uxb--guardado {
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.info-final-uxb-error {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--danger, #e74c3c);
 }
 
 .info-final-input-uxb {

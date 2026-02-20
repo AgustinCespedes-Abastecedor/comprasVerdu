@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
+import { sendError, MSG } from '../lib/errors.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev';
@@ -13,10 +14,10 @@ router.post('/registro', async (req, res) => {
   try {
     const { email, password, nombre, roleId } = req.body;
     if (!email || !password || !nombre) {
-      return res.status(400).json({ error: 'Faltan email, password o nombre' });
+      return sendError(res, 400, MSG.AUTH_FALTAN_DATOS, 'AUTH_001');
     }
-    const existe = await prisma.user.findUnique({ where: { email } });
-    if (existe) return res.status(400).json({ error: 'El email ya está registrado' });
+    const existe = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
+    if (existe) return sendError(res, 400, MSG.AUTH_EMAIL_REGISTRADO, 'AUTH_002');
     // En registro público solo se permite rol Visor o Comprador (por roleId o por rol legado)
     let role = null;
     if (roleId && typeof roleId === 'string') {
@@ -33,7 +34,7 @@ router.post('/registro', async (req, res) => {
       role = await prisma.role.findFirst({ where: { nombre: 'Comprador' } });
       if (!role) role = await prisma.role.findFirst({ where: { nombre: 'Visor' } });
     }
-    if (!role) return res.status(400).json({ error: 'No hay rol disponible para registro' });
+    if (!role) return sendError(res, 400, MSG.AUTH_ROL_NO_DISPONIBLE, 'AUTH_003');
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
@@ -65,8 +66,7 @@ router.post('/registro', async (req, res) => {
       token,
     });
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al registrar' });
+    sendError(res, 500, MSG.ERROR_SERVIDOR, 'AUTH_004', e);
   }
 });
 
@@ -76,23 +76,25 @@ router.post('/login', async (req, res) => {
     const email = typeof body.email === 'string' ? body.email.trim() : '';
     const password = typeof body.password === 'string' ? body.password : '';
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email y password requeridos' });
+      return sendError(res, 400, MSG.AUTH_EMAIL_PASSWORD_REQUERIDOS, 'AUTH_005');
     }
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() },
       include: { role: { select: { id: true, nombre: true, permisos: true } } },
     });
     if (!user) {
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
+      return sendError(res, 401, MSG.AUTH_CREDENCIALES, 'AUTH_006');
+    }
+    if (user.activo === false) {
+      return sendError(res, 403, MSG.AUTH_CUENTA_SUSPENDIDA, 'AUTH_007');
     }
     const passwordHash = user.password;
     if (!passwordHash || typeof passwordHash !== 'string') {
-      console.error('Login: usuario sin password hasheado en BD', user.id);
-      return res.status(500).json({ error: 'Error de configuración del usuario' });
+      return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_008', { userId: user.id });
     }
     const match = await bcrypt.compare(password, passwordHash);
     if (!match) {
-      return res.status(401).json({ error: 'Credenciales incorrectas' });
+      return sendError(res, 401, MSG.AUTH_CREDENCIALES, 'AUTH_009');
     }
     const token = jwt.sign(
       { userId: user.id, email: user.email },
@@ -110,17 +112,14 @@ router.post('/login', async (req, res) => {
       token,
     });
   } catch (e) {
-    console.error('Error en POST /auth/login:', e);
-    const isDev = process.env.NODE_ENV !== 'production';
-    const message = isDev && e.message ? e.message : 'Error al iniciar sesión';
-    res.status(500).json({ error: message });
+    sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_010', e);
   }
 });
 
 router.get('/me', async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token no proporcionado' });
+    return sendError(res, 401, MSG.AUTH_TOKEN_FALTA, 'AUTH_011');
   }
   try {
     const payload = jwt.verify(authHeader.slice(7), JWT_SECRET);
@@ -133,7 +132,7 @@ router.get('/me', async (req, res) => {
         role: { select: { id: true, nombre: true, permisos: true } },
       },
     });
-    if (!user) return res.status(401).json({ error: 'Usuario no encontrado' });
+    if (!user) return sendError(res, 401, MSG.AUTH_USUARIO_NO_EXISTE, 'AUTH_012');
     const permisos = Array.isArray(user.role?.permisos) ? user.role.permisos : [];
     res.json({
       id: user.id,
@@ -141,7 +140,10 @@ router.get('/me', async (req, res) => {
       nombre: user.nombre,
       role: user.role ? { id: user.role.id, nombre: user.role.nombre, permisos } : null,
     });
-  } catch {
-    res.status(401).json({ error: 'Token inválido o expirado' });
+  } catch (e) {
+    if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError') {
+      return sendError(res, 401, MSG.AUTH_TOKEN_INVALIDO, 'AUTH_013');
+    }
+    return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_014', e);
   }
 });

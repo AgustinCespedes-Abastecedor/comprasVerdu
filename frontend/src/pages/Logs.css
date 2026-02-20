@@ -1,0 +1,708 @@
+/* Logs: historial de actividad — encabezado alineado con Gestión de usuarios */
+.logs-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.logs-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.logs-back:hover {
+  color: var(--accent);
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="light"] .logs-back:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.logs-back:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.logs-back-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.logs-header-title {
+  margin: 0;
+  font-family: "Segoe UI", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--danger);
+  min-width: 0;
+}
+
+.logs-main {
+  flex: 1;
+  padding: 1rem 1.25rem 2rem;
+  max-width: 56rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.logs-desc {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.logs-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.logs-select,
+.logs-input-date {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.logs-input-date {
+  min-width: 10rem;
+}
+
+.logs-btn-refresh {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.logs-btn-refresh:hover {
+  filter: brightness(1.08);
+}
+
+.logs-filter-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.25rem;
+}
+
+.logs-pagination {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.logs-pagination-info {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.logs-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.logs-pagination-size {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.logs-pagination-size span {
+  white-space: nowrap;
+}
+
+.logs-select--small {
+  padding: 0.35rem 0.5rem;
+  min-width: 4rem;
+}
+
+.logs-pagination-btn {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.logs-pagination-btn:hover:not(:disabled) {
+  border-color: var(--border-hover);
+  background: var(--bg);
+}
+
+.logs-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.logs-pagination-page {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  padding: 0 0.25rem;
+}
+
+.logs-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.logs-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.logs-table th,
+.logs-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.logs-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .logs-table th {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.logs-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="light"] .logs-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.logs-cell-datetime {
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.logs-user-name {
+  display: block;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.logs-user-email {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.logs-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.logs-badge-action {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.logs-badge-entity {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .logs-badge-entity {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.logs-cell-detail {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.logs-btn-ver {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.logs-btn-ver:hover {
+  background: rgba(63, 185, 80, 0.25);
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+
+.logs-btn-ver-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Modal auditoría — diseño superador */
+.logs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.25rem;
+}
+
+.logs-modal {
+  width: 100%;
+  max-width: min(92vw, 720px);
+  height: min(92vh, 900px);
+  max-height: min(92vh, 900px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.2);
+}
+
+.logs-modal-header {
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, transparent 100%);
+}
+
+[data-theme="light"] .logs-modal-header {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, transparent 100%);
+}
+
+.logs-modal-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.logs-modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.logs-modal-close {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.logs-modal-close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.logs-modal-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .logs-modal-close:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.logs-modal-subtitle {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.logs-modal-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.logs-modal-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 8px;
+  letter-spacing: 0.02em;
+}
+
+.logs-modal-badge-action {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.logs-modal-badge-entity {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .logs-modal-badge-entity {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.logs-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.logs-modal-section {
+  margin-bottom: 1.5rem;
+}
+
+.logs-modal-section:last-child {
+  margin-bottom: 0;
+}
+
+.logs-modal-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.logs-modal-section-desc {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.logs-modal-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.logs-modal-grid-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.logs-modal-grid-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.logs-modal-grid-value {
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+
+.logs-modal-email {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.logs-modal-id {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--bg);
+  border-radius: 6px;
+  word-break: break-all;
+}
+
+/* Tabla de datos: Campo | Valor cargado */
+.logs-modal-section--datos {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.logs-modal-datatable {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.logs-modal-datatable-header {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="light"] .logs-modal-datatable-header {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.logs-modal-datatable-th {
+  min-width: 0;
+}
+
+.logs-modal-datatable-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border);
+  align-items: baseline;
+}
+
+.logs-modal-datatable-row:last-child {
+  border-bottom: none;
+}
+
+.logs-modal-datatable-cell--label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.logs-modal-datatable-cell--value {
+  color: var(--text);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+/* Tabla detalle por ítem (compra/recepción) */
+.logs-modal-section--items {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.logs-modal-items-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.logs-modal-items-table {
+  width: 100%;
+  min-width: 320px;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.logs-modal-items-table th,
+.logs-modal-items-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.logs-modal-items-table th {
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .logs-modal-items-table th {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.logs-modal-items-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.logs-modal-items-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="light"] .logs-modal-items-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.logs-modal-items-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.logs-modal-empty-detail {
+  margin: 0;
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+  background: var(--bg);
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+}
+
+@media (max-width: 640px) {
+  .logs-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .logs-select,
+  .logs-input-date {
+    width: 100%;
+  }
+  /* Ocultar solo Entidad (col 4); mantener Detalle (col 5) con el botón Ver */
+  .logs-table th:nth-child(4),
+  .logs-table td:nth-child(4) {
+    display: none;
+  }
+  .logs-cell-detail {
+    max-width: none;
+    width: auto;
+    min-width: 3rem;
+  }
+  .logs-btn-ver {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ========== APK / WebView nativo (Capacitor) ========== */
+html.is-native .logs-page {
+  min-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+html.is-native .logs-main {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Asegurar que la columna Detalle (botón Ver) siempre sea visible en APK */
+html.is-native .logs-table th:nth-child(5),
+html.is-native .logs-table td:nth-child(5) {
+  display: table-cell !important;
+}
+
+html.is-native .logs-cell-detail {
+  width: auto;
+  min-width: 3.5rem;
+  padding: 0.5rem 0.35rem;
+}
+
+html.is-native .logs-btn-ver {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .logs-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.is-native .logs-btn-refresh {
+  min-height: 44px;
+  padding: 0.6rem 1.25rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .logs-pagination-btn {
+  min-width: 44px;
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Modal de auditoría: el contenido usa Modal.css; reforzar scroll y toques en APK */
+html.is-native .logs-modal-body-inner {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+html.is-native .logs-modal-items-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.is-native .logs-modal-datatable-cell--value {
+  word-break: break-word;
+}

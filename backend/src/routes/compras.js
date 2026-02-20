@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { soloComprador } from '../middleware/auth.js';
+import { soloComprador, soloVerCompras } from '../middleware/auth.js';
+import { sendError, MSG } from '../lib/errors.js';
+import { createLog } from '../lib/logs.js';
 
 const router = Router();
 
 export const comprasRouter = router;
 
-// Solo compradores pueden crear/editar; visores solo listar
-router.get('/', async (req, res) => {
+/** GET compras: requiere permiso ver-compras */
+router.get('/', soloVerCompras, async (req, res) => {
   try {
     const { desde, hasta, proveedorId, sinRecepcion } = req.query;
     const where = {};
@@ -61,12 +63,11 @@ router.get('/', async (req, res) => {
     });
     res.json(compras);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al listar compras' });
+    sendError(res, 500, MSG.COMPRAS_LISTAR, 'COMPRAS_001', e);
   }
 });
 
-router.get('/totales-dia', async (req, res) => {
+router.get('/totales-dia', soloVerCompras, async (req, res) => {
   try {
     const fecha = req.query.fecha ? new Date(req.query.fecha) : new Date();
     const inicio = new Date(fecha);
@@ -85,20 +86,18 @@ router.get('/totales-dia', async (req, res) => {
     }, 0);
     res.json({ totalBultos, totalMonto, fecha: inicio.toISOString().slice(0, 10) });
   } catch (e) {
-    console.error('GET /compras/totales-dia:', e);
-    const message = e?.message ?? String(e);
-    res.status(500).json({ error: 'Error al calcular totales', detail: message });
+    sendError(res, 500, MSG.COMPRAS_TOTALES, 'COMPRAS_002', e);
   }
 });
 
 router.post('/', soloComprador, async (req, res) => {
   try {
     if (!req.userId) {
-      return res.status(401).json({ error: 'No se identificó al usuario. Iniciá sesión de nuevo.' });
+      return sendError(res, 401, MSG.COMPRAS_USUARIO_NO_IDENTIFICADO, 'COMPRAS_003');
     }
     const { fecha, proveedorId, detalles } = req.body;
     if (!fecha || !proveedorId || !Array.isArray(detalles) || detalles.length === 0) {
-      return res.status(400).json({ error: 'Faltan fecha, proveedor o detalles' });
+      return sendError(res, 400, MSG.COMPRAS_FALTAN_DATOS, 'COMPRAS_004');
     }
     // Resolver productoId: puede ser el id (cuid) de Prisma o el codigo (lista desde SQL Server)
     const resolverProductoId = async (d) => {
@@ -142,7 +141,7 @@ router.post('/', soloComprador, async (req, res) => {
     );
     const detallesCrear = detallesConIds.filter(Boolean);
     if (detallesCrear.length === 0) {
-      return res.status(400).json({ error: 'Debe haber al menos un ítem con bultos > 0' });
+      return sendError(res, 400, MSG.COMPRAS_AL_MENOS_UN_ITEM, 'COMPRAS_005');
     }
     const { _max } = await prisma.compra.aggregate({ _max: { numeroCompra: true } });
     const numeroCompra = (Number(_max?.numeroCompra) || 0) + 1;
@@ -180,20 +179,41 @@ router.post('/', soloComprador, async (req, res) => {
         },
       },
     });
+    if (req.userId) {
+      await createLog(prisma, {
+        userId: req.userId,
+        action: 'crear',
+        entity: 'compra',
+        entityId: compra.id,
+        details: {
+          numeroCompra: compra.numeroCompra,
+          fecha: compra.fecha,
+          proveedor: compra.proveedor?.nombre,
+          totalBultos: compra.totalBultos,
+          totalMonto: String(compra.totalMonto),
+          items: (compra.detalles || []).map((d) => ({
+            articulo: d.producto?.descripcion ?? d.producto?.codigo ?? '—',
+            codigo: d.producto?.codigo ?? '—',
+            bultos: d.bultos,
+            precioPorBulto: Number(d.precioPorBulto),
+            total: Number(d.total),
+          })),
+        },
+      });
+    }
     res.status(201).json(compra);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al guardar la compra' });
+    sendError(res, 500, MSG.COMPRAS_GUARDAR, 'COMPRAS_006', e);
   }
 });
 
-router.get('/:id/recepcion', async (req, res) => {
+router.get('/:id/recepcion', soloVerCompras, async (req, res) => {
   try {
     const compra = await prisma.compra.findUnique({
       where: { id: req.params.id },
       select: { id: true },
     });
-    if (!compra) return res.status(404).json({ error: 'Compra no encontrada' });
+    if (!compra) return sendError(res, 404, MSG.COMPRAS_NO_ENCONTRADA, 'COMPRAS_007');
     const recepcion = await prisma.recepcion.findUnique({
       where: { compraId: req.params.id },
       include: {
@@ -203,12 +223,11 @@ router.get('/:id/recepcion', async (req, res) => {
     });
     res.json(recepcion);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al obtener recepción' });
+    sendError(res, 500, MSG.COMPRAS_RECEPCION, 'COMPRAS_008', e);
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', soloVerCompras, async (req, res) => {
   try {
     const compra = await prisma.compra.findUnique({
       where: { id: req.params.id },
@@ -222,10 +241,9 @@ router.get('/:id', async (req, res) => {
         },
       },
     });
-    if (!compra) return res.status(404).json({ error: 'Compra no encontrada' });
+    if (!compra) return sendError(res, 404, MSG.COMPRAS_NO_ENCONTRADA, 'COMPRAS_009');
     res.json(compra);
   } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: 'Error al obtener compra' });
+    sendError(res, 500, MSG.COMPRAS_OBTENER, 'COMPRAS_010', e);
   }
 });

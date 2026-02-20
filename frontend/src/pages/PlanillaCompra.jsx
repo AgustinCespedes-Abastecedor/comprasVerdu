@@ -89,6 +89,13 @@ export default function PlanillaCompra() {
   }, [providerPickerOpen]);
 
   useEffect(() => {
+    if (!searchOpen) return;
+    const onEscape = (e) => { if (e.key === 'Escape') setSearchOpen(false); };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [searchOpen]);
+
+  useEffect(() => {
     let cancelled = false;
     proveedores.list().then((prov) => {
       if (!cancelled) setProveedoresList(prov);
@@ -239,7 +246,7 @@ export default function PlanillaCompra() {
       }));
       setFilas([]);
     } catch (e) {
-      showError(e?.message || 'Error al guardar la compra');
+      showError(e?.message || 'Error al guardar la compra', e?.code);
     } finally {
       setGuardando(false);
     }

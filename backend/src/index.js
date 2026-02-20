@@ -9,7 +9,9 @@ import { recepcionesRouter } from './routes/recepciones.js';
 import { infoFinalArticulosRouter } from './routes/infoFinalArticulos.js';
 import { usersRouter } from './routes/users.js';
 import { rolesRouter } from './routes/roles.js';
+import { logsRouter } from './routes/logs.js';
 import { authMiddleware } from './middleware/auth.js';
+import { sendError, MSG } from './lib/errors.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -36,7 +38,7 @@ app.use(express.json({ limit: '1mb' }));
 
 app.use((err, _req, res, next) => {
   if (err instanceof SyntaxError && 'body' in err) {
-    return res.status(400).json({ error: 'JSON inválido en el cuerpo de la petición' });
+    return sendError(res, 400, MSG.JSON_INVALIDO, 'GEN_001');
   }
   next(err);
 });
@@ -51,6 +53,7 @@ app.use('/api/recepciones', runAsync(authMiddleware), recepcionesRouter);
 app.use('/api/info-final-articulos', runAsync(authMiddleware), infoFinalArticulosRouter);
 app.use('/api/users', runAsync(authMiddleware), usersRouter);
 app.use('/api/roles', runAsync(authMiddleware), rolesRouter);
+app.use('/api/logs', runAsync(authMiddleware), logsRouter);
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 
@@ -65,12 +68,16 @@ app.get('/api/health/db', async (_, res) => {
   }
 });
 
-// Handler global: errores no capturados devuelven JSON 500
+// Cualquier otra petición a /api que no haya coincidido → 404 JSON (evita HTML por defecto de Express)
+app.use('/api', (req, res) => {
+  sendError(res, 404, 'Ruta no encontrada', 'RUTA_NO_ENCONTRADA');
+});
+
+// Handler global: errores no capturados devuelven JSON 500 con código
 app.use((err, _req, res, _next) => {
-  console.error('Error no capturado:', err);
-  res.status(500).json({
-    error: process.env.NODE_ENV === 'production' ? 'Error del servidor' : (err.message || String(err)),
-  });
+  const code = err.code || 'GEN_500';
+  const message = err.status === 400 ? (err.message || MSG.ERROR_SERVIDOR) : MSG.ERROR_SERVIDOR;
+  sendError(res, err.status || 500, message, code, err);
 });
 
 const HOST = '0.0.0.0';  // Aceptar conexiones desde LAN (celular, emulador)

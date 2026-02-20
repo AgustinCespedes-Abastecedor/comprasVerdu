@@ -19,16 +19,33 @@ model Role {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
+  id           String       @id @default(cuid())
+  email        String       @unique
   password     String
   nombre       String
   roleId       String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  activo       Boolean      @default(true)  // false = suspendido (soft delete), no puede iniciar sesión
   compras      Compra[]
   recepciones  Recepcion[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  activityLogs ActivityLog[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String   // "crear" | "actualizar" | "eliminar" | "activar" | "suspender"
+  entity    String   // "usuario" | "rol" | "compra" | "recepcion"
+  entityId  String?  // id del recurso afectado
+  details   Json?    // datos resumidos (ej. { "nombre": "Rol X" })
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
 }
 
 model Proveedor {

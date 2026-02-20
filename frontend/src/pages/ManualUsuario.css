@@ -1,0 +1,360 @@
+/* ========== Página Manual de usuario ========== */
+.manual-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.manual-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--text-muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.manual-back:hover {
+  color: var(--accent);
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="light"] .manual-back:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.manual-back:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.manual-back-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.manual-header-title {
+  margin: 0;
+  font-family: "Segoe UI", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--danger);
+  min-width: 0;
+}
+
+/* ----- Main ----- */
+.manual-main {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem 1.25rem 2rem;
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+}
+
+.manual-error {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+}
+
+.manual-error p {
+  margin: 0;
+}
+
+/* ----- Layout: TOC + artículo ----- */
+.manual-layout {
+  display: grid;
+  gap: 2rem;
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+  .manual-layout {
+    grid-template-columns: 200px 1fr;
+    align-items: start;
+    gap: 2.5rem;
+  }
+}
+
+/* ----- Índice (TOC) ----- */
+.manual-toc {
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  position: sticky;
+  top: 1rem;
+}
+
+.manual-toc-title {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.manual-toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.manual-toc-item {
+  margin: 0;
+}
+
+.manual-toc-item--h3 {
+  padding-left: 0.75rem;
+}
+
+.manual-toc-link {
+  display: block;
+  width: 100%;
+  padding: 0.35rem 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  line-height: 1.35;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.manual-toc-link:hover {
+  color: var(--accent);
+}
+
+.manual-toc-item--h3 .manual-toc-link {
+  font-size: 0.78125rem;
+  font-weight: 400;
+}
+
+/* ----- Artículo (markdown) ----- */
+.manual-article {
+  min-width: 0;
+}
+
+.manual-markdown {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.manual-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.manual-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Títulos */
+.manual-heading {
+  scroll-margin-top: 5rem;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.manual-markdown .manual-heading:first-child {
+  margin-top: 0;
+}
+
+.manual-markdown h1.manual-heading {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.manual-markdown h2.manual-heading {
+  font-size: 1.25rem;
+  margin-top: 2rem;
+}
+
+.manual-markdown h3.manual-heading {
+  font-size: 1.0625rem;
+  margin-top: 1.25rem;
+  font-weight: 600;
+}
+
+/* Párrafos y bloques */
+.manual-markdown p {
+  margin: 0 0 1rem 0;
+}
+
+.manual-markdown hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.75rem 0;
+}
+
+.manual-markdown strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.manual-markdown ul,
+.manual-markdown ol {
+  margin: 0 0 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.manual-markdown li {
+  margin-bottom: 0.35rem;
+}
+
+.manual-markdown li:last-child {
+  margin-bottom: 0;
+}
+
+/* Enlaces */
+.manual-markdown a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.manual-markdown a:hover {
+  text-decoration: underline;
+}
+
+.manual-markdown a:focus-visible {
+  outline: none;
+  text-decoration: underline;
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Tablas (GFM) */
+.manual-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 1.5rem 0;
+  font-size: 0.9375rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.manual-markdown thead {
+  background: var(--surface2);
+}
+
+.manual-markdown th {
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.manual-markdown td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.manual-markdown tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.manual-markdown tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="light"] .manual-markdown tbody tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* Blockquote / nota */
+.manual-markdown blockquote {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 8px 8px 0;
+  color: var(--text);
+}
+
+.manual-markdown blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Código inline */
+.manual-markdown code {
+  font-size: 0.9em;
+  padding: 0.15em 0.4em;
+  background: var(--surface2);
+  border-radius: 6px;
+  color: var(--text);
+}
+
+/* Footer del manual */
+.manual-markdown em {
+  display: block;
+  margin-top: 2rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ========== APK / WebView nativo (Capacitor) ========== */
+html.is-native .manual-page {
+  min-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+}
+
+html.is-native .manual-main {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+
+html.is-native .manual-back {
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .manual-toc-link {
+  min-height: 44px;
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .manual-heading {
+  scroll-margin-top: 4.5rem;
+}
+
+html.is-native .manual-layout {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}

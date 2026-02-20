@@ -275,6 +275,33 @@
   color: var(--home-info-hover);
 }
 
+/* Variante: Manual (azul / doc) */
+.home-nav-card--manual {
+  border-left: 4px solid var(--home-manual, #238636);
+  background: linear-gradient(135deg, var(--home-card-bg) 0%, rgba(35, 134, 54, 0.08) 100%);
+}
+
+[data-theme="light"] .home-nav-card--manual {
+  background: linear-gradient(135deg, var(--home-card-bg) 0%, rgba(35, 134, 54, 0.06) 100%);
+}
+
+.home-nav-card--manual:hover {
+  border-left-color: var(--home-manual, #238636);
+}
+
+.home-nav-card--manual .home-nav-card-icon {
+  background: var(--home-manual-soft, rgba(35, 134, 54, 0.15));
+  color: var(--home-manual, #238636);
+}
+
+.home-nav-card--manual .home-nav-card-cta {
+  color: var(--home-manual, #238636);
+}
+
+.home-nav-card--manual:hover .home-nav-card-cta {
+  color: var(--home-manual-hover, #2ea043);
+}
+
 .home-nav-card-icon {
   flex-shrink: 0;
   width: 2.5rem;
@@ -328,6 +355,9 @@
   margin-top: 1.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--home-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .home-config-card {

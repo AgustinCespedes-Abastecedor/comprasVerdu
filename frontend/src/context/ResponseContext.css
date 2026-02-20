@@ -52,8 +52,22 @@
   background: #cf222e;
 }
 
-.response-toast-message {
+.response-toast-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.response-toast-message {
+  line-height: 1.35;
+}
+
+.response-toast-code {
+  font-size: 0.875rem;
+  opacity: 0.95;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .response-toast-close {

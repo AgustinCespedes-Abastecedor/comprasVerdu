@@ -6,19 +6,10 @@ import { compras, proveedores as apiProveedores } from '../api/client';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
+import { formatNum, formatDate } from '../lib/format';
 import './VerCompras.css';
 
 const isApp = () => Capacitor.isNativePlatform();
-
-function formatNum(n) {
-  if (n == null) return '0';
-  return Number(n).toLocaleString('es-AR');
-}
-
-function formatDate(d) {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('es-AR');
-}
 
 function getNumeroCompra(c) {
   return c.numeroCompra != null ? c.numeroCompra : '—';

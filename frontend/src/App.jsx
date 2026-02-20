@@ -15,6 +15,8 @@ import VerCompras from './pages/VerCompras';
 import VerRecepciones from './pages/VerRecepciones';
 import InfoFinalArticulos from './pages/InfoFinalArticulos';
 import GestionUsuarios from './pages/GestionUsuarios';
+import Logs from './pages/Logs';
+import ManualUsuario from './pages/ManualUsuario';
 
 /** En APK: botón Atrás de Android navega en el historial de la app */
 function BackButtonHandler() {
@@ -95,6 +97,22 @@ function AppRoutes() {
         element={
           <PrivateRoute permiso="gestion-usuarios">
             <GestionUsuarios />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/logs"
+        element={
+          <PrivateRoute permiso="gestion-usuarios">
+            <Logs />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/manual-usuario"
+        element={
+          <PrivateRoute permiso="home">
+            <ManualUsuario />
           </PrivateRoute>
         }
       />

@@ -8,12 +8,9 @@ import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import PasswordInput from '../components/PasswordInput';
 import AppLoader from '../components/AppLoader';
+import Modal from '../components/Modal';
+import { formatDateShort } from '../lib/format';
 import './GestionUsuarios.css';
-
-function formatDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
-}
 
 export default function GestionUsuarios() {
   const { user } = useAuth();
@@ -22,10 +19,12 @@ export default function GestionUsuarios() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
+  const [activoFilter, setActivoFilter] = useState(''); // '' = todos, 'true' = activos, 'false' = inactivos
   const [tab, setTab] = useState('usuarios'); // 'usuarios' | 'roles'
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
 
   const puedeRoles = puedeGestionarRoles(user);
 
@@ -34,13 +33,15 @@ export default function GestionUsuarios() {
       const params = {};
       if (search.trim()) params.q = search.trim();
       if (roleFilter) params.roleId = roleFilter;
+      if (activoFilter) params.activo = activoFilter;
       const data = await users.list(params);
       setList(data);
     } catch (e) {
       setList([]);
       setError(e.message);
+      setErrorCode(e?.code ?? '');
     }
-  }, [search, roleFilter]);
+  }, [search, roleFilter, activoFilter]);
 
   const loadRoles = useCallback(async () => {
     if (!puedeRoles) return;
@@ -55,6 +56,7 @@ export default function GestionUsuarios() {
   useEffect(() => {
     setLoading(true);
     setError('');
+    setErrorCode('');
     Promise.all([
       loadUsers(),
       rolesApi.list().then(setRolesList).catch(() => setRolesList([])),
@@ -74,16 +76,19 @@ export default function GestionUsuarios() {
     const roleId = form.roleId.value;
     if (!nombre || !email || !password || !roleId) {
       setError('Nombre, email, contraseña y rol son obligatorios');
+      setErrorCode('');
       return;
     }
     setSaving(true);
     setError('');
+    setErrorCode('');
     try {
       await users.create({ nombre, email, password, roleId });
       setModal(null);
       loadUsers();
     } catch (err) {
       setError(err.message);
+      setErrorCode(err?.code ?? '');
     } finally {
       setSaving(false);
     }
@@ -93,20 +98,37 @@ export default function GestionUsuarios() {
     e.preventDefault();
     const form = e.target;
     const nombre = form.nombre.value.trim();
+    const email = form.email?.value?.trim().toLowerCase();
     const roleId = form.roleId.value;
     const password = form.password.value;
+    const activo = form.estado.value === 'true';
     setSaving(true);
     setError('');
+    setErrorCode('');
     try {
-      const body = { nombre, roleId };
+      const body = { nombre, roleId, activo };
+      if (email !== undefined) body.email = email;
       if (password.length > 0) body.password = password;
       await users.update(id, body);
       setModal(null);
       loadUsers();
     } catch (err) {
       setError(err.message);
+      setErrorCode(err?.code ?? '');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleActivo = async (u) => {
+    setError('');
+    setErrorCode('');
+    try {
+      await users.update(u.id, { activo: !u.activo });
+      loadUsers();
+    } catch (err) {
+      setError(err.message);
+      setErrorCode(err?.code ?? '');
     }
   };
 
@@ -122,6 +144,7 @@ export default function GestionUsuarios() {
     }
     setSaving(true);
     setError('');
+    setErrorCode('');
     try {
       await rolesApi.create({ nombre, descripcion, permisos });
       setModal(null);
@@ -129,6 +152,7 @@ export default function GestionUsuarios() {
       loadUsers();
     } catch (err) {
       setError(err.message);
+      setErrorCode(err?.code ?? '');
     } finally {
       setSaving(false);
     }
@@ -142,10 +166,12 @@ export default function GestionUsuarios() {
     const permisos = Array.from(form.querySelectorAll('input[name="permiso"]:checked')).map((el) => el.value);
     if (!nombre) {
       setError('El nombre del rol es obligatorio');
+      setErrorCode('');
       return;
     }
     setSaving(true);
     setError('');
+    setErrorCode('');
     try {
       await rolesApi.update(id, { nombre, descripcion, permisos });
       setModal(null);
@@ -153,6 +179,7 @@ export default function GestionUsuarios() {
       loadUsers();
     } catch (err) {
       setError(err.message);
+      setErrorCode(err?.code ?? '');
     } finally {
       setSaving(false);
     }
@@ -161,12 +188,14 @@ export default function GestionUsuarios() {
   const handleDeleteRole = async (role) => {
     if (!window.confirm(`¿Eliminar el rol "${role.nombre}"? No se puede si tiene usuarios asignados.`)) return;
     setError('');
+    setErrorCode('');
     try {
       await rolesApi.delete(role.id);
       loadRoles();
       loadUsers();
     } catch (err) {
       setError(err.message);
+      setErrorCode(err?.code ?? '');
     }
   };
 
@@ -229,8 +258,18 @@ export default function GestionUsuarios() {
                     <option key={r.id} value={r.id}>{r.nombre}</option>
                   ))}
                 </select>
+                <select
+                  value={activoFilter}
+                  onChange={(e) => setActivoFilter(e.target.value)}
+                  className="gestion-usuarios-select"
+                  aria-label="Filtrar por estado"
+                >
+                  <option value="">Todos</option>
+                  <option value="true">Activos</option>
+                  <option value="false">Inactivos</option>
+                </select>
               </div>
-              <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('create'); setError(''); }}>
+              <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('create'); setError(''); setErrorCode(''); }}>
                 Nuevo usuario
               </button>
             </div>
@@ -238,6 +277,7 @@ export default function GestionUsuarios() {
             {error && (
               <div className="gestion-usuarios-alert gestion-usuarios-alert-error" role="alert">
                 {error}
+                {errorCode && <span className="gestion-usuarios-error-code"> Código para reportar: {errorCode}</span>}
               </div>
             )}
 
@@ -251,12 +291,13 @@ export default function GestionUsuarios() {
                     <p className="gestion-usuarios-empty-hint">Probá cambiando la búsqueda o agregá un nuevo usuario.</p>
                   </div>
                 ) : (
-                  <table className="gestion-usuarios-table">
+                  <table className="gestion-usuarios-table gestion-usuarios-table--users">
                     <thead>
                       <tr>
                         <th>Nombre</th>
                         <th>Email</th>
                         <th>Rol</th>
+                        <th>Estado</th>
                         <th>Fecha de alta</th>
                         <th>Compras</th>
                         <th className="gestion-usuarios-th-actions">Acciones</th>
@@ -264,7 +305,7 @@ export default function GestionUsuarios() {
                     </thead>
                     <tbody>
                       {list.map((u) => (
-                        <tr key={u.id}>
+                        <tr key={u.id} className={u.activo === false ? 'gestion-usuarios-row-inactivo' : ''}>
                           <td>{u.nombre}</td>
                           <td>{u.email}</td>
                           <td>
@@ -272,17 +313,32 @@ export default function GestionUsuarios() {
                               {u.rol || rolEtiqueta(u)}
                             </span>
                           </td>
-                          <td>{formatDate(u.createdAt)}</td>
+                          <td>
+                            <span className={`gestion-usuarios-estado-badge ${u.activo !== false ? 'gestion-usuarios-estado-activo' : 'gestion-usuarios-estado-inactivo'}`}>
+                              {u.activo !== false ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </td>
+                          <td>{formatDateShort(u.createdAt)}</td>
                           <td>{u._count?.compras ?? 0}</td>
                           <td>
-                            <button
-                              type="button"
-                              className="gestion-usuarios-btn-edit"
-                              onClick={() => { setModal({ type: 'edit', user: u }); setError(''); }}
-                              title="Editar usuario"
-                            >
-                              Editar
-                            </button>
+                            <div className="gestion-usuarios-cell-actions">
+                              <button
+                                type="button"
+                                className="gestion-usuarios-btn-edit"
+                                onClick={() => { setModal({ type: 'edit', user: u }); setError(''); setErrorCode(''); }}
+                                title="Editar usuario"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                className={u.activo !== false ? 'gestion-usuarios-btn-suspender' : 'gestion-usuarios-btn-activar'}
+                                onClick={() => handleToggleActivo(u)}
+                                title={u.activo !== false ? 'Suspender usuario' : 'Activar usuario'}
+                              >
+                                {u.activo !== false ? 'Suspender' : 'Activar'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -298,13 +354,14 @@ export default function GestionUsuarios() {
           <>
             <div className="gestion-usuarios-toolbar">
               <span className="gestion-usuarios-toolbar-label">Permisos por pantalla: marcá qué puede ver y acceder cada rol.</span>
-              <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('role-create'); setError(''); }}>
+              <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('role-create'); setError(''); setErrorCode(''); }}>
                 Nuevo rol
               </button>
             </div>
             {error && (
               <div className="gestion-usuarios-alert gestion-usuarios-alert-error" role="alert">
                 {error}
+                {errorCode && <span className="gestion-usuarios-error-code"> Código para reportar: {errorCode}</span>}
               </div>
             )}
             <div className="gestion-usuarios-table-wrap">
@@ -313,7 +370,7 @@ export default function GestionUsuarios() {
                   <p>No hay roles. Creá uno desde &quot;Nuevo rol&quot;.</p>
                 </div>
               ) : (
-                <table className="gestion-usuarios-table">
+                <table className="gestion-usuarios-table gestion-usuarios-table--roles">
                   <thead>
                     <tr>
                       <th>Nombre</th>
@@ -329,21 +386,24 @@ export default function GestionUsuarios() {
                         <td>{r.descripcion || '—'}</td>
                         <td>{r.usuariosCount ?? 0}</td>
                         <td>
-                          <button
-                            type="button"
-                            className="gestion-usuarios-btn-edit"
-                            onClick={() => { setModal({ type: 'role-edit', role: r }); setError(''); }}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="gestion-usuarios-btn-danger"
-                            onClick={() => handleDeleteRole(r)}
-                            title="Eliminar rol"
-                          >
-                            Eliminar
-                          </button>
+                          <div className="gestion-usuarios-cell-actions">
+                            <button
+                              type="button"
+                              className="gestion-usuarios-btn-edit"
+                              onClick={() => { setModal({ type: 'role-edit', role: r }); setError(''); setErrorCode(''); }}
+                              title="Editar rol"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="gestion-usuarios-btn-danger"
+                              onClick={() => handleDeleteRole(r)}
+                              title="Eliminar rol"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -355,11 +415,8 @@ export default function GestionUsuarios() {
         )}
 
         {/* Modal Nuevo usuario */}
-        {modal === 'create' && (
-          <div className="gestion-usuarios-overlay" onClick={() => !saving && setModal(null)}>
-            <div className="gestion-usuarios-modal" onClick={(e) => e.stopPropagation()}>
-              <h2 className="gestion-usuarios-modal-title">Nuevo usuario</h2>
-              <form onSubmit={handleCreateUser}>
+        <Modal open={modal === 'create'} onClose={() => !saving && setModal(null)} title="Nuevo usuario" preventClose={saving}>
+          <form onSubmit={handleCreateUser}>
                 <div className="gestion-usuarios-form-group">
                   <label htmlFor="create-nombre">Nombre</label>
                   <input id="create-nombre" name="nombre" type="text" required placeholder="Ej. Juan Pérez" autoComplete="name" />
@@ -387,25 +444,28 @@ export default function GestionUsuarios() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
+        </Modal>
 
         {/* Modal Editar usuario */}
-        {modal?.type === 'edit' && modal?.user && (
-          <div className="gestion-usuarios-overlay" onClick={() => !saving && setModal(null)}>
-            <div className="gestion-usuarios-modal" onClick={(e) => e.stopPropagation()}>
-              <h2 className="gestion-usuarios-modal-title">Editar usuario</h2>
-              <form onSubmit={(e) => handleUpdateUser(e, modal.user.id)}>
-                <div className="gestion-usuarios-form-group">
+        <Modal open={modal?.type === 'edit' && !!modal?.user} onClose={() => !saving && setModal(null)} title="Editar usuario" preventClose={saving} boxClassName="gestion-usuarios-modal gestion-usuarios-modal--edit">
+          {modal?.type === 'edit' && modal?.user && (
+              <form className="gestion-usuarios-modal-edit-form" onSubmit={(e) => handleUpdateUser(e, modal.user.id)}>
+                <div className="gestion-usuarios-modal-edit-field">
                   <label htmlFor="edit-nombre">Nombre</label>
                   <input id="edit-nombre" name="nombre" type="text" required defaultValue={modal.user.nombre} placeholder="Nombre completo" />
                 </div>
-                <div className="gestion-usuarios-form-group">
-                  <label>Email</label>
-                  <p className="gestion-usuarios-form-readonly">{modal.user.email}</p>
+                <div className="gestion-usuarios-modal-edit-field">
+                  <label htmlFor="edit-email">Email</label>
+                  <input id="edit-email" name="email" type="email" required defaultValue={modal.user.email} placeholder="usuario@ejemplo.com" autoComplete="email" />
                 </div>
-                <div className="gestion-usuarios-form-group">
+                <div className="gestion-usuarios-modal-edit-field">
+                  <label htmlFor="edit-estado">Estado</label>
+                  <select id="edit-estado" name="estado" defaultValue={modal.user.activo !== false ? 'true' : 'false'}>
+                    <option value="true">Activo</option>
+                    <option value="false">Inactivo</option>
+                  </select>
+                </div>
+                <div className="gestion-usuarios-modal-edit-field">
                   <label htmlFor="edit-roleId">Rol</label>
                   <select id="edit-roleId" name="roleId" defaultValue={modal.user.roleId} required>
                     {rolesList.map((r) => (
@@ -413,37 +473,43 @@ export default function GestionUsuarios() {
                     ))}
                   </select>
                 </div>
-                <div className="gestion-usuarios-form-group">
-                  <label htmlFor="edit-password">Nueva contraseña <span className="gestion-usuarios-optional">(opcional)</span></label>
+                <div className="gestion-usuarios-modal-edit-field">
+                  <label htmlFor="edit-password">Nueva contraseña <span className="gestion-usuarios-modal-edit-optional">opcional</span></label>
                   <PasswordInput id="edit-password" name="password" placeholder="Dejar en blanco para no cambiar" autoComplete="new-password" minLength={6} />
                 </div>
-                <div className="gestion-usuarios-modal-actions">
-                  <button type="button" className="gestion-usuarios-btn-secondary" onClick={() => !saving && setModal(null)} disabled={saving}>Cancelar</button>
-                  <button type="submit" className="gestion-usuarios-btn-primary" disabled={saving}>
-                    {saving ? 'Guardando...' : 'Guardar cambios'}
+                <div className="gestion-usuarios-modal-edit-actions">
+                  <button type="button" className="gestion-usuarios-modal-edit-btn-cancel" onClick={() => !saving && setModal(null)} disabled={saving}>Cancelar</button>
+                  <button type="submit" className="gestion-usuarios-modal-edit-btn-save" disabled={saving}>
+                    {saving ? 'Guardando…' : 'Guardar'}
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
+          )}
+        </Modal>
 
         {/* Modal Nuevo rol */}
-        {modal === 'role-create' && (
-          <div className="gestion-usuarios-overlay" onClick={() => !saving && setModal(null)}>
-            <div className="gestion-usuarios-modal gestion-usuarios-modal--wide" onClick={(e) => e.stopPropagation()}>
-              <h2 className="gestion-usuarios-modal-title">Nuevo rol</h2>
-              <form onSubmit={handleCreateRole}>
-                <div className="gestion-usuarios-form-group">
-                  <label htmlFor="role-create-nombre">Nombre</label>
-                  <input id="role-create-nombre" name="nombre" type="text" required placeholder="Ej. Supervisor" />
-                </div>
-                <div className="gestion-usuarios-form-group">
-                  <label htmlFor="role-create-desc">Descripción (opcional)</label>
-                  <input id="role-create-desc" name="descripcion" type="text" placeholder="Breve descripción del rol" />
-                </div>
-                <div className="gestion-usuarios-form-group">
-                  <span className="gestion-usuarios-checklist-label">Pantallas permitidas (el rol solo podrá ver y acceder a las que marques):</span>
+        <Modal open={modal === 'role-create'} onClose={() => !saving && setModal(null)} title="Nuevo rol" size="wide" preventClose={saving} boxClassName="gestion-usuarios-modal gestion-usuarios-modal--role" subtitle="Definí el nombre y qué pantallas podrá ver y usar este rol.">
+          <form onSubmit={handleCreateRole} className="gestion-usuarios-role-form">
+                <section className="gestion-usuarios-modal-section">
+                  <div className="gestion-usuarios-form-group">
+                    <label htmlFor="role-create-nombre">Nombre del rol</label>
+                    <input id="role-create-nombre" name="nombre" type="text" required placeholder="Ej. Supervisor" />
+                  </div>
+                  <div className="gestion-usuarios-form-group">
+                    <label htmlFor="role-create-desc">Descripción <span className="gestion-usuarios-optional">(opcional)</span></label>
+                    <input id="role-create-desc" name="descripcion" type="text" placeholder="Breve descripción del rol" />
+                  </div>
+                </section>
+                <section className="gestion-usuarios-modal-section gestion-usuarios-modal-section--permisos">
+                  <div className="gestion-usuarios-checklist-header">
+                    <span className="gestion-usuarios-checklist-title">Pantallas permitidas</span>
+                    <span className="gestion-usuarios-checklist-actions">
+                      <button type="button" className="gestion-usuarios-checklist-link" onClick={(e) => e.target.closest('form')?.querySelectorAll('input[name="permiso"]').forEach((cb) => { cb.checked = true; })}>Seleccionar todo</button>
+                      <span className="gestion-usuarios-checklist-sep">·</span>
+                      <button type="button" className="gestion-usuarios-checklist-link" onClick={(e) => e.target.closest('form')?.querySelectorAll('input[name="permiso"]').forEach((cb) => { cb.checked = false; })}>Desmarcar todo</button>
+                    </span>
+                  </div>
+                  <p className="gestion-usuarios-checklist-hint">El rol solo podrá ver y acceder a las pantallas que marques.</p>
                   <ul className="gestion-usuarios-checklist">
                     {PANTALLAS.map((p) => (
                       <li key={p.id}>
@@ -454,7 +520,7 @@ export default function GestionUsuarios() {
                       </li>
                     ))}
                   </ul>
-                </div>
+                </section>
                 <div className="gestion-usuarios-modal-actions">
                   <button type="button" className="gestion-usuarios-btn-secondary" onClick={() => !saving && setModal(null)} disabled={saving}>Cancelar</button>
                   <button type="submit" className="gestion-usuarios-btn-primary" disabled={saving}>
@@ -462,26 +528,32 @@ export default function GestionUsuarios() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
+        </Modal>
 
         {/* Modal Editar rol */}
-        {modal?.type === 'role-edit' && modal?.role && (
-          <div className="gestion-usuarios-overlay" onClick={() => !saving && setModal(null)}>
-            <div className="gestion-usuarios-modal gestion-usuarios-modal--wide" onClick={(e) => e.stopPropagation()}>
-              <h2 className="gestion-usuarios-modal-title">Editar rol</h2>
-              <form onSubmit={(e) => handleUpdateRole(e, modal.role.id)}>
-                <div className="gestion-usuarios-form-group">
-                  <label htmlFor="role-edit-nombre">Nombre</label>
-                  <input id="role-edit-nombre" name="nombre" type="text" required defaultValue={modal.role.nombre} />
-                </div>
-                <div className="gestion-usuarios-form-group">
-                  <label htmlFor="role-edit-desc">Descripción (opcional)</label>
-                  <input id="role-edit-desc" name="descripcion" type="text" defaultValue={modal.role.descripcion || ''} placeholder="Breve descripción" />
-                </div>
-                <div className="gestion-usuarios-form-group">
-                  <span className="gestion-usuarios-checklist-label">Pantallas permitidas:</span>
+        <Modal open={modal?.type === 'role-edit' && !!modal?.role} onClose={() => !saving && setModal(null)} title="Editar rol" size="wide" preventClose={saving} boxClassName="gestion-usuarios-modal gestion-usuarios-modal--role" subtitle="Modificá el nombre y los permisos de pantalla de este rol.">
+          {modal?.type === 'role-edit' && modal?.role && (
+              <form onSubmit={(e) => handleUpdateRole(e, modal.role.id)} className="gestion-usuarios-role-form">
+                <section className="gestion-usuarios-modal-section">
+                  <div className="gestion-usuarios-form-group">
+                    <label htmlFor="role-edit-nombre">Nombre del rol</label>
+                    <input id="role-edit-nombre" name="nombre" type="text" required defaultValue={modal.role.nombre} />
+                  </div>
+                  <div className="gestion-usuarios-form-group">
+                    <label htmlFor="role-edit-desc">Descripción <span className="gestion-usuarios-optional">(opcional)</span></label>
+                    <input id="role-edit-desc" name="descripcion" type="text" defaultValue={modal.role.descripcion || ''} placeholder="Breve descripción" />
+                  </div>
+                </section>
+                <section className="gestion-usuarios-modal-section gestion-usuarios-modal-section--permisos">
+                  <div className="gestion-usuarios-checklist-header">
+                    <span className="gestion-usuarios-checklist-title">Pantallas permitidas</span>
+                    <span className="gestion-usuarios-checklist-actions">
+                      <button type="button" className="gestion-usuarios-checklist-link" onClick={(e) => e.target.closest('form')?.querySelectorAll('input[name="permiso"]').forEach((cb) => { cb.checked = true; })}>Seleccionar todo</button>
+                      <span className="gestion-usuarios-checklist-sep">·</span>
+                      <button type="button" className="gestion-usuarios-checklist-link" onClick={(e) => e.target.closest('form')?.querySelectorAll('input[name="permiso"]').forEach((cb) => { cb.checked = false; })}>Desmarcar todo</button>
+                    </span>
+                  </div>
+                  <p className="gestion-usuarios-checklist-hint">El rol solo podrá ver y acceder a las pantallas que marques.</p>
                   <ul className="gestion-usuarios-checklist">
                     {PANTALLAS.map((p) => (
                       <li key={p.id}>
@@ -497,7 +569,7 @@ export default function GestionUsuarios() {
                       </li>
                     ))}
                   </ul>
-                </div>
+                </section>
                 <div className="gestion-usuarios-modal-actions">
                   <button type="button" className="gestion-usuarios-btn-secondary" onClick={() => !saving && setModal(null)} disabled={saving}>Cancelar</button>
                   <button type="submit" className="gestion-usuarios-btn-primary" disabled={saving}>
@@ -505,9 +577,8 @@ export default function GestionUsuarios() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
+          )}
+        </Modal>
       </main>
     </div>
   );

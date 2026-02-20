@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { fetchArticulosExternos, fetchArticulosPorDepartamento, fetchIvaPorcentajePorCodigos, fetchPreciosDesdeArticulos, fetchStockPorCodigos, fetchVentasYCostoDesdeVTAARTICULOS, normalizarCodigoStock, normalizarProveedorParaArticulos } from '../lib/sqlserver.js';
+import { soloComprarOVerCompras } from '../middleware/auth.js';
+import { sendError, MSG } from '../lib/errors.js';
 
 const DEPARTAMENTO_VERDULERIA = process.env.EXTERNAL_ARTICULOS_DEPARTAMENTO_ID ?? '6';
 
@@ -11,8 +13,8 @@ export const productosRouter = router;
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 200;
 
-/** GET /productos/iva?codigos=1,2,3 - Porcentaje IVA por código (desde ELABASTECEDOR TablaIVA). */
-router.get('/iva', async (req, res) => {
+/** GET /productos/iva?codigos=1,2,3 - Porcentaje IVA por código. Requiere comprar o ver-compras. */
+router.get('/iva', soloComprarOVerCompras, async (req, res) => {
   try {
     const raw = typeof req.query.codigos === 'string' ? req.query.codigos.trim() : '';
     const codigos = raw ? raw.split(/[\s,]+/).filter(Boolean) : [];
@@ -20,12 +22,12 @@ router.get('/iva', async (req, res) => {
     const map = await fetchIvaPorcentajePorCodigos(codigos);
     return res.json(map);
   } catch (e) {
-    console.error('GET /productos/iva:', e);
-    res.status(500).json({ error: e?.message || 'Error al obtener IVA' });
+    sendError(res, 500, MSG.PROD_IVA, 'PROD_001', e);
   }
 });
 
-router.get('/', async (req, res) => {
+/** GET /productos - Lista/busca productos (con proveedor o por departamento). Requiere comprar o ver-compras. */
+router.get('/', soloComprarOVerCompras, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(req.query.pageSize, 10) || DEFAULT_PAGE_SIZE));
@@ -296,8 +298,6 @@ router.get('/', async (req, res) => {
     });
     res.json({ total, page, pageSize, items: listConStock });
   } catch (e) {
-    console.error('GET /api/productos:', e);
-    const message = e?.message || String(e);
-    res.status(500).json({ error: 'Error al listar productos', detail: message });
+    sendError(res, 500, MSG.PROD_LISTAR, 'PROD_002', e);
   }
 });

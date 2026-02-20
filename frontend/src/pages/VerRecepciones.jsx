@@ -4,18 +4,10 @@ import { recepciones } from '../api/client';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
+import Modal from '../components/Modal';
 import { useResponse } from '../context/ResponseContext';
+import { formatNum, formatDate, formatPct } from '../lib/format';
 import './VerCompras.css';
-
-function formatNum(n) {
-  if (n == null) return '0';
-  return Number(n).toLocaleString('es-AR');
-}
-
-function formatDate(d) {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('es-AR');
-}
 
 function getNumeroRecepcion(r) {
   return r.numeroRecepcion != null ? r.numeroRecepcion : '—';
@@ -103,7 +95,7 @@ export default function VerRecepciones() {
       setModalRecepcion(null);
       showSuccess('Precios de venta y márgenes actualizados.');
     } catch (e) {
-      showError(e?.message || 'Error al guardar precios');
+      showError(e?.message || 'Error al guardar precios', e?.code);
     } finally {
       setGuardandoPrecios(false);
     }
@@ -154,10 +146,12 @@ export default function VerRecepciones() {
             const expandido = expandidoKey === r.id;
             return (
               <article key={r.id} className={`vercompras-card ${expandido ? 'vercompras-card--open' : ''}`}>
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   className="vercompras-card-head vercompras-card-head--btn"
                   onClick={() => toggleExpandir(r.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpandir(r.id); } }}
                   aria-expanded={expandido}
                   aria-controls={`verrec-detalle-${r.id}`}
                 >
@@ -178,7 +172,7 @@ export default function VerRecepciones() {
                   </span>
                   <span className="vercompras-card-user">{r.user?.nombre}</span>
                   <span className="vercompras-card-chevron" aria-hidden>{expandido ? '▼' : '▶'}</span>
-                </button>
+                </div>
                 {expandido && (
                   <div id={`verrec-detalle-${r.id}`} className="vercompras-card-body">
                     <div className="vercompras-card-totales">
@@ -215,7 +209,7 @@ export default function VerRecepciones() {
                                   <td>{formatNum(d.uxb)}</td>
                                   <td>{costo !== '' ? formatNum(costo) : '—'}</td>
                                   <td>{pv != null ? formatNum(pv) : '—'}</td>
-                                  <td>{margen != null ? `${formatNum(margen)} %` : '—'}</td>
+                                  <td>{margen != null ? formatPct(margen) : '—'}</td>
                                 </tr>
                               );
                             })}
@@ -231,16 +225,16 @@ export default function VerRecepciones() {
         </div>
       )}
 
-      {modalRecepcion && (
-        <div className="verrecepciones-modal-backdrop" onClick={() => setModalRecepcion(null)} role="presentation">
-          <div className="verrecepciones-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="verrecepciones-modal-head">
-              <h2 className="verrecepciones-modal-title">Agregar Precio de Venta</h2>
-              <button type="button" className="verrecepciones-modal-close" onClick={() => setModalRecepcion(null)} aria-label="Cerrar">
-                ×
-              </button>
-            </div>
-            <p className="verrecepciones-modal-intro">Recepción Nº {getNumeroRecepcion(modalRecepcion)} — {modalRecepcion.compra?.proveedor?.nombre}. Con costo y precio de venta se calcula el Margen % (MarkUP).</p>
+      <Modal
+        open={!!modalRecepcion}
+        onClose={() => setModalRecepcion(null)}
+        title="Agregar Precio de Venta"
+        size="wide"
+        preventClose={guardandoPrecios}
+        subtitle={modalRecepcion ? `Recepción Nº ${getNumeroRecepcion(modalRecepcion)} — ${modalRecepcion.compra?.proveedor?.nombre}. Con costo y precio de venta se calcula el Margen % (MarkUP).` : ''}
+      >
+        {modalRecepcion && (
+          <>
             <div className="verrecepciones-modal-scroll">
               <table className="vercompras-detalle verrecepciones-modal-table">
                 <thead>
@@ -276,7 +270,7 @@ export default function VerRecepciones() {
                             placeholder="0"
                           />
                         </td>
-                        <td>{margen != null ? `${formatNum(margen)} %` : '—'}</td>
+                        <td>{margen != null ? formatPct(margen) : '—'}</td>
                       </tr>
                     );
                   })}
@@ -291,9 +285,9 @@ export default function VerRecepciones() {
                 {guardandoPrecios ? 'Guardando…' : 'Guardar precios'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

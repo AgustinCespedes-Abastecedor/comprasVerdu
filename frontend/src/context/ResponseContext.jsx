@@ -16,8 +16,15 @@ export function ResponseProvider({ children }) {
     setToast({ type: 'success', message });
   }, []);
 
-  const showError = useCallback((message) => {
-    setToast({ type: 'error', message });
+  /** showError(message) o showError({ message, code }) — code se muestra como "Código para reportar: XXX" */
+  const showError = useCallback((messageOrPayload, code) => {
+    const message = typeof messageOrPayload === 'string'
+      ? messageOrPayload
+      : (messageOrPayload?.message ?? 'Ocurrió un error.');
+    const errorCode = typeof messageOrPayload === 'object' && messageOrPayload?.code != null
+      ? messageOrPayload.code
+      : code;
+    setToast({ type: 'error', message, code: errorCode });
   }, []);
 
   useEffect(() => {
@@ -35,7 +42,12 @@ export function ResponseProvider({ children }) {
           role="alert"
           aria-live="polite"
         >
-          <span className="response-toast-message">{toast.message}</span>
+          <span className="response-toast-content">
+            <span className="response-toast-message">{toast.message}</span>
+            {toast.code && (
+              <span className="response-toast-code">Código para reportar: {toast.code}</span>
+            )}
+          </span>
           <button
             type="button"
             className="response-toast-close"

@@ -26,9 +26,15 @@ export async function api(path, options = {}) {
     let msg = data.error || data.message || res.statusText || 'Error de red';
     if (data.detail) msg = `${msg}: ${data.detail}`;
     if ((res.status === 500 || res.status === 502 || res.status === 503) && !data.error && !data.message) {
-      msg = 'Servidor no disponible. ¿Ejecutaste el backend? (npm run dev:backend en la raíz del proyecto)';
+      msg = 'Servidor no disponible. Revisá la conexión o intentá más tarde.';
     }
-    throw new Error(msg);
+    if (res.status === 404 && !data.error && !data.message) {
+      msg = 'Ruta no encontrada. Verificá que el backend esté corriendo (puerto 4000).';
+    }
+    const err = new Error(msg);
+    err.status = res.status;
+    if (data.code && typeof data.code === 'string') err.code = data.code;
+    throw err;
   }
   return data;
 }
@@ -84,6 +90,8 @@ export const recepciones = {
 export const infoFinalArticulos = {
   /** Lista artículos recepcionados en la fecha (YYYY-MM-DD), con info Tecnolar y costo ponderado */
   list: (fecha) => api(`/info-final-articulos?fecha=${encodeURIComponent(fecha || '')}`),
+  /** Guardar UXB para un artículo en una fecha (registra en historial) */
+  saveUxb: (body) => api('/info-final-articulos/uxb', { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 export const users = {
@@ -100,4 +108,12 @@ export const roles = {
   create: (body) => api('/roles', { method: 'POST', body: JSON.stringify(body) }),
   update: (id, body) => api(`/roles/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: (id) => api(`/roles/${id}`, { method: 'DELETE' }),
+};
+
+/** Historial de actividad (solo quien tiene gestión de usuarios). Params: userId?, entity?, desde?, hasta?, limit? */
+export const logs = {
+  list: (params) => {
+    const q = new URLSearchParams(params || {}).toString();
+    return api(`/logs${q ? `?${q}` : ''}`);
+  },
 };

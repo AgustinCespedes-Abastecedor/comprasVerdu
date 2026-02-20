@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { fetchProveedoresExternos } from '../lib/sqlserver.js';
+import { soloComprarOVerCompras } from '../middleware/auth.js';
+import { sendError, MSG } from '../lib/errors.js';
 
 const router = Router();
 
@@ -16,7 +18,8 @@ const CODIGOS_PROVEEDORES_PERMITIDOS = [
   '10740', '10798', '10801',
 ];
 
-router.get('/', async (_, res) => {
+/** GET /proveedores - Lista proveedores (sincroniza con SQL Server). Requiere comprar o ver-compras. */
+router.get('/', soloComprarOVerCompras, async (_, res) => {
   try {
     let externos = [];
     try {
@@ -64,8 +67,7 @@ router.get('/', async (_, res) => {
     });
     res.json(list);
   } catch (e) {
-    console.error('GET /proveedores:', e);
-    res.status(500).json({ error: 'Error al listar proveedores', detail: e?.message ?? String(e) });
+    sendError(res, 500, MSG.PROV_LISTAR, 'PROV_001', e);
   }
 });
 

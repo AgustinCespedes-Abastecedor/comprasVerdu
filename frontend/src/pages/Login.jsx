@@ -13,6 +13,7 @@ export default function Login() {
   const [modo, setModo] = useState('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -23,11 +24,13 @@ export default function Login() {
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
     setError('');
+    setErrorCode('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setErrorCode('');
     setLoading(true);
     try {
       if (modo === 'login') {
@@ -45,6 +48,7 @@ export default function Login() {
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.message || 'Error');
+      setErrorCode(err?.code ?? '');
     } finally {
       setLoading(false);
     }
@@ -66,7 +70,12 @@ export default function Login() {
           {modo === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
         </p>
         <form onSubmit={handleSubmit}>
-          {error && <div className="login-error">{error}</div>}
+          {error && (
+            <div className="login-error" role="alert">
+              {error}
+              {errorCode && <span className="login-error-code"> Código para reportar: {errorCode}</span>}
+            </div>
+          )}
           {modo === 'registro' && (
             <>
               <label>Nombre</label>
@@ -116,6 +125,7 @@ export default function Login() {
           onClick={() => {
             setModo((m) => (m === 'login' ? 'registro' : 'login'));
             setError('');
+            setErrorCode('');
           }}
         >
           {modo === 'login' ? '¿No tenés cuenta? Registrarse' : 'Ya tengo cuenta. Iniciar sesión'}

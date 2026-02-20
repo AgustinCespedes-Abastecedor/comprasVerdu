@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { tienePermiso } from '../lib/permisos.js';
+import { sendError, MSG } from '../lib/errors.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev';
 
@@ -10,14 +11,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev';
 export async function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token no proporcionado' });
+    return sendError(res, 401, MSG.AUTH_TOKEN_FALTA, 'AUTH_015');
   }
   const token = authHeader.slice(7);
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     const userId = payload.userId;
     if (!userId) {
-      return res.status(401).json({ error: 'Token inválido' });
+      return sendError(res, 401, MSG.AUTH_TOKEN_INVALIDO, 'AUTH_016');
     }
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -33,7 +34,7 @@ export async function authMiddleware(req, res, next) {
       },
     });
     if (!user) {
-      return res.status(401).json({ error: 'Usuario ya no existe. Iniciá sesión de nuevo.' });
+      return sendError(res, 401, MSG.AUTH_USUARIO_NO_EXISTE, 'AUTH_017');
     }
     req.userId = user.id;
     req.rol = user.role;
@@ -42,9 +43,9 @@ export async function authMiddleware(req, res, next) {
     next();
   } catch (e) {
     if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token inválido o expirado' });
+      return sendError(res, 401, MSG.AUTH_TOKEN_INVALIDO, 'AUTH_018');
     }
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+    return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_019', e);
   }
 }
 
@@ -52,7 +53,7 @@ export async function authMiddleware(req, res, next) {
 export function requierePermiso(codigo) {
   return (req, res, next) => {
     if (!req.permisos || !tienePermiso(req.permisos, codigo)) {
-      return res.status(403).json({ error: 'No tenés permiso para acceder a esta función' });
+      return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'AUTH_020');
     }
     next();
   };
@@ -66,18 +67,37 @@ export const soloGestionUsuarios = requierePermiso('gestion-usuarios');
 
 /** Listar roles: quien tenga gestion-usuarios o gestion-roles. */
 export function soloGestionUsuariosOroles(req, res, next) {
-  if (!req.permisos) return res.status(403).json({ error: 'No tenés permiso para acceder' });
+  if (!req.permisos) return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'AUTH_021');
   if (tienePermiso(req.permisos, 'gestion-usuarios') || tienePermiso(req.permisos, 'gestion-roles')) return next();
-  return res.status(403).json({ error: 'No tenés permiso para acceder' });
+  return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'AUTH_022');
 }
 
 /** Solo quien tiene permiso "comprar" (crear compras). */
 export const soloComprador = requierePermiso('comprar');
 
+/** Solo quien tiene permiso "ver-compras" (listar y ver compras). */
+export const soloVerCompras = requierePermiso('ver-compras');
+
+/** Quien tenga comprar o ver-compras (para listar proveedores/productos usados en compras). */
+export function soloComprarOVerCompras(req, res, next) {
+  if (!req.permisos) return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'AUTH_020');
+  if (tienePermiso(req.permisos, 'comprar') || tienePermiso(req.permisos, 'ver-compras')) return next();
+  return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'AUTH_020');
+}
+
+/** Solo quien tiene permiso "recepcion" (crear/actualizar recepciones y precios). */
+export const soloRecepcion = requierePermiso('recepcion');
+
+/** Solo quien tiene permiso "ver-recepciones" (listar recepciones). */
+export const soloVerRecepciones = requierePermiso('ver-recepciones');
+
+/** Solo quien tiene permiso "info-final-articulos" (ver y guardar UXB en info final). */
+export const soloInfoFinalArticulos = requierePermiso('info-final-articulos');
+
 /** Solo administrador: quien tiene "gestion-roles" (acceso total). */
 export function soloAdmin(req, res, next) {
   if (!req.permisos || !tienePermiso(req.permisos, 'gestion-roles')) {
-    return res.status(403).json({ error: 'Solo administradores pueden acceder' });
+    return sendError(res, 403, MSG.AUTH_SOLO_ADMIN, 'AUTH_023');
   }
   next();
 }
