@@ -1,0 +1,54 @@
+/* Indicador pull-to-refresh (solo APK, renderizado en portal) */
+.pull-to-refresh-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0));
+  min-height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.pull-to-refresh-indicator-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.pull-to-refresh-arrow {
+  font-size: 1.25rem;
+  color: var(--accent);
+  transition: transform 0.15s ease;
+}
+
+.pull-to-refresh-spinner {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: pull-to-refresh-spin 0.7s linear infinite;
+}
+
+@keyframes pull-to-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pull-to-refresh-label {
+  white-space: nowrap;
+}

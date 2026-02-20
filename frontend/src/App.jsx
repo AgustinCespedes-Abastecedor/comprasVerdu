@@ -5,6 +5,8 @@ import { App as CapApp } from '@capacitor/app';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ResponseProvider } from './context/ResponseContext';
+import { PullToRefreshProvider } from './context/PullToRefreshContext';
+import PullToRefresh from './components/PullToRefresh';
 import { puedeAcceder } from './lib/roles';
 import AppLoader from './components/AppLoader';
 import Login from './pages/Login';
@@ -126,8 +128,11 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <ResponseProvider>
-          <BackButtonHandler />
-          <AppRoutes />
+          <PullToRefreshProvider>
+            <BackButtonHandler />
+            <PullToRefresh />
+            <AppRoutes />
+          </PullToRefreshProvider>
         </ResponseProvider>
       </AuthProvider>
     </ThemeProvider>

@@ -6,6 +6,7 @@ import { compras, proveedores as apiProveedores } from '../api/client';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
+import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatNum, formatDate } from '../lib/format';
 import './VerCompras.css';
 
@@ -171,6 +172,12 @@ export default function VerCompras() {
   useEffect(() => {
     cargar();
   }, [filtroDesde, filtroHasta, proveedorId]);
+
+  const { registerRefresh } = usePullToRefresh();
+  useEffect(() => {
+    registerRefresh(() => cargar());
+    return () => registerRefresh(null);
+  }, [cargar, registerRefresh]);
 
   return (
     <div className="vercompras-page">

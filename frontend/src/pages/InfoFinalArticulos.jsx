@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { infoFinalArticulos } from '../api/client';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
+import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatNum, formatMoneda, formatPct, formatEntero, todayStr } from '../lib/format';
 import './VerCompras.css';
 
@@ -40,7 +41,7 @@ export default function InfoFinalArticulos() {
   const [errorGuardarKey, setErrorGuardarKey] = useState(null);
   const [errorGuardarMsg, setErrorGuardarMsg] = useState(null);
 
-  const loadList = () => {
+  const loadList = useCallback(() => {
     if (!fecha) return Promise.resolve();
     setLoading(true);
     return infoFinalArticulos
@@ -48,7 +49,7 @@ export default function InfoFinalArticulos() {
       .then((data) => setList(Array.isArray(data) ? data : []))
       .catch(() => setList([]))
       .finally(() => setLoading(false));
-  };
+  }, [fecha]);
 
   useEffect(() => {
     if (!fecha) return;
@@ -61,6 +62,12 @@ export default function InfoFinalArticulos() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [fecha]);
+
+  const { registerRefresh } = usePullToRefresh();
+  useEffect(() => {
+    registerRefresh(loadList);
+    return () => registerRefresh(null);
+  }, [loadList, registerRefresh]);
 
   const itemKey = (item) => `${item.codigo}|${item.uxb}`;
 

@@ -57,7 +57,9 @@ La APK estará en `android/app/build/outputs/apk/debug/app-debug.apk`
 - En Android Studio: **Run** (▶️) para instalar y ejecutar
 - O desde terminal: `npx cap run android`
 
-## Error "failed to fetch" en celular físico
+## Error "failed to fetch" o "HOST UNREACHABLE" en celular físico
+
+Si al iniciar sesión desde la app en el celular ves **"No se pudo conectar al servidor"** y el código para reportar es **NOROUTETOHOST** (o el mensaje dice "HOST UNREACHABLE" / NoRouteToHostException), el celular no puede alcanzar la PC donde corre el backend. Seguí los mismos pasos que abajo:
 
 1. **Verifica la IP de tu PC**: En PowerShell ejecutá `ipconfig` y buscá la IPv4 de tu adaptador WiFi (ej: 192.168.1.99). Actualizá `frontend/.env` con esa IP.
 
@@ -69,3 +71,5 @@ La APK estará en `android/app/build/outputs/apk/debug/app-debug.apk`
 3. **Prueba desde el navegador del celular**: Abrí Chrome en el celular y andá a `http://TU_IP:4000/api/health`. Si ves `{"ok":true}` la red está bien. Si no carga, es firewall o IP incorrecta.
 
 4. **Backend corriendo**: Asegurate de tener `npm run dev:backend` ejecutándose en la PC.
+
+5. **Misma red**: El celular debe estar conectado a la **misma red WiFi** que la PC (no uses datos móviles en el celular para probar la app).

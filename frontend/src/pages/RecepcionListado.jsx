@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { compras, recepciones } from '../api/client';
+import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
@@ -36,6 +37,14 @@ export default function RecepcionListado() {
   if (filtroDesde) params.desde = filtroDesde;
   if (filtroHasta) params.hasta = filtroHasta;
 
+  const loadList = useCallback(() => {
+    setLoading(true);
+    return compras.list(params)
+      .then((data) => setList(Array.isArray(data) ? data : []))
+      .catch(() => setList([]))
+      .finally(() => setLoading(false));
+  }, [filtroDesde, filtroHasta]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -45,6 +54,12 @@ export default function RecepcionListado() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [filtroDesde, filtroHasta]);
+
+  const { registerRefresh } = usePullToRefresh();
+  useEffect(() => {
+    registerRefresh(loadList);
+    return () => registerRefresh(null);
+  }, [loadList, registerRefresh]);
 
   const cargarRecepcion = async (compraId, compra) => {
     if (recepcionCargada[compraId]) return;

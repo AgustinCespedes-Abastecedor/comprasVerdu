@@ -4,6 +4,7 @@ import { users, roles as rolesApi } from '../api/client';
 import { rolEtiqueta, puedeGestionarRoles } from '../lib/roles';
 import { PANTALLAS } from '../lib/permisos';
 import { useAuth } from '../context/AuthContext';
+import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import PasswordInput from '../components/PasswordInput';
@@ -66,6 +67,16 @@ export default function GestionUsuarios() {
   useEffect(() => {
     if (modal === null && !loading) loadUsers();
   }, [modal, loading, loadUsers]);
+
+  const { registerRefresh } = usePullToRefresh();
+  const doRefresh = useCallback(async () => {
+    await loadUsers();
+    if (puedeRoles) await loadRoles();
+  }, [loadUsers, loadRoles, puedeRoles]);
+  useEffect(() => {
+    registerRefresh(doRefresh);
+    return () => registerRefresh(null);
+  }, [doRefresh, registerRefresh]);
 
   const handleCreateUser = async (e) => {
     e.preventDefault();

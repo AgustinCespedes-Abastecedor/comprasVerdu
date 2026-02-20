@@ -13,6 +13,23 @@ function getToken() {
   return localStorage.getItem('compras_verdu_token');
 }
 
+function normalizeNetworkError(err) {
+  const msg = (err && err.message) ? String(err.message) : 'Error de red';
+  const lower = msg.toLowerCase();
+  const isUnreachable = lower.includes('unreachable') || lower.includes('noroutetohost') || lower.includes('network is unreachable');
+  const code = isUnreachable ? 'NOROUTETOHOST' : 'NETWORK_ERROR';
+  let friendly = 'No se pudo conectar al servidor.';
+  if (Capacitor.isNativePlatform()) {
+    friendly += ' En la app móvil: el celular debe estar en la misma red WiFi que la PC donde corre el backend. En el proyecto frontend, el archivo .env debe tener VITE_API_URL con la IP de esa PC (ej. http://192.168.1.X:4000/api). Revisá que el servidor esté encendido y que el firewall permita el puerto 4000.';
+  } else {
+    friendly += ' Revisá que el backend esté corriendo y la URL sea correcta.';
+  }
+  const out = new Error(friendly);
+  out.code = code;
+  out.originalMessage = msg;
+  return out;
+}
+
 export async function api(path, options = {}) {
   const token = getToken();
   const headers = {
@@ -20,7 +37,12 @@ export async function api(path, options = {}) {
     ...options.headers,
   };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  } catch (fetchErr) {
+    throw normalizeNetworkError(fetchErr);
+  }
   const data = res.status === 204 ? {} : await res.json().catch(() => ({}));
   if (!res.ok) {
     let msg = data.error || data.message || res.statusText || 'Error de red';
@@ -33,7 +55,14 @@ export async function api(path, options = {}) {
     }
     const err = new Error(msg);
     err.status = res.status;
-    if (data.code && typeof data.code === 'string') err.code = data.code;
+    if (data.code && typeof data.code === 'string') {
+      err.code = data.code;
+    } else {
+      const lower = msg.toLowerCase();
+      if (lower.includes('unreachable') || lower.includes('noroutetohost')) {
+        err.code = 'NOROUTETOHOST';
+      }
+    }
     throw err;
   }
   return data;

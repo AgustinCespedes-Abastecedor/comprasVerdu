@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { logs as logsApi, users } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
 import AppLoader from '../components/AppLoader';
 import ThemeToggle from '../components/ThemeToggle';
@@ -119,6 +120,12 @@ export default function Logs() {
   };
 
   const onFilterChange = () => setPage(1);
+
+  const { registerRefresh } = usePullToRefresh();
+  useEffect(() => {
+    registerRefresh(loadLogs);
+    return () => registerRefresh(null);
+  }, [loadLogs, registerRefresh]);
 
   return (
     <div className="logs-page">
