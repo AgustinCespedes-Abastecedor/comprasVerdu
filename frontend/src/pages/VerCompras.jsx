@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import * as XLSX from 'xlsx';
@@ -7,7 +7,7 @@ import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
-import { formatNum, formatDate } from '../lib/format';
+import { formatNum, formatDate, todayStr } from '../lib/format';
 import './VerCompras.css';
 
 const isApp = () => Capacitor.isNativePlatform();
@@ -153,7 +153,7 @@ export default function VerCompras() {
     apiProveedores.list().then(setProveedoresList).catch(() => setProveedoresList([]));
   }, []);
 
-  const cargar = async () => {
+  const cargar = useCallback(async () => {
     setLoading(true);
     try {
       const params = {};
@@ -167,15 +167,15 @@ export default function VerCompras() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filtroDesde, filtroHasta, proveedorId]);
 
   useEffect(() => {
     cargar();
-  }, [filtroDesde, filtroHasta, proveedorId]);
+  }, [cargar]);
 
   const { registerRefresh } = usePullToRefresh();
   useEffect(() => {
-    registerRefresh(() => cargar());
+    registerRefresh(cargar);
     return () => registerRefresh(null);
   }, [cargar, registerRefresh]);
 
@@ -200,7 +200,9 @@ export default function VerCompras() {
           <input
             type="date"
             value={filtroDesde}
+            max={todayStr()}
             onChange={(e) => setFiltroDesde(e.target.value)}
+            aria-label="Fecha desde"
           />
         </div>
         <div className="vercompras-field">
@@ -208,7 +210,9 @@ export default function VerCompras() {
           <input
             type="date"
             value={filtroHasta}
+            max={todayStr()}
             onChange={(e) => setFiltroHasta(e.target.value)}
+            aria-label="Fecha hasta"
           />
         </div>
         <div className="vercompras-field">

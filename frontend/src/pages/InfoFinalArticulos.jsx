@@ -142,7 +142,9 @@ export default function InfoFinalArticulos() {
             id="info-final-fecha"
             type="date"
             value={fecha}
+            max={todayStr()}
             onChange={(e) => setFecha(e.target.value)}
+            aria-label="Fecha"
           />
         </div>
       </div>

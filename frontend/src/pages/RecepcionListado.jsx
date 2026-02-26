@@ -6,7 +6,7 @@ import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import { useResponse } from '../context/ResponseContext';
-import { formatNum, formatDate } from '../lib/format';
+import { formatNum, formatDate, todayStr } from '../lib/format';
 import './RecepcionListado.css';
 
 function getNumeroCompra(c) {
@@ -155,7 +155,9 @@ export default function RecepcionListado() {
               id="rec-desde"
               type="date"
               value={filtroDesde}
+              max={todayStr()}
               onChange={(e) => setFiltroDesde(e.target.value)}
+              aria-label="Fecha desde"
             />
           </div>
           <div className="recepcion-listado-field">
@@ -164,7 +166,9 @@ export default function RecepcionListado() {
               id="rec-hasta"
               type="date"
               value={filtroHasta}
+              max={todayStr()}
               onChange={(e) => setFiltroHasta(e.target.value)}
+              aria-label="Fecha hasta"
             />
           </div>
         </div>

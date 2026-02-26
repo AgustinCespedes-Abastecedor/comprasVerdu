@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { proveedores, productos, compras } from '../api/client';
+import { todayStr } from '../lib/format';
 import { useResponse } from '../context/ResponseContext';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
@@ -276,8 +277,10 @@ export default function PlanillaCompra() {
               id="planilla-fecha"
               type="date"
               value={fecha}
+              max={todayStr()}
               onChange={(e) => setFecha(e.target.value)}
               className="planilla-input planilla-input-date"
+              aria-label="Fecha de compra"
             />
           </div>
         </section>

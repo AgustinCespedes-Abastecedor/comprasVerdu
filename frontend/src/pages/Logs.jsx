@@ -187,6 +187,7 @@ export default function Logs() {
           <input
             type="date"
             value={desde}
+            max={todayStr()}
             onChange={(e) => { setDesde(e.target.value); onFilterChange(); }}
             className="logs-input-date"
             aria-label="Desde fecha"
@@ -194,6 +195,7 @@ export default function Logs() {
           <input
             type="date"
             value={hasta}
+            max={todayStr()}
             onChange={(e) => { setHasta(e.target.value); onFilterChange(); }}
             className="logs-input-date"
             aria-label="Hasta fecha"

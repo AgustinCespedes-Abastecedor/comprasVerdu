@@ -7,7 +7,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import Modal from '../components/Modal';
 import { useResponse } from '../context/ResponseContext';
-import { formatNum, formatDate, formatPct } from '../lib/format';
+import { formatNum, formatDate, formatPct, todayStr } from '../lib/format';
 import './VerCompras.css';
 
 function getNumeroRecepcion(r) {
@@ -138,7 +138,9 @@ export default function VerRecepciones() {
             id="verrec-desde"
             type="date"
             value={filtroDesde}
+            max={todayStr()}
             onChange={(e) => setFiltroDesde(e.target.value)}
+            aria-label="Fecha desde"
           />
         </div>
         <div className="vercompras-field">
@@ -147,7 +149,9 @@ export default function VerRecepciones() {
             id="verrec-hasta"
             type="date"
             value={filtroHasta}
+            max={todayStr()}
             onChange={(e) => setFiltroHasta(e.target.value)}
+            aria-label="Fecha hasta"
           />
         </div>
       </div>
