@@ -8,9 +8,9 @@ import './Home.css';
 
 const actions = [
   { to: '/comprar', permiso: 'comprar', title: 'Nueva compra', desc: 'Cargar compra a proveedores desde la planilla', cta: 'Ir a comprar', icon: 'cart', variant: 'compras' },
-  { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', desc: 'Elegir compra por fecha y cargar cantidades recibidas', cta: 'Ir a recepción', icon: 'download', variant: 'recepcion' },
+  { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', desc: 'Elegir compra por fecha y cargar cantidades recibidas', cta: 'Ir a recepción', icon: 'packageCheck', variant: 'recepcion' },
   { to: '/ver-compras', permiso: 'ver-compras', title: 'Ver compras', desc: 'Consultar y filtrar historial de compras', cta: 'Ver listado', icon: 'doc', variant: 'compras' },
-  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', desc: 'Consultar historial de recepciones', cta: 'Ver listado', icon: 'inbox', variant: 'recepcion' },
+  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', desc: 'Consultar historial de recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion' },
   { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', desc: 'Artículos por fecha con Tecnolar y costo ponderado', cta: 'Ver info', icon: 'clipboard', variant: 'info' },
 ];
 
@@ -22,11 +22,23 @@ const icons = {
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
     </svg>
   ),
-  download: (
+  /** Recepción de compras: registrar cantidades recibidas (planilla con check) */
+  packageCheck: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10 12 5" />
-      <line x1="12" y1="15" x2="12" y2="3" />
+      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+      <rect x="9" y="3" width="6" height="4" rx="2" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  ),
+  /** Ver recepciones: consultar listado/historial */
+  listRecepciones: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="4" y1="6" x2="4.01" y2="6" />
+      <line x1="4" y1="12" x2="4.01" y2="12" />
+      <line x1="4" y1="18" x2="4.01" y2="18" />
     </svg>
   ),
   doc: (
@@ -36,13 +48,6 @@ const icons = {
       <line x1="16" y1="13" x2="8" y2="13" />
       <line x1="16" y1="17" x2="8" y2="17" />
       <polyline points="10 9 9 9 8 9" />
-    </svg>
-  ),
-  inbox: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
     </svg>
   ),
   clipboard: (
