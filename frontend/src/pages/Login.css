@@ -25,6 +25,46 @@
   opacity: 0.6;
 }
 
+.login-backend-error {
+  width: 100%;
+  max-width: 380px;
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(248, 81, 73, 0.12);
+  border: 1px solid var(--danger);
+  border-radius: 12px;
+  color: var(--text);
+  position: relative;
+  z-index: 1;
+}
+
+.login-backend-error p {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.login-backend-error p:last-of-type {
+  margin-bottom: 0;
+}
+
+.login-backend-error-hint {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.login-backend-error .btn-link {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
+.login-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 380px;
+}
+
 .login-theme-wrap {
   position: fixed;
   top: max(1rem, calc(env(safe-area-inset-top, 0) + 0.25rem));

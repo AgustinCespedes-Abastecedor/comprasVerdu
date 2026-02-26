@@ -8,7 +8,7 @@ import PasswordInput from '../components/PasswordInput';
 import './Login.css';
 
 export default function Login() {
-  const { user, login } = useAuth();
+  const { user, login, backendError, clearBackendError } = useAuth();
   const navigate = useNavigate();
   const [modo, setModo] = useState('login');
   const [loading, setLoading] = useState(false);
@@ -61,7 +61,17 @@ export default function Login() {
       <div className="login-theme-wrap">
         <ThemeToggle />
       </div>
-      <div className="login-card">
+      <div className="login-center">
+        {backendError && (
+          <div className="login-backend-error" role="alert">
+            <p>{backendError}</p>
+            <p className="login-backend-error-hint">Cuando el servidor esté listo, iniciá sesión de nuevo.</p>
+            <button type="button" className="btn-link" onClick={clearBackendError} aria-label="Cerrar aviso">
+              Cerrar
+            </button>
+          </div>
+        )}
+        <div className="login-card">
         <div className="login-logo" aria-hidden>
           <img src="/logo.png" alt="" width="56" height="56" />
         </div>
@@ -130,6 +140,7 @@ export default function Login() {
         >
           {modo === 'login' ? '¿No tenés cuenta? Registrarse' : 'Ya tengo cuenta. Iniciar sesión'}
         </button>
+      </div>
       </div>
     </div>
   );
