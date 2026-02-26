@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # Sin cache: monorepo con package-lock en backend/ y frontend/, no en raíz
 
       - name: Backend – instalar dependencias
         run: npm ci --prefix backend
