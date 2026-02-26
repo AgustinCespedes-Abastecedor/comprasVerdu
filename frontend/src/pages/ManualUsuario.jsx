@@ -88,7 +88,7 @@ export default function ManualUsuario() {
 
   const headingComponent = (level) => {
     const Tag = `h${level}`;
-    return ({ children, ...props }) => {
+    function ManualHeading({ children, ...props }) {
       const text = getHeadingText(children) || '';
       const id = slugify(text);
       return (
@@ -96,7 +96,9 @@ export default function ManualUsuario() {
           {children}
         </Tag>
       );
-    };
+    }
+    ManualHeading.displayName = `ManualHeading${level}`;
+    return ManualHeading;
   };
 
   const components = useMemo(

@@ -1,0 +1,34 @@
+# Deploy a Staging. Solo se ejecuta en push a main y después de que CI haya pasado.
+# Usa el environment "staging" de GitHub para secrets y visibilidad.
+# Opcional: configurar RENDER_DEPLOY_HOOK_STAGING en GitHub para disparar deploy en Render.
+name: Deploy Staging
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    name: Deploy a Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar que CI pasó
+        run: |
+          echo "Solo se ejecuta tras merge a main; Branch Protection exige que CI pase antes de mergear."
+          echo "Deploy a staging listo para este commit: ${{ github.sha }}"
+
+      - name: Disparar deploy en Render (Staging)
+        env:
+          RENDER_DEPLOY_HOOK_STAGING: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_STAGING" ]; then
+            curl -X POST "$RENDER_DEPLOY_HOOK_STAGING"
+          fi

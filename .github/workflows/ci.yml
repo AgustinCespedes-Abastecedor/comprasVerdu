@@ -1,0 +1,51 @@
+# CI: Lint, tests y build. Obligatorio para merge a main/develop.
+# Nada se deploya si este workflow falla (protegido por Branch Protection).
+name: Lint, tests y build
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Backend – instalar dependencias
+        run: npm ci --prefix backend
+
+      - name: Backend – Prisma generate
+        run: npm run db:generate --prefix backend
+
+      - name: Backend – lint
+        run: npm run lint --prefix backend
+
+      - name: Backend – tests
+        run: npm run test --prefix backend
+
+      - name: Frontend – instalar dependencias
+        run: npm ci --prefix frontend
+
+      - name: Frontend – lint
+        run: npm run lint --prefix frontend
+
+      - name: Frontend – build
+        run: npm run build --prefix frontend
+
+      - name: Frontend – tests unitarios
+        run: npm run test --prefix frontend

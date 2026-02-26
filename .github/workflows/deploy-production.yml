@@ -1,0 +1,37 @@
+# Deploy a Producción. Manual o desde release.
+# Usa el environment "production" (puede tener approval en GitHub).
+# Opcional: RENDER_DEPLOY_HOOK_PRODUCTION para disparar deploy en Render.
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    name: Deploy a Producción
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release?.target_commitish || github.ref }}
+
+      - name: Disparar deploy en Render (Production)
+        env:
+          RENDER_DEPLOY_HOOK_PRODUCTION: ${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION }}
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_PRODUCTION" ]; then
+            curl -X POST "$RENDER_DEPLOY_HOOK_PRODUCTION"
+          fi
+
+      - name: Resumen
+        run: |
+          echo "Deploy a producción solicitado para commit: ${{ github.sha }}"
+          echo "Branch/ref: ${{ github.ref }}"

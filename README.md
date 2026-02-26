@@ -85,6 +85,10 @@ El frontend corre en `http://localhost:5173` y usa el proxy a `http://localhost:
    - En **Comprar** se muestra la planilla: fecha (por defecto hoy), selector de proveedor, tabla con productos. Los datos amarillos vienen de la BD; los salmones se completan a mano (bultos, precio por bulto, peso por bulto); los verdes se calculan (precio por kg, total por ítem). Al guardar se persiste la compra y se actualizan los totales del día.
 3. **Visor:** solo puede entrar a **Ver Compras** para consultar compras guardadas (filtros por fecha y proveedor).
 
+## CI/CD y despliegue
+
+- **Pipeline:** En cada PR y push a `main`/`develop` se ejecuta **Lint, tests y build** (backend + frontend). Nada se deploya si falla. Ver [docs/CI-CD.md](docs/CI-CD.md) para Branch Protection, entornos **staging** y **production**, y deploy en Render desde GitHub Actions.
+
 ## Despliegue en Render
 
 - **PostgreSQL:** crear un servicio PostgreSQL en Render y usar la `DATABASE_URL` interna que te da Render.

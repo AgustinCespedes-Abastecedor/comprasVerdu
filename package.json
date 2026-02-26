@@ -11,6 +11,9 @@
     "start:all": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1",
     "build": "npm run build --prefix frontend",
     "apk": "npm run apk --prefix frontend",
-    "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend"
+    "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend",
+    "lint": "npm run lint --prefix backend && npm run lint --prefix frontend",
+    "test": "npm run test --prefix backend && npm run test --prefix frontend",
+    "ci": "npm run lint --prefix backend && npm run test --prefix backend && npm run lint --prefix frontend && npm run build --prefix frontend && npm run test --prefix frontend"
   }
 }

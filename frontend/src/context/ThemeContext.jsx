@@ -17,7 +17,9 @@ export function ThemeProvider({ children }) {
     document.documentElement.setAttribute('data-theme', theme);
     try {
       localStorage.setItem(THEME_KEY, theme);
-    } catch {}
+    } catch (_) {
+      // Ignorar fallos de localStorage (privado, etc.)
+    }
   }, [theme]);
 
   const setTheme = (value) => {

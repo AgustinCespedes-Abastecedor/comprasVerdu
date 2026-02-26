@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { soloGestionUsuarios } from '../middleware/auth.js';
+import { soloLogsOGestionUsuarios } from '../middleware/auth.js';
 import { sendError, MSG } from '../lib/errors.js';
 
 const router = Router();
@@ -15,13 +15,13 @@ function dayBounds(dateStr) {
   return { start, end };
 }
 
-/** GET /logs - Listar historial de actividad paginado (solo quien tiene gestión de usuarios).
+/** GET /logs - Listar historial de actividad paginado (quien tiene permiso logs o gestion-usuarios).
  *  Query: userId?, entity?, desde?, hasta?, page?, pageSize?
  *  - Sin filtros de fecha ni usuario: por defecto solo registros del día actual (UTC).
  *  - Con userId: historial completo de ese usuario (sin acotar por fecha salvo que se envíe desde/hasta).
  *  Respuesta: { items, total, page, pageSize }
  */
-router.get('/', soloGestionUsuarios, async (req, res) => {
+router.get('/', soloLogsOGestionUsuarios, async (req, res) => {
   try {
     const { userId, entity, desde, hasta, page: pageParam, pageSize: pageSizeParam } = req.query;
 
@@ -56,12 +56,12 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
     const selectParams = [];
     let paramIndex = 1;
 
-    function addParam(value) {
+    const addParam = (value) => {
       const idx = paramIndex++;
       countParams.push(value);
       selectParams.push(value);
       return idx;
-    }
+    };
 
     if (hasUserFilter) {
       conditions.push(`al."userId" = $${paramIndex}`);
