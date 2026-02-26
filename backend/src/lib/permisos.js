@@ -11,6 +11,8 @@ export const PERMISOS = {
   INFO_FINAL_ARTICULOS: 'info-final-articulos',
   GESTION_USUARIOS: 'gestion-usuarios',
   GESTION_ROLES: 'gestion-roles',
+  LOGS: 'logs',
+  MANUAL_USUARIO: 'manual-usuario',
 };
 
 /** Lista de todos los códigos (para validar en ABM de roles). */
@@ -26,7 +28,7 @@ export const RUTA_A_PERMISO = {
   'POST:/api/roles': PERMISOS.GESTION_ROLES,
   'PATCH:/api/roles': PERMISOS.GESTION_ROLES,
   'DELETE:/api/roles': PERMISOS.GESTION_ROLES,
-  'GET:/api/logs': PERMISOS.GESTION_USUARIOS,
+  'GET:/api/logs': PERMISOS.LOGS,
 };
 
 export function tienePermiso(permisos, codigo) {

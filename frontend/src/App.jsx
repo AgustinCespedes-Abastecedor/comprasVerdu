@@ -105,7 +105,7 @@ function AppRoutes() {
       <Route
         path="/logs"
         element={
-          <PrivateRoute permiso="gestion-usuarios">
+          <PrivateRoute permiso="logs">
             <Logs />
           </PrivateRoute>
         }
@@ -113,7 +113,7 @@ function AppRoutes() {
       <Route
         path="/manual-usuario"
         element={
-          <PrivateRoute permiso="home">
+          <PrivateRoute permiso="manual-usuario">
             <ManualUsuario />
           </PrivateRoute>
         }

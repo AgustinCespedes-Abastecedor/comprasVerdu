@@ -151,24 +151,26 @@ export default function Home() {
         </nav>
 
         <section className="home-config" aria-label="Ayuda y configuración">
-          <Link to="/manual-usuario" className="home-config-card">
-            <span className="home-config-icon" aria-hidden>{icons.book}</span>
-            <span className="home-config-label">Manual de usuario</span>
-            <span className="home-config-arrow" aria-hidden>→</span>
-          </Link>
+          {puedeAcceder(user, 'manual-usuario') && (
+            <Link to="/manual-usuario" className="home-config-card">
+              <span className="home-config-icon" aria-hidden>{icons.book}</span>
+              <span className="home-config-label">Manual de usuario</span>
+              <span className="home-config-arrow" aria-hidden>→</span>
+            </Link>
+          )}
           {esAdmin && (
-            <>
-              <Link to="/gestion-usuarios" className="home-config-card">
-                <span className="home-config-icon" aria-hidden>{icons.users}</span>
-                <span className="home-config-label">Gestión de usuarios</span>
-                <span className="home-config-arrow" aria-hidden>→</span>
-              </Link>
-              <Link to="/logs" className="home-config-card">
-                <span className="home-config-icon" aria-hidden>{icons.logs}</span>
-                <span className="home-config-label">Historial de actividad</span>
-                <span className="home-config-arrow" aria-hidden>→</span>
-              </Link>
-            </>
+            <Link to="/gestion-usuarios" className="home-config-card">
+              <span className="home-config-icon" aria-hidden>{icons.users}</span>
+              <span className="home-config-label">Gestión de usuarios</span>
+              <span className="home-config-arrow" aria-hidden>→</span>
+            </Link>
+          )}
+          {(puedeAcceder(user, 'logs') || esAdmin) && (
+            <Link to="/logs" className="home-config-card">
+              <span className="home-config-icon" aria-hidden>{icons.logs}</span>
+              <span className="home-config-label">Historial de actividad</span>
+              <span className="home-config-arrow" aria-hidden>→</span>
+            </Link>
           )}
         </section>
 

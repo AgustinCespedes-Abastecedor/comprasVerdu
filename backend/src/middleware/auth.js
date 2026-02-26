@@ -65,6 +65,13 @@ export const soloGestionRoles = requierePermiso('gestion-roles');
 /** Solo quien tiene permiso "gestion-usuarios". */
 export const soloGestionUsuarios = requierePermiso('gestion-usuarios');
 
+/** Quien tenga permiso "logs" o "gestion-usuarios" (para ver historial de actividad). */
+export function soloLogsOGestionUsuarios(req, res, next) {
+  if (!req.permisos) return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'AUTH_020');
+  if (tienePermiso(req.permisos, 'logs') || tienePermiso(req.permisos, 'gestion-usuarios')) return next();
+  return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'AUTH_020');
+}
+
 /** Listar roles: quien tenga gestion-usuarios o gestion-roles. */
 export function soloGestionUsuariosOroles(req, res, next) {
   if (!req.permisos) return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'AUTH_021');

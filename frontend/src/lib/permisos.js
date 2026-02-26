@@ -13,6 +13,8 @@ export const PANTALLAS = [
   { id: 'info-final-articulos', path: '/info-final-articulos', label: 'Info Final de Artículos' },
   { id: 'gestion-usuarios', path: '/gestion-usuarios', label: 'Gestión de usuarios' },
   { id: 'gestion-roles', path: '/gestion-usuarios', label: 'Gestión de roles (ABM roles)', samePathAs: 'gestion-usuarios' },
+  { id: 'logs', path: '/logs', label: 'Logs (Historial de actividad)' },
+  { id: 'manual-usuario', path: '/manual-usuario', label: 'Manual de usuario' },
 ];
 
 /** Códigos de permiso (para checklist en ABM roles). */
