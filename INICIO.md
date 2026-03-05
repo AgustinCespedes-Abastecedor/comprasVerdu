@@ -145,3 +145,43 @@ Cerrá el backend, ejecutá `npm run db:generate` y volvé a iniciar.
 1. Docker Desktop (si usás PostgreSQL en Docker)
 2. `npm run start` o inicio manual en dos terminales
 3. Firewall (solo si usás APK o celular en la misma red)
+
+---
+
+## Despliegue con Docker (Linux / servidor)
+
+En el servidor (Ubuntu/Linux) podés levantar todo con Docker y opcionalmente con arranque automático al reiniciar el SO.
+
+### Levantar con Docker
+
+Desde la raíz del proyecto:
+
+```bash
+cp .env.example .env
+# Editar .env (JWT_SECRET, FRONTEND_URL, EXTERNAL_DB_* si aplica). Ver docs/ENV.md.
+./levantar.sh
+```
+
+Acceso: **http://localhost:8081** (o la IP del servidor con puerto 8081). El backend no se expone en el host; se usa vía proxy `/api` del frontend.
+
+### Acceso desde otras PCs (misma organización / misma red)
+
+**No usan localhost.** En la PC de cada persona, "localhost" es su propia máquina. Para que cualquiera en tu organización acceda al sistema:
+
+1. **Desde el servidor** (donde corre Docker): abrí **http://localhost:8081**.
+2. **Desde cualquier otra PC** (misma red): abrí **http://IP_DEL_SERVIDOR:8081** (ej: `http://192.168.1.50:8081`). La IP es la del equipo donde levantaste Docker.
+
+Opcional: en el `.env` del servidor podés poner `FRONTEND_URL=http://IP_DEL_SERVIDOR:8081` para que coincida con la URL que usa la gente (útil para CORS; además el backend ya acepta orígenes de red 192.168.x.x y 10.x.x.x).
+
+Si no pueden conectarse, revisá que el **firewall del servidor** permita entradas en el puerto **8081** (en Linux: `sudo ufw allow 8081/tcp` y `sudo ufw reload` si usás ufw).
+
+La primera vez que levantás con Docker, las migraciones se aplican solas. Si necesitás usuarios de prueba, ejecutá el seed una vez:  
+`docker compose exec backend node prisma/seed.js`
+
+### Arranque automático al reiniciar el SO
+
+```bash
+sudo ./deployment/instalar-servicio.sh
+```
+
+Ver `deployment/README.md` para más detalles. Si copiás el `.env` desde Ticketador, consultá **docs/ENV.md** para saber qué valores cambiar (puerto 8081, variables de Compras Verdu, etc.).

@@ -1,16 +1,74 @@
+# =============================================================================
+# Docker Compose - Compras Verdu (producción)
+# =============================================================================
+# Uso: desde la raíz del proyecto:  docker compose up -d --build
+# Frontend accesible en http://localhost:8081 (no usa puerto 80 para convivir con Ticketador).
+# =============================================================================
+
 services:
   db:
     image: postgres:16-alpine
     container_name: compras_verdu_db
-    restart: unless-stopped
     environment:
-      POSTGRES_USER: compras_verdu
-      POSTGRES_PASSWORD: compras_verdu_secret
-      POSTGRES_DB: compras_verdu
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-compras_verdu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-compras_verdu_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-compras_verdu}
     volumes:
       - compras_verdu_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-compras_verdu} -d ${POSTGRES_DB:-compras_verdu}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - compras-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: compras_verdu_backend
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-compras_verdu}:${POSTGRES_PASSWORD:-compras_verdu_secret}@db:5432/${POSTGRES_DB:-compras_verdu}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-cambiar-clave-secreta-en-produccion}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
+      EXTERNAL_DB_SERVER: ${EXTERNAL_DB_SERVER:-}
+      EXTERNAL_DB_PORT: ${EXTERNAL_DB_PORT:-1433}
+      EXTERNAL_DB_DATABASE: ${EXTERNAL_DB_DATABASE:-ELABASTECEDOR}
+      EXTERNAL_DB_USER: ${EXTERNAL_DB_USER:-}
+      EXTERNAL_DB_PASSWORD: ${EXTERNAL_DB_PASSWORD:-}
+      EXTERNAL_ARTICULOS_DEPARTAMENTO_ID: ${EXTERNAL_ARTICULOS_DEPARTAMENTO_ID:-6}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - compras-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: compras_verdu_frontend
+    expose:
+      - "80"
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - compras-network
 
 volumes:
   compras_verdu_pgdata:
+    driver: local
+
+networks:
+  compras-network:
+    driver: bridge

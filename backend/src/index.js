@@ -17,13 +17,16 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-// Orígenes permitidos: web (dev) + Capacitor (app móvil) + LAN (192.168.x.x)
+// Orígenes permitidos: FRONTEND_URL + dev + Capacitor + LAN (cualquiera en la misma red/organización)
 const allowedOrigins = [
   FRONTEND_URL,
   'capacitor://localhost',
   'ionic://localhost',
   'http://localhost',
-  /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/,  // LAN: 192.168.x.x
+  /^https?:\/\/localhost(:\d+)?$/,
+  /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+  /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/,  // LAN típica
+  /^https?:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/,   // Red interna 10.x.x.x
   /^https?:\/\/10\.0\.2\.\d+(:\d+)?$/,       // Emulador Android
 ];
 app.use(cors({

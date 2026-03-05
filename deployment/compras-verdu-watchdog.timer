@@ -1,0 +1,16 @@
+# =============================================================================
+# Timer: ejecuta compras-verdu-watchdog.service cada 5 minutos
+# =============================================================================
+
+[Unit]
+Description=Ejecutar watchdog Compras Verdu cada 5 minutos
+Requires=compras-verdu-watchdog.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=1min
+Persistent=yes
+
+[Install]
+WantedBy=timers.target

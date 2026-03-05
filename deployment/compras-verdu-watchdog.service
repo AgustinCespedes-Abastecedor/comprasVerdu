@@ -1,0 +1,20 @@
+# =============================================================================
+# systemd: verificación periódica para que Compras Verdu siga ON
+# =============================================================================
+# Si algún contenedor se detuvo, este servicio lo vuelve a levantar cada 5 min.
+# Instalación: sudo ./deployment/instalar-servicio.sh  (y elegir habilitar watchdog)
+# =============================================================================
+
+[Unit]
+Description=Watchdog Compras Verdu (compose up -d cada 5 min)
+After=docker.service compras-verdu.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/adm_agustin/comprasVerdu
+ExecStart=/usr/bin/docker compose up -d
+TimeoutStartSec=120
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=compras-verdu-watchdog
