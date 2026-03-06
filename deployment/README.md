@@ -1,4 +1,15 @@
-# Arranque automático y recuperación (Compras Verdu)
+# Deployment - Compras Verdu
+
+## Reverse proxy (Ticketador + Compras Verdu en paralelo)
+
+Para exponer la app en internet con HTTPS (dominio `cverdu.elabastecedor.com.ar`) y que funcione junto con Ticketador en el mismo servidor, usá los archivos en **`reverse-proxy/`**:
+
+- **`reverse-proxy/README.md`** — instrucciones según si ya tenés Nginx (Ticketador) o instalás desde cero.
+- **`reverse-proxy/instalar-reverse-proxy.sh`** — script que instala Nginx, configura el sitio y te guía con Certbot.
+
+---
+
+## Arranque automático y recuperación
 
 Este directorio contiene lo necesario para que Compras Verdu:
 
