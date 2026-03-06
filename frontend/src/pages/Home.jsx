@@ -156,7 +156,7 @@ export default function Home() {
         </nav>
 
         <section className="home-config" aria-label="Ayuda y configuración">
-          {puedeAcceder(user, 'manual-usuario') && (
+          {(puedeAcceder(user, 'manual-usuario') || esAdmin) && (
             <Link to="/manual-usuario" className="home-config-card">
               <span className="home-config-icon" aria-hidden>{icons.book}</span>
               <span className="home-config-label">Manual de usuario</span>

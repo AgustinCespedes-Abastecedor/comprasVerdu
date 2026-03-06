@@ -7,7 +7,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ResponseProvider } from './context/ResponseContext';
 import { PullToRefreshProvider } from './context/PullToRefreshContext';
 import PullToRefresh from './components/PullToRefresh';
-import { puedeAcceder } from './lib/roles';
+import { puedeAcceder, puedeGestionarUsuarios } from './lib/roles';
 import AppLoader from './components/AppLoader';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -33,12 +33,15 @@ function BackButtonHandler() {
   return null;
 }
 
-/** Ruta privada: exige login y, si se indica, el permiso para esa pantalla (sin permiso → redirect a /). */
-function PrivateRoute({ children, permiso }) {
+/** Ruta privada: exige login y, si se indica, el permiso para esa pantalla (sin permiso → redirect a /). Si permitirAdmin es true, los admins siempre pueden acceder. */
+function PrivateRoute({ children, permiso, permitirAdmin }) {
   const { user, loading } = useAuth();
   if (loading) return <AppLoader message="Cargando..." />;
   if (!user) return <Navigate to="/login" replace />;
-  if (permiso && !puedeAcceder(user, permiso)) return <Navigate to="/" replace />;
+  if (permiso) {
+    const tienePermiso = puedeAcceder(user, permiso) || (permitirAdmin && puedeGestionarUsuarios(user));
+    if (!tienePermiso) return <Navigate to="/" replace />;
+  }
   return children;
 }
 
@@ -113,7 +116,7 @@ function AppRoutes() {
       <Route
         path="/manual-usuario"
         element={
-          <PrivateRoute permiso="manual-usuario">
+          <PrivateRoute permiso="manual-usuario" permitirAdmin>
             <ManualUsuario />
           </PrivateRoute>
         }
