@@ -1,40 +1,61 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { formatForReport } from '../lib/errorReport';
 import './ResponseContext.css';
 
 const ResponseContext = createContext(null);
 
 const TOAST_DURATION_MS = 6000;
+const TOAST_ERROR_DURATION_MS = 12000;
 
 export function ResponseProvider({ children }) {
   const [toast, setToast] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef(null);
 
   const clearToast = useCallback(() => {
     setToast(null);
+    setCopied(false);
   }, []);
 
   const showSuccess = useCallback((message) => {
     setToast({ type: 'success', message });
   }, []);
 
-  /** showError(message) o showError({ message, code }) — code se muestra como "Código para reportar: XXX" */
+  /**
+   * showError(message) | showError({ message, code, reportText }) | showError(message, code)
+   * Muestra el error y permite copiar un texto listo para reportar (mensaje + código).
+   */
   const showError = useCallback((messageOrPayload, code) => {
     const message = typeof messageOrPayload === 'string'
       ? messageOrPayload
       : (messageOrPayload?.message ?? 'Ocurrió un error.');
     const errorCode = typeof messageOrPayload === 'object' && messageOrPayload?.code != null
       ? messageOrPayload.code
-      : code;
-    setToast({ type: 'error', message, code: errorCode });
+      : (code ?? '');
+    const reportText = typeof messageOrPayload === 'object' && messageOrPayload?.reportText
+      ? messageOrPayload.reportText
+      : formatForReport(message, errorCode);
+    setToast({ type: 'error', message, code: errorCode, reportText });
   }, []);
+
+  const copyReport = useCallback(() => {
+    if (!toast?.reportText) return;
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    navigator.clipboard.writeText(toast.reportText).then(() => {
+      setCopied(true);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  }, [toast?.reportText]);
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(clearToast, TOAST_DURATION_MS);
+    const duration = toast.type === 'error' ? TOAST_ERROR_DURATION_MS : TOAST_DURATION_MS;
+    const t = setTimeout(clearToast, duration);
     return () => clearTimeout(t);
   }, [toast, clearToast]);
 
   return (
-    <ResponseContext.Provider value={{ showSuccess, showError, clearToast }}>
+    <ResponseContext.Provider value={{ showSuccess, showError, clearToast, formatForReport }}>
       {children}
       {toast && (
         <div
@@ -44,8 +65,22 @@ export function ResponseProvider({ children }) {
         >
           <span className="response-toast-content">
             <span className="response-toast-message">{toast.message}</span>
-            {toast.code && (
-              <span className="response-toast-code">Código para reportar: {toast.code}</span>
+            {toast.type === 'error' && (
+              <>
+                {toast.code && (
+                  <span className="response-toast-code">Código para reportar: {toast.code}</span>
+                )}
+                {toast.reportText && (
+                  <button
+                    type="button"
+                    className="response-toast-copy"
+                    onClick={copyReport}
+                    aria-label="Copiar mensaje para reportar el error"
+                  >
+                    {copied ? 'Copiado' : 'Copiar para reportar'}
+                  </button>
+                )}
+              </>
             )}
           </span>
           <button

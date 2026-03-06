@@ -3,9 +3,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { sendError, MSG } from '../lib/errors.js';
+import { getJwtSecret } from '../lib/config.js';
+import { validateEmail, validatePassword, validateNombre } from '../lib/validation.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev';
 const TOKEN_EXPIRY = '7d';
 
 export const authRouter = router;
@@ -16,7 +17,23 @@ router.post('/registro', async (req, res) => {
     if (!email || !password || !nombre) {
       return sendError(res, 400, MSG.AUTH_FALTAN_DATOS, 'AUTH_001');
     }
-    const existe = await prisma.user.findUnique({ where: { email: String(email).toLowerCase() } });
+    const emailStr = String(email).trim().toLowerCase();
+    const nombreStr = String(nombre).trim();
+    const emailVal = validateEmail(emailStr);
+    if (!emailVal.ok) {
+      if (emailVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_EMAIL_LARGO, 'AUTH_024');
+      return sendError(res, 400, MSG.AUTH_FALTAN_DATOS, 'AUTH_001');
+    }
+    const pwdVal = validatePassword(password);
+    if (!pwdVal.ok) {
+      if (pwdVal.error === 'too_short') return sendError(res, 400, MSG.AUTH_PASSWORD_CORTA, 'AUTH_025');
+      if (pwdVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_PASSWORD_LARGA, 'AUTH_026');
+    }
+    const nomVal = validateNombre(nombreStr);
+    if (!nomVal.ok) {
+      if (nomVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_NOMBRE_LARGO, 'AUTH_027');
+    }
+    const existe = await prisma.user.findUnique({ where: { email: emailStr } });
     if (existe) return sendError(res, 400, MSG.AUTH_EMAIL_REGISTRADO, 'AUTH_002');
     // En registro público solo se permite rol Visor o Comprador (por roleId o por rol legado)
     let role = null;
@@ -38,9 +55,9 @@ router.post('/registro', async (req, res) => {
     const hash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
-        email,
+        email: emailStr,
         password: hash,
-        nombre,
+        nombre: nombreStr,
         roleId: role.id,
       },
       select: {
@@ -52,7 +69,7 @@ router.post('/registro', async (req, res) => {
     });
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: TOKEN_EXPIRY }
     );
     const permisos = Array.isArray(user.role?.permisos) ? user.role.permisos : [];
@@ -73,10 +90,19 @@ router.post('/registro', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const email = typeof body.email === 'string' ? body.email.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = typeof body.password === 'string' ? body.password : '';
     if (!email || !password) {
       return sendError(res, 400, MSG.AUTH_EMAIL_PASSWORD_REQUERIDOS, 'AUTH_005');
+    }
+    const emailVal = validateEmail(email);
+    if (!emailVal.ok) {
+      if (emailVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_EMAIL_LARGO, 'AUTH_028');
+    }
+    const pwdVal = validatePassword(password);
+    if (!pwdVal.ok) {
+      if (pwdVal.error === 'too_short') return sendError(res, 400, MSG.AUTH_EMAIL_PASSWORD_REQUERIDOS, 'AUTH_005');
+      if (pwdVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_PASSWORD_LARGA, 'AUTH_029');
     }
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -98,7 +124,7 @@ router.post('/login', async (req, res) => {
     }
     const token = jwt.sign(
       { userId: user.id, email: user.email },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: TOKEN_EXPIRY }
     );
     const permisos = Array.isArray(user.role?.permisos) ? user.role.permisos : [];
@@ -122,7 +148,7 @@ router.get('/me', async (req, res) => {
     return sendError(res, 401, MSG.AUTH_TOKEN_FALTA, 'AUTH_011');
   }
   try {
-    const payload = jwt.verify(authHeader.slice(7), JWT_SECRET);
+    const payload = jwt.verify(authHeader.slice(7), getJwtSecret());
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: {

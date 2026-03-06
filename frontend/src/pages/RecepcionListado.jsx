@@ -121,7 +121,7 @@ export default function RecepcionListado() {
       setExpandidoId(null);
       setRecepcionCargada((prev) => ({ ...prev, [compra.id]: true }));
     } catch (e) {
-      showError(e?.message || 'Error al guardar la recepción', e?.code);
+      showError(e ?? { message: 'Error al guardar la recepción' });
     } finally {
       setGuardando(false);
     }

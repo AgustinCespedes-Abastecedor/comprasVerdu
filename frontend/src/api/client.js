@@ -1,5 +1,6 @@
 // Navegador: usa /api (proxy de Vite → localhost:4000). Capacitor/móvil: usa VITE_API_URL (URL completa).
 import { Capacitor } from '@capacitor/core';
+import { formatForReport } from '../lib/errorReport';
 
 const getApiBase = () => {
   if (Capacitor.isNativePlatform()) {
@@ -27,6 +28,7 @@ function normalizeNetworkError(err) {
   const out = new Error(friendly);
   out.code = code;
   out.originalMessage = msg;
+  out.reportText = formatForReport(friendly, code);
   return out;
 }
 
@@ -55,14 +57,11 @@ export async function api(path, options = {}) {
     }
     const err = new Error(msg);
     err.status = res.status;
-    if (data.code && typeof data.code === 'string') {
-      err.code = data.code;
-    } else {
-      const lower = msg.toLowerCase();
-      if (lower.includes('unreachable') || lower.includes('noroutetohost')) {
-        err.code = 'NOROUTETOHOST';
-      }
-    }
+    const code = data.code && typeof data.code === 'string'
+      ? data.code
+      : (msg.toLowerCase().includes('unreachable') || msg.toLowerCase().includes('noroutetohost') ? 'NOROUTETOHOST' : '');
+    err.code = code;
+    err.reportText = formatForReport(msg, code);
     throw err;
   }
   return data;

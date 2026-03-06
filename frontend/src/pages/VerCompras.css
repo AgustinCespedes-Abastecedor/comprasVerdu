@@ -1134,12 +1134,45 @@ html.is-native .vercompras-list.info-final-list {
   cursor: default;
 }
 
+.info-final-uxb-error-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  width: 100%;
+}
+
 .info-final-uxb-error {
   display: block;
   width: 100%;
-  margin-top: 0.35rem;
   font-size: 0.75rem;
   color: var(--danger, #e74c3c);
+}
+
+.info-final-uxb-error-code {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--danger, #e74c3c);
+  opacity: 0.95;
+}
+
+.info-final-uxb-error-copy {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--danger, #e74c3c);
+  background: transparent;
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.info-final-uxb-error-copy:hover {
+  background: rgba(231, 76, 60, 0.1);
 }
 
 .info-final-input-uxb {

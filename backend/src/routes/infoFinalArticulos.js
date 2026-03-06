@@ -160,13 +160,13 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
 const handlerUxb = async (req, res) => {
   try {
     if (!req.userId) {
-      return sendError(res, 401, 'Usuario no identificado', 'INFO_004');
+      return sendError(res, 401, MSG.INFO_USUARIO_NO_IDENTIFICADO, 'INFO_004');
     }
     const { fecha: fechaStr, codigo, uxb } = req.body;
     const codigoStr = (codigo ?? '').toString().trim();
     const uxbNum = Math.max(0, Number(uxb) || 0);
     if (!fechaStr || !codigoStr) {
-      return sendError(res, 400, 'Faltan fecha o código de artículo', 'INFO_005');
+      return sendError(res, 400, MSG.INFO_FALTAN_FECHA_CODIGO, 'INFO_005');
     }
     const inicio = new Date(fechaStr + 'T00:00:00.000Z');
     const fin = new Date(fechaStr + 'T23:59:59.999Z');

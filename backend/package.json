@@ -13,7 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
     "lint": "eslint . --ext .js",
-    "test": "node --test src/"
+    "test": "node --test src/lib/errors.test.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -21,6 +21,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1"
   },

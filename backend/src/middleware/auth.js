@@ -2,8 +2,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { tienePermiso } from '../lib/permisos.js';
 import { sendError, MSG } from '../lib/errors.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret-dev';
+import { getJwtSecret } from '../lib/config.js';
 
 /**
  * Carga usuario con rol y permisos. Asigna req.userId, req.rol (objeto Role), req.permisos (array de códigos).
@@ -15,7 +14,7 @@ export async function authMiddleware(req, res, next) {
   }
   const token = authHeader.slice(7);
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, getJwtSecret());
     const userId = payload.userId;
     if (!userId) {
       return sendError(res, 401, MSG.AUTH_TOKEN_INVALIDO, 'AUTH_016');

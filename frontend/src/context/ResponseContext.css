@@ -70,6 +70,25 @@
   letter-spacing: 0.02em;
 }
 
+.response-toast-copy {
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.response-toast-copy:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
 .response-toast-close {
   flex-shrink: 0;
   min-width: 2.75rem;

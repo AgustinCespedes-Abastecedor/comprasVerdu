@@ -226,11 +226,33 @@
   font-size: 0.9rem;
 }
 
+.login-error-message {
+  margin: 0 0 0.25rem 0;
+}
+
 .login-error-code {
   display: block;
-  margin-top: 0.35rem;
+  margin: 0 0 0.5rem 0;
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   opacity: 0.95;
+}
+
+.login-error-copy {
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: inherit;
+  background: rgba(248, 81, 73, 0.2);
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.login-error-copy:hover {
+  background: rgba(248, 81, 73, 0.3);
 }

@@ -5,6 +5,9 @@ import { sendError, apiError, MSG } from './errors.js';
 test('MSG exporta códigos de mensaje', () => {
   assert.ok(MSG);
   assert.strictEqual(typeof MSG.AUTH_CREDENCIALES, 'string');
+  assert.strictEqual(typeof MSG.INFO_USUARIO_NO_IDENTIFICADO, 'string');
+  assert.strictEqual(typeof MSG.INFO_FALTAN_FECHA_CODIGO, 'string');
+  assert.strictEqual(typeof MSG.RECEP_NINGUN_DETALLE_VALIDO, 'string');
 });
 
 test('apiError crea error con code y status', () => {

@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { authRouter } from './routes/auth.js';
 import { proveedoresRouter } from './routes/proveedores.js';
 import { productosRouter } from './routes/productos.js';
@@ -12,10 +14,47 @@ import { rolesRouter } from './routes/roles.js';
 import { logsRouter } from './routes/logs.js';
 import { authMiddleware } from './middleware/auth.js';
 import { sendError, MSG } from './lib/errors.js';
+import { getJwtSecret } from './lib/config.js';
+
+// En producción exige JWT_SECRET válido al arrancar (evita secret por defecto)
+try {
+  getJwtSecret();
+} catch (e) {
+  console.error(e.message);
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+if (process.env.NODE_ENV === 'production' && process.env.TRUST_PROXY !== 'false') {
+  app.set('trust proxy', 1);
+}
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+const limiterGlobal = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: { error: 'Demasiadas peticiones. Intentá más tarde.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const limiterAuth = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Demasiados intentos de acceso. Intentá en 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api', limiterGlobal);
+app.use('/api/auth/login', limiterAuth);
+app.use('/api/auth/registro', limiterAuth);
 
 // Orígenes permitidos: FRONTEND_URL + dev + Capacitor + LAN (cualquiera en la misma red/organización)
 const allowedOrigins = [

@@ -6,6 +6,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatNum, formatMoneda, formatPct, formatEntero, todayStr } from '../lib/format';
+import { formatForReport } from '../lib/errorReport';
 import './VerCompras.css';
 
 /** Redondea a 2 decimales para comparar números. */
@@ -40,6 +41,7 @@ export default function InfoFinalArticulos() {
   const [guardadosKeys, setGuardadosKeys] = useState(() => new Set());
   const [errorGuardarKey, setErrorGuardarKey] = useState(null);
   const [errorGuardarMsg, setErrorGuardarMsg] = useState(null);
+  const [errorGuardarCode, setErrorGuardarCode] = useState('');
 
   const loadList = useCallback(() => {
     if (!fecha) return Promise.resolve();
@@ -95,10 +97,12 @@ export default function InfoFinalArticulos() {
     if (Number.isNaN(uxbNum) || uxbNum <= 0) {
       setErrorGuardarKey(key);
       setErrorGuardarMsg('Ingresá un número mayor a 0.');
+      setErrorGuardarCode('');
       return;
     }
     setErrorGuardarKey(null);
     setErrorGuardarMsg(null);
+    setErrorGuardarCode('');
     setGuardandoKey(key);
     try {
       await infoFinalArticulos.saveUxb({ fecha, codigo: item.codigo, uxb: uxbNum });
@@ -109,8 +113,9 @@ export default function InfoFinalArticulos() {
       setExpandidoKey((prev) => (prev === key ? nuevaKey : prev));
     } catch (e) {
       setErrorGuardarKey(key);
-      setErrorGuardarMsg(e.message || 'Error al guardar.');
-      if (e.status === 401) {
+      setErrorGuardarMsg(e?.message || 'Error al guardar.');
+      setErrorGuardarCode(e?.code ?? '');
+      if (e?.status === 401) {
         localStorage.removeItem('compras_verdu_token');
         window.location.href = '/login';
         return;
@@ -238,7 +243,18 @@ export default function InfoFinalArticulos() {
                               {guardandoKey === key ? 'Guardando…' : bloqueado ? 'Guardado' : 'Guardar'}
                             </button>
                             {errorGuardarKey === key && !bloqueado && (
-                              <span className="info-final-uxb-error" role="alert">{errorGuardarMsg || 'Error al guardar. Revisá la conexión.'}</span>
+                              <span className="info-final-uxb-error-wrap" role="alert">
+                                <span className="info-final-uxb-error">{errorGuardarMsg || 'Error al guardar. Revisá la conexión.'}</span>
+                                {errorGuardarCode && <span className="info-final-uxb-error-code"> Código: {errorGuardarCode}</span>}
+                                <button
+                                  type="button"
+                                  className="info-final-uxb-error-copy"
+                                  onClick={() => navigator.clipboard.writeText(formatForReport(errorGuardarMsg, errorGuardarCode)).catch(() => {})}
+                                  aria-label="Copiar mensaje para reportar"
+                                >
+                                  Copiar para reportar
+                                </button>
+                              </span>
                             )}
                           </span>
                         </div>

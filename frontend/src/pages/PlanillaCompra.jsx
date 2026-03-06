@@ -247,7 +247,7 @@ export default function PlanillaCompra() {
       }));
       setFilas([]);
     } catch (e) {
-      showError(e?.message || 'Error al guardar la compra', e?.code);
+      showError(e ?? { message: 'Error al guardar la compra' });
     } finally {
       setGuardando(false);
     }

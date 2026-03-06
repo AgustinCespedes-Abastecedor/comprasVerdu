@@ -110,7 +110,7 @@ export default function VerRecepciones() {
       setModalRecepcion(null);
       showSuccess('Precios de venta y márgenes actualizados.');
     } catch (e) {
-      showError(e?.message || 'Error al guardar precios', e?.code);
+      showError(e ?? { message: 'Error al guardar precios' });
     } finally {
       setGuardandoPrecios(false);
     }

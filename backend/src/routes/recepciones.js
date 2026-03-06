@@ -205,7 +205,7 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
     }
 
     if (payloads.length === 0) {
-      return sendError(res, 400, 'Ningún detalle válido con precio de venta', 'RECEP_006B');
+      return sendError(res, 400, MSG.RECEP_NINGUN_DETALLE_VALIDO, 'RECEP_006B');
     }
 
     await prisma.$transaction(async (tx) => {

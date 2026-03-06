@@ -42,6 +42,10 @@ export const MSG = {
   AUTH_SIN_PERMISO: 'No tenés permiso para esta acción.',
   AUTH_SOLO_ADMIN: 'Solo administradores pueden acceder.',
   AUTH_ROL_NO_DISPONIBLE: 'No hay rol disponible para el registro.',
+  AUTH_PASSWORD_CORTA: 'La contraseña debe tener al menos 8 caracteres.',
+  AUTH_PASSWORD_LARGA: 'La contraseña no puede superar 128 caracteres.',
+  AUTH_EMAIL_LARGO: 'El email no puede superar 255 caracteres.',
+  AUTH_NOMBRE_LARGO: 'El nombre no puede superar 200 caracteres.',
 
   // Usuarios
   USERS_LISTAR: 'No se pudo cargar la lista de usuarios.',
@@ -55,6 +59,10 @@ export const MSG = {
   USERS_ROL_INVALIDO: 'El rol seleccionado no es válido.',
   USERS_NO_ENCONTRADO: 'Usuario no encontrado.',
   USERS_DEBE_HABER_ROL: 'Debe seleccionar un rol.',
+  USERS_PASSWORD_CORTA: 'La contraseña debe tener al menos 8 caracteres.',
+  USERS_PASSWORD_LARGA: 'La contraseña no puede superar 128 caracteres.',
+  USERS_EMAIL_LARGO: 'El email no puede superar 255 caracteres.',
+  USERS_NOMBRE_LARGO: 'El nombre no puede superar 200 caracteres.',
 
   // Roles
   ROLES_LISTAR: 'No se pudo cargar la lista de roles.',
@@ -88,6 +96,7 @@ export const MSG = {
   RECEP_DETALLES_MINIMO: 'Debe haber al menos un ítem en los detalles.',
   RECEP_NO_ENCONTRADA: 'Recepción no encontrada.',
   RECEP_PRECIO_MINIMO: 'Ingresá al menos un precio de venta.',
+  RECEP_NINGUN_DETALLE_VALIDO: 'Ningún detalle válido con precio de venta.',
 
   // Productos / Proveedores
   PROD_LISTAR: 'No se pudo cargar el listado de productos.',
@@ -98,6 +107,8 @@ export const MSG = {
   INFO_FECHA_REQUERIDA: 'Debe indicarse la fecha (formato YYYY-MM-DD).',
   INFO_FECHA_INVALIDA: 'La fecha no es válida.',
   INFO_OBTENER: 'No se pudo cargar la información de artículos.',
+  INFO_USUARIO_NO_IDENTIFICADO: 'No se pudo identificar al usuario. Iniciá sesión de nuevo.',
+  INFO_FALTAN_FECHA_CODIGO: 'Faltan fecha o código de artículo.',
 
   // Logs
   LOGS_LISTAR: 'No se pudo cargar el historial de actividad.',

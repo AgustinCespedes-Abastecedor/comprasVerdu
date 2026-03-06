@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../api/client';
+import { formatForReport } from '../lib/errorReport';
 import { ROLES_REGISTRO, rolEtiqueta } from '../lib/roles';
 import ThemeToggle from '../components/ThemeToggle';
 import PasswordInput from '../components/PasswordInput';
@@ -14,6 +15,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState(false);
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -47,7 +49,7 @@ export default function Login() {
       }
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.message || 'Error');
+      setError(err?.message || 'Error');
       setErrorCode(err?.code ?? '');
     } finally {
       setLoading(false);
@@ -82,8 +84,22 @@ export default function Login() {
         <form onSubmit={handleSubmit}>
           {error && (
             <div className="login-error" role="alert">
-              {error}
-              {errorCode && <span className="login-error-code"> Código para reportar: {errorCode}</span>}
+              <p className="login-error-message">{error}</p>
+              {errorCode && <p className="login-error-code">Código para reportar: {errorCode}</p>}
+              <button
+                type="button"
+                className="login-error-copy"
+                onClick={() => {
+                  const text = formatForReport(error, errorCode);
+                  navigator.clipboard.writeText(text).then(() => {
+                    setCopyFeedback(true);
+                    setTimeout(() => setCopyFeedback(false), 2000);
+                  }).catch(() => {});
+                }}
+                aria-label="Copiar mensaje para reportar el error"
+              >
+                {copyFeedback ? 'Copiado' : 'Copiar para reportar'}
+              </button>
             </div>
           )}
           {modo === 'registro' && (

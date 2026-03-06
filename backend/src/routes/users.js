@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { soloGestionUsuarios } from '../middleware/auth.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
+import { validateEmail, validatePassword, validateNombre } from '../lib/validation.js';
 
 const router = Router();
 
@@ -70,6 +71,20 @@ router.post('/', soloGestionUsuarios, async (req, res) => {
     }
     const emailNorm = String(email).trim().toLowerCase();
     if (!emailNorm) return sendError(res, 400, MSG.USERS_EMAIL_INVALIDO, 'USERS_003');
+    const emailVal = validateEmail(emailNorm);
+    if (!emailVal.ok) {
+      if (emailVal.error === 'too_long') return sendError(res, 400, MSG.USERS_EMAIL_LARGO, 'USERS_012');
+      return sendError(res, 400, MSG.USERS_EMAIL_INVALIDO, 'USERS_003');
+    }
+    const pwdVal = validatePassword(password);
+    if (!pwdVal.ok) {
+      if (pwdVal.error === 'too_short') return sendError(res, 400, MSG.USERS_PASSWORD_CORTA, 'USERS_013');
+      if (pwdVal.error === 'too_long') return sendError(res, 400, MSG.USERS_PASSWORD_LARGA, 'USERS_014');
+    }
+    const nomVal = validateNombre(String(nombre).trim());
+    if (!nomVal.ok) {
+      if (nomVal.error === 'too_long') return sendError(res, 400, MSG.USERS_NOMBRE_LARGO, 'USERS_015');
+    }
     const existe = await prisma.user.findUnique({ where: { email: emailNorm } });
     if (existe) return sendError(res, 400, MSG.USERS_EMAIL_DUPLICADO, 'USERS_004');
     if (!roleId || typeof roleId !== 'string') {
@@ -127,9 +142,20 @@ router.patch('/:id', soloGestionUsuarios, async (req, res) => {
     if (!user) return sendError(res, 404, MSG.USERS_NO_ENCONTRADO, 'USERS_008');
     const data = {};
     if (nombre !== undefined) data.nombre = String(nombre).trim();
+    if (nombre !== undefined) {
+      const nomVal = validateNombre(String(nombre).trim());
+      if (!nomVal.ok) {
+        if (nomVal.error === 'too_long') return sendError(res, 400, MSG.USERS_NOMBRE_LARGO, 'USERS_017');
+      }
+    }
     if (email !== undefined) {
       const emailNorm = String(email).trim().toLowerCase();
       if (!emailNorm) return sendError(res, 400, MSG.USERS_EMAIL_INVALIDO, 'USERS_009');
+      const emailVal = validateEmail(emailNorm);
+      if (!emailVal.ok) {
+        if (emailVal.error === 'too_long') return sendError(res, 400, MSG.USERS_EMAIL_LARGO, 'USERS_016');
+        return sendError(res, 400, MSG.USERS_EMAIL_INVALIDO, 'USERS_009');
+      }
       if (emailNorm !== user.email) {
         const existe = await prisma.user.findUnique({ where: { email: emailNorm } });
         if (existe) return sendError(res, 400, MSG.USERS_EMAIL_DUPLICADO, 'USERS_010');
@@ -143,6 +169,11 @@ router.patch('/:id', soloGestionUsuarios, async (req, res) => {
       data.roleId = roleId;
     }
     if (password !== undefined && String(password).length > 0) {
+      const pwdVal = validatePassword(password);
+      if (!pwdVal.ok) {
+        if (pwdVal.error === 'too_short') return sendError(res, 400, MSG.USERS_PASSWORD_CORTA, 'USERS_018');
+        if (pwdVal.error === 'too_long') return sendError(res, 400, MSG.USERS_PASSWORD_LARGA, 'USERS_019');
+      }
       data.password = await bcrypt.hash(password, 10);
     }
     if (Object.keys(data).length === 0) {
@@ -193,7 +224,7 @@ router.patch('/:id', soloGestionUsuarios, async (req, res) => {
       createdAt: updated.createdAt,
     });
   } catch (e) {
-    sendError(res, 500, MSG.USERS_ACTUALIZAR, 'USERS_012', e);
+    sendError(res, 500, MSG.USERS_ACTUALIZAR, 'USERS_020', e);
   }
 });
 

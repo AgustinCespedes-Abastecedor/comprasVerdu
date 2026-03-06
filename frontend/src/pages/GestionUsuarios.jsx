@@ -11,6 +11,7 @@ import PasswordInput from '../components/PasswordInput';
 import AppLoader from '../components/AppLoader';
 import Modal from '../components/Modal';
 import { formatDateShort } from '../lib/format';
+import { formatForReport } from '../lib/errorReport';
 import './GestionUsuarios.css';
 
 export default function GestionUsuarios() {
@@ -26,6 +27,7 @@ export default function GestionUsuarios() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const puedeRoles = puedeGestionarRoles(user);
 
@@ -287,8 +289,22 @@ export default function GestionUsuarios() {
 
             {error && (
               <div className="gestion-usuarios-alert gestion-usuarios-alert-error" role="alert">
-                {error}
-                {errorCode && <span className="gestion-usuarios-error-code"> Código para reportar: {errorCode}</span>}
+                <p className="gestion-usuarios-error-message">{error}</p>
+                {errorCode && <p className="gestion-usuarios-error-code">Código para reportar: {errorCode}</p>}
+                <button
+                  type="button"
+                  className="gestion-usuarios-error-copy"
+                  onClick={() => {
+                    const text = formatForReport(error, errorCode);
+                    navigator.clipboard.writeText(text).then(() => {
+                      setCopyFeedback(true);
+                      setTimeout(() => setCopyFeedback(false), 2000);
+                    }).catch(() => {});
+                  }}
+                  aria-label="Copiar mensaje para reportar el error"
+                >
+                  {copyFeedback ? 'Copiado' : 'Copiar para reportar'}
+                </button>
               </div>
             )}
 
@@ -371,8 +387,22 @@ export default function GestionUsuarios() {
             </div>
             {error && (
               <div className="gestion-usuarios-alert gestion-usuarios-alert-error" role="alert">
-                {error}
-                {errorCode && <span className="gestion-usuarios-error-code"> Código para reportar: {errorCode}</span>}
+                <p className="gestion-usuarios-error-message">{error}</p>
+                {errorCode && <p className="gestion-usuarios-error-code">Código para reportar: {errorCode}</p>}
+                <button
+                  type="button"
+                  className="gestion-usuarios-error-copy"
+                  onClick={() => {
+                    const text = formatForReport(error, errorCode);
+                    navigator.clipboard.writeText(text).then(() => {
+                      setCopyFeedback(true);
+                      setTimeout(() => setCopyFeedback(false), 2000);
+                    }).catch(() => {});
+                  }}
+                  aria-label="Copiar mensaje para reportar el error"
+                >
+                  {copyFeedback ? 'Copiado' : 'Copiar para reportar'}
+                </button>
               </div>
             )}
             <div className="gestion-usuarios-table-wrap">
