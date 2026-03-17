@@ -108,7 +108,7 @@ function AppRoutes() {
       <Route
         path="/logs"
         element={
-          <PrivateRoute permiso="logs">
+          <PrivateRoute permiso="logs" permitirAdmin>
             <Logs />
           </PrivateRoute>
         }
