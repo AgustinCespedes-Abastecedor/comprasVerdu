@@ -332,12 +332,6 @@
   line-height: 1.25;
 }
 
-.home-nav-card-desc {
-  font-size: 0.8125rem;
-  color: var(--home-muted);
-  line-height: 1.35;
-}
-
 .home-nav-card-cta {
   flex-shrink: 0;
   font-size: 0.8125rem;

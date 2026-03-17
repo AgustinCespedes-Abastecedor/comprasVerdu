@@ -7,11 +7,11 @@ import ThemeToggle from '../components/ThemeToggle';
 import './Home.css';
 
 const actions = [
-  { to: '/comprar', permiso: 'comprar', title: 'Nueva compra', desc: 'Cargar compra a proveedores desde la planilla', cta: 'Ir a comprar', icon: 'cart', variant: 'compras' },
-  { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', desc: 'Elegir compra por fecha y cargar cantidades recibidas', cta: 'Ir a recepción', icon: 'packageCheck', variant: 'recepcion' },
-  { to: '/ver-compras', permiso: 'ver-compras', title: 'Ver compras', desc: 'Consultar y filtrar historial de compras', cta: 'Ver listado', icon: 'doc', variant: 'compras' },
-  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', desc: 'Consultar historial de recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion' },
-  { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', desc: 'Artículos por fecha con Tecnolar y costo ponderado', cta: 'Ver info', icon: 'clipboard', variant: 'info' },
+  { to: '/comprar', permiso: 'comprar', title: 'Nueva compra', cta: 'Ir a comprar', icon: 'cart', variant: 'compras' },
+  { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', cta: 'Ir a recepción', icon: 'packageCheck', variant: 'recepcion' },
+  { to: '/ver-compras', permiso: 'ver-compras', title: 'Ver compras', cta: 'Ver listado', icon: 'doc', variant: 'compras' },
+  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion' },
+  { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', cta: 'Ver info', icon: 'clipboard', variant: 'info' },
 ];
 
 const icons = {
@@ -146,7 +146,6 @@ export default function Home() {
                   </span>
                   <span className="home-nav-card-content">
                     <span className="home-nav-card-title">{action.title}</span>
-                    <span className="home-nav-card-desc">{action.desc}</span>
                   </span>
                   <span className="home-nav-card-cta">{action.cta}</span>
                 </Link>
