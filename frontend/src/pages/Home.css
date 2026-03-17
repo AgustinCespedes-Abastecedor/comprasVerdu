@@ -221,13 +221,6 @@
   color: var(--home-accent);
 }
 
-.home-nav-card--compras .home-nav-card-cta {
-  color: var(--home-accent);
-}
-
-.home-nav-card--compras:hover .home-nav-card-cta {
-  color: var(--home-accent-hover);
-}
 
 /* Variante: Recepción (amarillo / mostaza) */
 .home-nav-card--recepcion {
@@ -244,13 +237,6 @@
   color: var(--home-recepcion);
 }
 
-.home-nav-card--recepcion .home-nav-card-cta {
-  color: var(--home-recepcion);
-}
-
-.home-nav-card--recepcion:hover .home-nav-card-cta {
-  color: var(--home-recepcion-hover);
-}
 
 /* Variante: Info artículos (rojo / salmón) */
 .home-nav-card--info {
@@ -267,13 +253,6 @@
   color: var(--home-info);
 }
 
-.home-nav-card--info .home-nav-card-cta {
-  color: var(--home-info);
-}
-
-.home-nav-card--info:hover .home-nav-card-cta {
-  color: var(--home-info-hover);
-}
 
 /* Variante: Manual (azul / doc) */
 .home-nav-card--manual {
@@ -294,13 +273,6 @@
   color: var(--home-manual, #238636);
 }
 
-.home-nav-card--manual .home-nav-card-cta {
-  color: var(--home-manual, #238636);
-}
-
-.home-nav-card--manual:hover .home-nav-card-cta {
-  color: var(--home-manual-hover, #2ea043);
-}
 
 .home-nav-card-icon {
   flex-shrink: 0;
@@ -330,18 +302,6 @@
   font-weight: 600;
   color: var(--home-text);
   line-height: 1.25;
-}
-
-.home-nav-card-cta {
-  flex-shrink: 0;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--home-accent);
-  transition: color 0.2s ease;
-}
-
-.home-nav-card:hover .home-nav-card-cta {
-  color: var(--home-accent-hover);
 }
 
 /* ----- Config (solo admin) ----- */

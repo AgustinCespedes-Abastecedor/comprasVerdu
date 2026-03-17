@@ -13,6 +13,7 @@ const actions = [
   { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion' },
   { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', cta: 'Ver info', icon: 'clipboard', variant: 'info' },
 ];
+// cta se usa solo en aria-label para accesibilidad; en pantalla solo se muestra title
 
 const icons = {
   cart: (
@@ -140,14 +141,13 @@ export default function Home() {
           <ul className="home-nav-list">
             {visibleActions.map((action) => (
               <li key={action.to}>
-                <Link to={action.to} className={`home-nav-card home-nav-card--${action.variant}`}>
+                <Link to={action.to} className={`home-nav-card home-nav-card--${action.variant}`} aria-label={`${action.title}, ${action.cta}`}>
                   <span className="home-nav-card-icon" aria-hidden>
                     {icons[action.icon]}
                   </span>
                   <span className="home-nav-card-content">
                     <span className="home-nav-card-title">{action.title}</span>
                   </span>
-                  <span className="home-nav-card-cta">{action.cta}</span>
                 </Link>
               </li>
             ))}
