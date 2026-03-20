@@ -4,6 +4,16 @@
 
 :root {
   --font: 'DM Sans', system-ui, sans-serif;
+  /*
+   * Áreas seguras unificadas:
+   * - iOS / Safari: env(safe-area-inset-*)
+   * - Android (Capacitor 8, API 35+): el plugin SystemBars inyecta --safe-area-inset-* en <html>;
+   *   el WebView no rellena env() de forma fiable con edge-to-edge.
+   */
+  --app-safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --app-safe-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  --app-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --app-safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
 }
 
 body {
@@ -12,16 +22,16 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   /* Áreas seguras: no superponer con barra de estado ni botones de navegación (APK/móvil) */
-  padding-top: env(safe-area-inset-top, 0);
-  padding-bottom: env(safe-area-inset-bottom, 0);
-  padding-left: env(safe-area-inset-left, 0);
-  padding-right: env(safe-area-inset-right, 0);
+  padding-top: var(--app-safe-top);
+  padding-bottom: var(--app-safe-bottom);
+  padding-left: var(--app-safe-left);
+  padding-right: var(--app-safe-right);
 }
 
 #root {
   min-height: 100vh;
   min-height: 100dvh;
-  min-height: calc(100vh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  min-height: calc(100vh - var(--app-safe-top) - var(--app-safe-bottom));
 }
 
 /* ========== APK / WebView nativo (Capacitor) ========== */
@@ -34,6 +44,53 @@ html.is-native {
 html.is-native body {
   overflow-x: hidden;
   overscroll-behavior-y: contain;
+}
+
+/*
+ * Contenedor global seguro (APK):
+ * - El viewport útil queda recortado entre barras del sistema.
+ * - Todo el scroll ocurre dentro de .app-shell y no debajo de status/nav bars.
+ */
+html.is-native,
+html.is-native body {
+  height: 100%;
+}
+
+html.is-native body {
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+html.is-native #root {
+  position: fixed;
+  top: var(--app-safe-top);
+  right: var(--app-safe-right);
+  bottom: var(--app-safe-bottom);
+  left: var(--app-safe-left);
+  min-height: 0;
+  overflow: hidden;
+}
+
+html.is-native .app-shell {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Banda de protección permanente para la barra de estado al hacer scroll */
+html.is-native body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-safe-top);
+  background: var(--surface);
+  pointer-events: none;
+  z-index: 40;
 }
 
 /* Inputs/select mínimo 16px en APK para evitar zoom al enfocar (iOS) */
@@ -310,11 +367,11 @@ input.campo-calculo:focus {
 
 .layout-center {
   min-height: 100vh;
-  min-height: calc(100vh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  min-height: calc(100vh - var(--app-safe-top) - var(--app-safe-bottom));
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+  padding: var(--app-safe-top) var(--app-safe-right) var(--app-safe-bottom) var(--app-safe-left);
   color: var(--text-muted);
 }
 

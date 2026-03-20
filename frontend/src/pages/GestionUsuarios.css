@@ -109,9 +109,9 @@
   margin: 0 auto;
   width: 100%;
   padding: 1.5rem 2rem 2rem;
-  padding-left: max(2rem, env(safe-area-inset-left, 0));
-  padding-right: max(2rem, env(safe-area-inset-right, 0));
-  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0));
+  padding-left: max(2rem, var(--app-safe-left));
+  padding-right: max(2rem, var(--app-safe-right));
+  padding-bottom: max(2rem, var(--app-safe-bottom));
 }
 
 .gestion-usuarios-toolbar {
@@ -481,10 +481,10 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: max(1rem, env(safe-area-inset-top, 0))
-           max(1rem, env(safe-area-inset-right, 0))
-           max(1rem, env(safe-area-inset-bottom, 0))
-           max(1rem, env(safe-area-inset-left, 0));
+  padding: max(1rem, var(--app-safe-top))
+           max(1rem, var(--app-safe-right))
+           max(1rem, var(--app-safe-bottom))
+           max(1rem, var(--app-safe-left));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -656,7 +656,7 @@
 .gestion-usuarios-modal {
   width: 100%;
   max-width: 420px;
-  max-height: min(calc(100vh - 2rem), calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 2rem));
+  max-height: min(calc(100vh - 2rem), calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--surface);
@@ -1021,7 +1021,7 @@
 
 /* ========== APK / WebView nativo (Capacitor) ========== */
 html.is-native .gestion-usuarios-page {
-  min-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  min-height: calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom));
   overflow: hidden;
 }
 
@@ -1032,9 +1032,9 @@ html.is-native .gestion-usuarios-main {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 1rem;
-  padding-left: max(1rem, env(safe-area-inset-left));
-  padding-right: max(1rem, env(safe-area-inset-right));
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
+  padding-bottom: max(1.5rem, var(--app-safe-bottom));
 }
 
 html.is-native .gestion-usuarios-tabs {
@@ -1140,18 +1140,18 @@ html.is-native .gestion-usuarios-btn-edit {
 
 /* Modales: altura segura y scroll */
 html.is-native .gestion-usuarios-overlay {
-  padding: max(0.75rem, env(safe-area-inset-top, 0)) max(0.75rem, env(safe-area-inset-right, 0)) max(0.75rem, env(safe-area-inset-bottom, 0)) max(0.75rem, env(safe-area-inset-left, 0));
+  padding: max(0.75rem, var(--app-safe-top)) max(0.75rem, var(--app-safe-right)) max(0.75rem, var(--app-safe-bottom)) max(0.75rem, var(--app-safe-left));
   align-items: flex-start;
-  padding-top: max(1.5rem, env(safe-area-inset-top, 0));
+  padding-top: max(1.5rem, var(--app-safe-top));
 }
 
 html.is-native .gestion-usuarios-modal {
-  max-height: min(85vh, calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 3rem));
+  max-height: min(85vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 3rem));
   margin: 0 auto auto;
 }
 
 html.is-native .gestion-usuarios-modal--role {
-  max-height: min(85vh, calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 3rem));
+  max-height: min(85vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 3rem));
   max-width: min(96vw, 520px);
 }
 
@@ -1161,7 +1161,7 @@ html.is-native .gestion-usuarios-modal--wide {
 
 html.is-native .gestion-usuarios-modal--edit {
   max-width: min(96vw, 400px);
-  max-height: min(85vh, calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 3rem));
+  max-height: min(85vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 3rem));
 }
 
 html.is-native .gestion-usuarios-checklist-item {

@@ -1,6 +1,6 @@
 .vercompras-page {
   min-height: 100vh;
-  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0));
+  padding-bottom: max(2rem, var(--app-safe-bottom));
   background: var(--bg);
 }
 
@@ -53,8 +53,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  padding: 1rem max(1.5rem, env(safe-area-inset-left, 0));
-  padding-right: max(1.5rem, env(safe-area-inset-right, 0));
+  padding: 1rem max(1.5rem, var(--app-safe-left));
+  padding-right: max(1.5rem, var(--app-safe-right));
   align-items: flex-end;
 }
 
@@ -146,7 +146,7 @@
   width: 100%;
   max-width: 28rem;
   max-height: 85vh;
-  max-height: min(85vh, calc(100dvh - env(safe-area-inset-top, 0) - 3rem));
+  max-height: min(85vh, calc(100dvh - var(--app-safe-top) - 3rem));
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px 16px 0 0;
@@ -155,7 +155,7 @@
   flex-direction: column;
   overflow: hidden;
   animation: vercompras-provider-sheet-in 0.25s ease;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: var(--app-safe-bottom);
 }
 
 @keyframes vercompras-provider-sheet-in {
@@ -175,7 +175,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem 1rem 0.75rem;
-  padding-top: max(1rem, env(safe-area-inset-top, 0));
+  padding-top: max(1rem, var(--app-safe-top));
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -361,8 +361,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  padding: 0 max(1.5rem, env(safe-area-inset-left, 0));
-  padding-right: max(1.5rem, env(safe-area-inset-right, 0));
+  padding: 0 max(1.5rem, var(--app-safe-left));
+  padding-right: max(1.5rem, var(--app-safe-right));
   padding-bottom: 1rem;
   align-items: stretch;
   justify-content: flex-start;
@@ -393,15 +393,15 @@
 }
 
 .vercompras-empty {
-  padding: 2rem max(1.5rem, env(safe-area-inset-left, 0));
-  padding-right: max(1.5rem, env(safe-area-inset-right, 0));
+  padding: 2rem max(1.5rem, var(--app-safe-left));
+  padding-right: max(1.5rem, var(--app-safe-right));
   color: var(--text-muted);
   text-align: center;
 }
 
 .vercompras-list {
-  padding: 0 max(1.5rem, env(safe-area-inset-left, 0));
-  padding-right: max(1.5rem, env(safe-area-inset-right, 0));
+  padding: 0 max(1.5rem, var(--app-safe-left));
+  padding-right: max(1.5rem, var(--app-safe-right));
   padding-bottom: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -507,13 +507,13 @@
 
 /* ----- APK: Ver Compras / Ver Recepciones / Info Final ----- */
 html.is-native .vercompras-page {
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0));
+  padding-bottom: max(1.5rem, var(--app-safe-bottom));
 }
 
 html.is-native .vercompras-list {
-  padding-left: max(1rem, env(safe-area-inset-left, 0));
-  padding-right: max(1rem, env(safe-area-inset-right, 0));
-  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
+  padding-bottom: max(1rem, var(--app-safe-bottom));
 }
 
 html.is-native .vercompras-card-head--btn {
@@ -588,9 +588,9 @@ html.is-native .info-final-card-uxb {
 
 html.is-native .info-final-list,
 html.is-native .vercompras-list.info-final-list {
-  padding-left: max(1rem, env(safe-area-inset-left, 0));
-  padding-right: max(1rem, env(safe-area-inset-right, 0));
-  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
+  padding-bottom: max(1rem, var(--app-safe-bottom));
 }
 
 .vercompras-detalle-wrap {
@@ -635,8 +635,8 @@ html.is-native .vercompras-list.info-final-list {
   /* Botones de exportación: en APK/móvil ocupan mitad del ancho cada uno o se apilan */
   .vercompras-export {
     gap: 0.5rem;
-    padding-left: max(1rem, env(safe-area-inset-left, 0));
-    padding-right: max(1rem, env(safe-area-inset-right, 0));
+    padding-left: max(1rem, var(--app-safe-left));
+    padding-right: max(1rem, var(--app-safe-right));
   }
 
   .vercompras-btn-export {

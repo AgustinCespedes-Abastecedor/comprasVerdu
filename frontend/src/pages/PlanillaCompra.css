@@ -543,7 +543,7 @@
   width: 100%;
   max-width: 28rem;
   max-height: 85vh;
-  max-height: min(85vh, calc(100dvh - env(safe-area-inset-top, 0) - 3rem));
+  max-height: min(85vh, calc(100dvh - var(--app-safe-top) - 3rem));
   background: var(--planilla-card-bg);
   border: 1px solid var(--planilla-border);
   border-radius: 16px 16px 0 0;
@@ -552,7 +552,7 @@
   flex-direction: column;
   overflow: hidden;
   animation: planilla-provider-sheet-in 0.25s ease;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: var(--app-safe-bottom);
 }
 
 @keyframes planilla-provider-sheet-in {
@@ -572,7 +572,7 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem 1rem 0.75rem;
-  padding-top: max(1rem, env(safe-area-inset-top, 0));
+  padding-top: max(1rem, var(--app-safe-top));
   border-bottom: 1px solid var(--planilla-border);
   flex-shrink: 0;
 }
@@ -854,16 +854,16 @@
 
 /* ========== APK: Nueva compra optimizada para móvil ========== */
 html.is-native .planilla-main {
-  padding-left: max(0.75rem, env(safe-area-inset-left, 0));
-  padding-right: max(0.75rem, env(safe-area-inset-right, 0));
-  padding-bottom: max(5rem, calc(env(safe-area-inset-bottom, 0) + 4rem));
+  padding-left: max(0.75rem, var(--app-safe-left));
+  padding-right: max(0.75rem, var(--app-safe-right));
+  padding-bottom: max(5rem, calc(var(--app-safe-bottom) + 4rem));
   -webkit-overflow-scrolling: touch;
 }
 
 html.is-native .planilla-top-bar {
-  padding: max(0.75rem, env(safe-area-inset-top, 0)) 1rem 0.75rem;
-  padding-left: max(1rem, env(safe-area-inset-left, 0));
-  padding-right: max(1rem, env(safe-area-inset-right, 0));
+  padding: max(0.75rem, var(--app-safe-top)) 1rem 0.75rem;
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
 }
 
 html.is-native .planilla-top-fecha .planilla-input-date {
@@ -970,8 +970,8 @@ html.is-native .planilla-item-btn {
 
 /* Totales */
 html.is-native .planilla-section-totales {
-  padding-left: max(1rem, env(safe-area-inset-left, 0));
-  padding-right: max(1rem, env(safe-area-inset-right, 0));
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
 }
 
 html.is-native .planilla-totales-bar {
@@ -984,8 +984,8 @@ html.is-native .planilla-section-proveedor {
   visibility: visible;
   margin-top: 1rem;
   padding: 1rem;
-  padding-left: max(1rem, env(safe-area-inset-left, 0));
-  padding-right: max(1rem, env(safe-area-inset-right, 0));
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
 }
 
 html.is-native .planilla-proveedor-hint {
@@ -1018,7 +1018,7 @@ html.is-native .planilla-proveedor-label {
 html.is-native .planilla-section-actions {
   margin-top: 0.75rem;
   padding-top: 1rem;
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0));
+  padding-bottom: max(0.5rem, var(--app-safe-bottom));
 }
 
 html.is-native .planilla-btn-primary {
@@ -1904,9 +1904,9 @@ html.is-native .planilla-table-wrap {
   }
 
   .planilla-main {
-    padding-left: max(0.75rem, env(safe-area-inset-left, 0));
-    padding-right: max(0.75rem, env(safe-area-inset-right, 0));
-    padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0) + 1rem));
+    padding-left: max(0.75rem, var(--app-safe-left));
+    padding-right: max(0.75rem, var(--app-safe-right));
+    padding-bottom: max(1.5rem, calc(var(--app-safe-bottom) + 1rem));
   }
 
   /* Columnas un poco más compactas en móvil para poder ver más al hacer scroll */

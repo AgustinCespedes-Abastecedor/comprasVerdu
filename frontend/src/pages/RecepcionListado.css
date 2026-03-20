@@ -3,7 +3,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0));
+  padding-bottom: max(2rem, var(--app-safe-bottom));
   background: var(--bg);
 }
 
@@ -52,8 +52,8 @@
   max-width: 56rem;
   width: 100%;
   margin: 0 auto;
-  padding: 1rem max(1.5rem, env(safe-area-inset-left, 0));
-  padding-right: max(1.5rem, env(safe-area-inset-right, 0));
+  padding: 1rem max(1.5rem, var(--app-safe-left));
+  padding-right: max(1.5rem, var(--app-safe-right));
 }
 
 .recepcion-listado-intro {
@@ -241,12 +241,12 @@
 
 /* ----- APK ----- */
 html.is-native .recepcion-listado-page {
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0));
+  padding-bottom: max(1.5rem, var(--app-safe-bottom));
 }
 
 html.is-native .recepcion-listado-main {
-  padding-left: max(1rem, env(safe-area-inset-left, 0));
-  padding-right: max(1rem, env(safe-area-inset-right, 0));
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
 }
 
 html.is-native .recepcion-listado-card-head {

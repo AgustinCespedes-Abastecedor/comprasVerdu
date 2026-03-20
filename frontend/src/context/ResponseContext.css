@@ -1,8 +1,8 @@
 .response-toast {
   position: fixed;
-  top: max(1rem, calc(env(safe-area-inset-top, 0) + 0.5rem));
-  left: max(1rem, env(safe-area-inset-left, 0));
-  right: max(1rem, env(safe-area-inset-right, 0));
+  top: max(1rem, calc(var(--app-safe-top) + 0.5rem));
+  left: max(1rem, var(--app-safe-left));
+  right: max(1rem, var(--app-safe-right));
   margin-left: auto;
   margin-right: auto;
   width: 100%;

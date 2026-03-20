@@ -2,7 +2,7 @@
 .manual-page {
   min-height: 100vh;
   min-height: 100dvh;
-  min-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  min-height: calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom));
   display: flex;
   flex-direction: column;
   background: var(--bg);
@@ -59,9 +59,9 @@
   flex: 1;
   overflow: auto;
   padding: 1rem 1.25rem 2rem;
-  padding-left: max(1.25rem, env(safe-area-inset-left));
-  padding-right: max(1.25rem, env(safe-area-inset-right));
-  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  padding-left: max(1.25rem, var(--app-safe-left));
+  padding-right: max(1.25rem, var(--app-safe-right));
+  padding-bottom: max(2rem, var(--app-safe-bottom));
 }
 
 .manual-error {
@@ -325,13 +325,13 @@
 
 /* ========== APK / WebView nativo (Capacitor) ========== */
 html.is-native .manual-page {
-  min-height: calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  min-height: calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom));
 }
 
 html.is-native .manual-main {
-  padding-left: max(1rem, env(safe-area-inset-left));
-  padding-right: max(1rem, env(safe-area-inset-right));
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
+  padding-bottom: max(1.5rem, var(--app-safe-bottom));
   -webkit-overflow-scrolling: touch;
 }
 
@@ -356,5 +356,5 @@ html.is-native .manual-heading {
 }
 
 html.is-native .manual-layout {
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: var(--app-safe-bottom);
 }

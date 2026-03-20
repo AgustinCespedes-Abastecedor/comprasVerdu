@@ -1,14 +1,22 @@
+/* Mismas variables que index.css: loader se carga antes del bundle */
+:root {
+  --app-safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --app-safe-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  --app-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --app-safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+}
+
 /* Loader inicial (antes de React) - mismo aspecto que AppLoader */
 #root .app-loader-initial {
   min-height: 100vh;
-  min-height: calc(100vh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0));
+  min-height: calc(100vh - var(--app-safe-top) - var(--app-safe-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  padding-top: max(2rem, env(safe-area-inset-top, 0));
-  padding-bottom: max(2rem, env(safe-area-inset-bottom, 0));
+  padding-top: max(2rem, var(--app-safe-top));
+  padding-bottom: max(2rem, var(--app-safe-bottom));
   background: #0d1117;
   color: #8b949e;
 }

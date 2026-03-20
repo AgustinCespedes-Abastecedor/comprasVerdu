@@ -134,7 +134,9 @@ export default function App() {
           <PullToRefreshProvider>
             <BackButtonHandler />
             <PullToRefresh />
-            <AppRoutes />
+            <div className="app-shell" role="application" aria-label="Compras Verdu">
+              <AppRoutes />
+            </div>
           </PullToRefreshProvider>
         </ResponseProvider>
       </AuthProvider>

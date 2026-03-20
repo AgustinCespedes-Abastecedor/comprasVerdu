@@ -119,20 +119,20 @@
 
 /* ========== APK / WebView nativo (Capacitor) ========== */
 html.is-native .modal-overlay {
-  padding: max(1rem, env(safe-area-inset-top, 0)) max(1rem, env(safe-area-inset-right, 0)) max(1rem, env(safe-area-inset-bottom, 0)) max(1rem, env(safe-area-inset-left, 0));
+  padding: max(1rem, var(--app-safe-top)) max(1rem, var(--app-safe-right)) max(1rem, var(--app-safe-bottom)) max(1rem, var(--app-safe-left));
   -webkit-overflow-scrolling: touch;
 }
 
 html.is-native .modal-box--medium {
-  max-height: min(90vh, calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 2rem));
+  max-height: min(90vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
 }
 
 html.is-native .modal-box--wide {
-  max-height: min(90vh, calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 2rem));
+  max-height: min(90vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
 }
 
 html.is-native .modal-box--large {
-  max-height: min(92vh, calc(100dvh - env(safe-area-inset-top, 0) - env(safe-area-inset-bottom, 0) - 2rem));
+  max-height: min(92vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
 }
 
 html.is-native .modal-close {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../api/client';
@@ -7,6 +7,8 @@ import { ROLES_REGISTRO, rolEtiqueta } from '../lib/roles';
 import ThemeToggle from '../components/ThemeToggle';
 import PasswordInput from '../components/PasswordInput';
 import './Login.css';
+
+const LOGIN_EMAIL_KEY = 'compras_verdu_login_email';
 
 export default function Login() {
   const { user, login, backendError, clearBackendError } = useAuth();
@@ -22,6 +24,18 @@ export default function Login() {
     nombre: '',
     rol: 'COMPRADOR',
   });
+  const [rememberEmail, setRememberEmail] = useState(false);
+
+  useEffect(() => {
+    try {
+      const savedEmail = localStorage.getItem(LOGIN_EMAIL_KEY) || '';
+      if (!savedEmail) return;
+      setForm((prev) => ({ ...prev, email: savedEmail }));
+      setRememberEmail(true);
+    } catch {
+      // Sin acceso a localStorage (modo privado/políticas del navegador).
+    }
+  }, []);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -38,6 +52,15 @@ export default function Login() {
       if (modo === 'login') {
         const { user: u, token } = await auth.login(form.email, form.password);
         login(u, token);
+        try {
+          if (rememberEmail) {
+            localStorage.setItem(LOGIN_EMAIL_KEY, form.email.trim());
+          } else {
+            localStorage.removeItem(LOGIN_EMAIL_KEY);
+          }
+        } catch {
+          // No bloquear login si falla persistencia local.
+        }
       } else {
         const { user: u, token } = await auth.registro({
           email: form.email,
@@ -132,6 +155,17 @@ export default function Login() {
             placeholder="correo@ejemplo.com"
             autoComplete="email"
           />
+          {modo === 'login' && (
+            <label className="login-remember-email">
+              <input
+                type="checkbox"
+                name="rememberEmail"
+                checked={rememberEmail}
+                onChange={(e) => setRememberEmail(e.target.checked)}
+              />
+              <span>Recordar email en este dispositivo</span>
+            </label>
+          )}
           <label>Contraseña</label>
           <PasswordInput
             name="password"
