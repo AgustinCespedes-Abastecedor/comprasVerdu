@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -19,6 +19,7 @@ import InfoFinalArticulos from './pages/InfoFinalArticulos';
 import GestionUsuarios from './pages/GestionUsuarios';
 import Logs from './pages/Logs';
 import ManualUsuario from './pages/ManualUsuario';
+import './button-ui.css';
 
 /** En APK: botón Atrás de Android navega en el historial de la app */
 function BackButtonHandler() {
@@ -43,6 +44,15 @@ function PrivateRoute({ children, permiso, permitirAdmin }) {
     if (!tienePermiso) return <Navigate to="/" replace />;
   }
   return children;
+}
+
+function AppRoutesWithTransition() {
+  const location = useLocation();
+  return (
+    <div key={location.pathname} className="route-page-transition">
+      <AppRoutes />
+    </div>
+  );
 }
 
 function AppRoutes() {
@@ -135,7 +145,7 @@ export default function App() {
             <BackButtonHandler />
             <PullToRefresh />
             <div className="app-shell" role="application" aria-label="Compras Verdu">
-              <AppRoutes />
+              <AppRoutesWithTransition />
             </div>
           </PullToRefreshProvider>
         </ResponseProvider>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { hapticImpact } from '../lib/haptics';
 import './AppHeader.css';
 
 /**
@@ -13,7 +14,15 @@ export default function AppHeader({ leftContent, rightContent }) {
         {leftContent}
       </div>
       <div className="app-header-logo">
-        <Link to="/" className="app-header-logo-link" title="Ir al inicio" aria-label="Ir al inicio">
+        <Link
+          to="/"
+          className="app-header-logo-link"
+          title="Ir al inicio"
+          aria-label="Ir al inicio"
+          onClick={() => {
+            void hapticImpact('light');
+          }}
+        >
           <img src="/logo.png" alt="Compras Verdu" className="app-logo-img" />
         </Link>
       </div>

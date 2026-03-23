@@ -1,0 +1,16 @@
+# Imagen de desarrollo: Vite con hot reload; el código se monta por volumen.
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY docker-entrypoint.dev.sh /usr/local/bin/docker-entrypoint-dev.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint-dev.sh
+
+EXPOSE 5173
+
+ENV VITE_API_URL=http://localhost:4000/api
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint-dev.sh"]

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useContext } from 'rea
 import { createPortal } from 'react-dom';
 import { Capacitor } from '@capacitor/core';
 import { PullToRefreshContext } from '../context/PullToRefreshContext';
+import { hapticImpact, hapticNotification } from '../lib/haptics';
 import './PullToRefresh.css';
 
 const PULL_THRESHOLD = 60;
@@ -18,6 +19,7 @@ export default function PullToRefresh() {
   const pullDistanceRef = useRef(0);
   const refreshCallbackRef = useRef(refreshCallback);
   const refreshingRef = useRef(refreshing);
+  const thresholdHapticSentRef = useRef(false);
 
   refreshCallbackRef.current = refreshCallback;
   refreshingRef.current = refreshing;
@@ -32,6 +34,7 @@ export default function PullToRefresh() {
       if (result && typeof result.then === 'function') {
         await result;
       }
+      void hapticNotification('success');
     } finally {
       setRefreshing(false);
     }
@@ -45,6 +48,7 @@ export default function PullToRefresh() {
       scrollContainer ? scrollContainer.scrollTop : (document.documentElement.scrollTop || document.body.scrollTop);
 
     const handleStart = (e) => {
+      thresholdHapticSentRef.current = false;
       if (getScrollTop() <= 0) {
         startY.current = e.touches[0].clientY;
         pulling.current = true;
@@ -65,6 +69,10 @@ export default function PullToRefresh() {
       const distance = Math.min(delta * 0.5, PULL_MAX);
       setPullDistance(distance);
       pullDistanceRef.current = distance;
+      if (distance >= PULL_THRESHOLD && !thresholdHapticSentRef.current) {
+        thresholdHapticSentRef.current = true;
+        void hapticImpact('light');
+      }
       if (distance > 10) {
         e.preventDefault();
       }

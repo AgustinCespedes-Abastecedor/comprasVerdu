@@ -1,11 +1,12 @@
+/* Pastilla compacta: thumb alineado con cada celda (translateX = ancho del thumb) */
 .theme-toggle {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 3px;
+  padding: 2px;
   background: var(--theme-track);
   border: 1px solid var(--theme-border);
-  border-radius: 10px;
+  border-radius: 7px;
   box-shadow: var(--theme-track-shadow);
 }
 
@@ -15,12 +16,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
   color: var(--theme-icon);
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
   cursor: pointer;
   transition: color 0.2s ease;
 }
@@ -38,65 +42,31 @@
   color: var(--theme-icon-active);
 }
 
-.theme-toggle-icon {
-  width: 18px;
-  height: 18px;
+.theme-toggle-lucide {
+  width: 13px;
+  height: 13px;
 }
 
 .theme-toggle-thumb {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 32px;
-  height: 32px;
+  top: 2px;
+  left: 2px;
+  z-index: 0;
+  width: 24px;
+  height: 24px;
   background: var(--theme-thumb);
   border: 1px solid var(--theme-thumb-border);
-  border-radius: 8px;
+  border-radius: 5px;
   box-shadow: var(--theme-thumb-shadow);
   transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
-.theme-toggle-thumb[data-active="dark"] {
-  transform: translateX(calc(100% + 3px));
-}
-
-.theme-toggle-thumb[data-active="light"] {
+.theme-toggle-thumb[data-active='light'] {
   transform: translateX(0);
 }
 
-@media (max-width: 768px) {
-  .theme-toggle-btn {
-    min-width: 44px;
-    min-height: 44px;
-    width: 44px;
-    height: 44px;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .theme-toggle-thumb {
-    width: 44px;
-    height: 44px;
-  }
-
-  .theme-toggle-thumb[data-active="dark"] {
-    transform: translateX(calc(100% + 3px));
-  }
-}
-
-/* App/Android: mismo tamaño que botones del header (volver, logout) */
-html.is-native .theme-toggle-btn {
-  width: 2.25rem;
-  height: 2.25rem;
-  min-width: 2.25rem;
-  min-height: 2.25rem;
-}
-
-html.is-native .theme-toggle-thumb {
-  width: 2.25rem;
-  height: 2.25rem;
-}
-
-html.is-native .theme-toggle-thumb[data-active="dark"] {
-  transform: translateX(calc(100% + 3px));
+/* Un segmento = ancho del thumb (igual que un botón); sin gap entre celdas */
+.theme-toggle-thumb[data-active='dark'] {
+  transform: translateX(100%);
 }

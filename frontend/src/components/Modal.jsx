@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 import './Modal.css';
 
 /**
@@ -67,9 +68,7 @@ export default function Modal({
               disabled={preventClose}
               aria-label="Cerrar"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
+              <X className="modal-close-icon" aria-hidden strokeWidth={2} />
             </button>
           </div>
           {subtitle != null && subtitle !== '' && (

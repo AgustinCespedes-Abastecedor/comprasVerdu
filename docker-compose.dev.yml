@@ -1,0 +1,105 @@
+# =============================================================================
+# Compras Verdu — entorno LOCAL de pruebas (desarrollo)
+# =============================================================================
+# Levanta PostgreSQL + API (Node --watch) + Vite con hot reload.
+# El código de ./backend y ./frontend está montado: los cambios se ven al guardar.
+#
+# Uso (desde la raíz del repo):
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# URLs:
+#   - App:  http://localhost:5173
+#   - API:  http://localhost:4000/api/health
+#   - Postgres (opcional, desde el host): localhost:5433
+#
+# Primera vez / base vacía: el backend aplica migraciones al iniciar.
+# Datos demo:  docker compose -f docker-compose.dev.yml exec backend npm run db:seed
+#
+# Bajar:  docker compose -f docker-compose.dev.yml down
+# (Los datos de Postgres quedan en el volumen compras_verdu_pgdata_dev)
+# =============================================================================
+
+name: comprasverdu-dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: compras_verdu_db_dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-compras_verdu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-compras_verdu_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-compras_verdu}
+    volumes:
+      - compras_verdu_pgdata_dev:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-compras_verdu} -d ${POSTGRES_DB:-compras_verdu}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - compras-dev
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: compras_verdu_backend_dev
+    volumes:
+      - ./backend:/app
+      - backend_dev_node_modules:/app/node_modules
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-compras_verdu}:${POSTGRES_PASSWORD:-compras_verdu_secret}@db:5432/${POSTGRES_DB:-compras_verdu}?schema=public
+      FRONTEND_URL: http://localhost:5173
+      JWT_SECRET: ${JWT_SECRET:-docker-dev-jwt-secret-minimo-32-caracteres-xx}
+      EXTERNAL_DB_SERVER: ${EXTERNAL_DB_SERVER:-}
+      EXTERNAL_DB_PORT: ${EXTERNAL_DB_PORT:-1433}
+      EXTERNAL_DB_DATABASE: ${EXTERNAL_DB_DATABASE:-}
+      EXTERNAL_DB_USER: ${EXTERNAL_DB_USER:-}
+      EXTERNAL_DB_PASSWORD: ${EXTERNAL_DB_PASSWORD:-}
+      EXTERNAL_ARTICULOS_DEPARTAMENTO_ID: ${EXTERNAL_ARTICULOS_DEPARTAMENTO_ID:-6}
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:4000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 90s
+    networks:
+      - compras-dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: compras_verdu_frontend_dev
+    volumes:
+      - ./frontend:/app
+      - frontend_dev_node_modules:/app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:4000/api
+      # En Docker Desktop (Windows/macOS) el watch de archivos a veces no detecta cambios; forzar polling:
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - compras-dev
+
+volumes:
+  compras_verdu_pgdata_dev:
+  backend_dev_node_modules:
+  frontend_dev_node_modules:
+
+networks:
+  compras-dev:
+    driver: bridge

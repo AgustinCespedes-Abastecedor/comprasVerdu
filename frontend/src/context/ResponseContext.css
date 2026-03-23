@@ -32,6 +32,12 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .response-toast {
+    animation: none;
+  }
+}
+
 .response-toast-success {
   background: var(--planilla-accent, #3fb950);
   color: #fff;
@@ -91,10 +97,10 @@
 
 .response-toast-close {
   flex-shrink: 0;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  width: 2.75rem;
-  height: 2.75rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
   padding: 0;
   display: flex;
   align-items: center;

@@ -65,8 +65,8 @@
 }
 
 .modal-close {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2rem;
+  height: 2rem;
   padding: 0;
   display: flex;
   align-items: center;
@@ -94,9 +94,10 @@
   background: rgba(0, 0, 0, 0.06);
 }
 
-.modal-close svg {
-  width: 1.25rem;
-  height: 1.25rem;
+.modal-close svg,
+.modal-close-icon {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .modal-subtitle {
@@ -136,10 +137,10 @@ html.is-native .modal-box--large {
 }
 
 html.is-native .modal-close {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
   -webkit-tap-highlight-color: transparent;
 }
 

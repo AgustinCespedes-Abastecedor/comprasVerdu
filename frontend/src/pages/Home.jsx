@@ -1,110 +1,113 @@
-import React from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
+  LogOut,
+  PackageCheck,
+  PackageSearch,
+  Search,
+  Salad,
+  ScrollText,
+  ShoppingCart,
+  Users,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { puedeGestionarUsuarios, puedeAcceder, rolEtiqueta } from '../lib/roles';
 import AppHeader from '../components/AppHeader';
+import HomeHeaderBrand from '../components/HomeHeaderBrand';
 import ThemeToggle from '../components/ThemeToggle';
+import { hapticImpact } from '../lib/haptics';
 import './Home.css';
 
 const actions = [
-  { to: '/comprar', permiso: 'comprar', title: 'Nueva compra', cta: 'Ir a comprar', icon: 'cart', variant: 'compras' },
-  { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', cta: 'Ir a recepción', icon: 'packageCheck', variant: 'recepcion' },
-  { to: '/ver-compras', permiso: 'ver-compras', title: 'Ver compras', cta: 'Ver listado', icon: 'doc', variant: 'compras' },
-  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion' },
-  { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', cta: 'Ver info', icon: 'clipboard', variant: 'info' },
+  { to: '/comprar', permiso: 'comprar', title: 'Nueva compra', cta: 'Ir a comprar', icon: 'cart', variant: 'compras', tileLabel: 'Nueva compra' },
+  { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', cta: 'Ir a recepción', icon: 'recepcion', variant: 'recepcion', tileLabel: 'Recepción' },
+  { to: '/ver-compras', permiso: 'ver-compras', title: 'Ver compras', cta: 'Ver listado', icon: 'verCompras', variant: 'compras', tileLabel: 'Ver compras' },
+  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion', tileLabel: 'Recepciones' },
+  { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', cta: 'Ver info', icon: 'infoArticulos', variant: 'info', tileLabel: 'Info artículos' },
 ];
-// cta se usa solo en aria-label para accesibilidad; en pantalla solo se muestra title
+
+const ni = { strokeWidth: 1.65, 'aria-hidden': true };
 
 const icons = {
-  cart: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="9" cy="21" r="1" />
-      <circle cx="20" cy="21" r="1" />
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-    </svg>
+  cart: <ShoppingCart {...ni} />,
+  recepcion: <PackageCheck {...ni} />,
+  listRecepciones: <PackageSearch {...ni} strokeWidth={1.55} />,
+  verCompras: (
+    <span className="home-cart-search-icon" aria-hidden>
+      <ShoppingCart className="home-cart-search-icon__cart" aria-hidden strokeWidth={1.65} />
+      <Search className="home-cart-search-icon__search" aria-hidden strokeWidth={2.35} />
+    </span>
   ),
-  /** Recepción de compras: registrar cantidades recibidas (planilla con check) */
-  packageCheck: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
-      <rect x="9" y="3" width="6" height="4" rx="2" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  ),
-  /** Ver recepciones: consultar listado/historial */
-  listRecepciones: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <line x1="8" y1="6" x2="21" y2="6" />
-      <line x1="8" y1="12" x2="21" y2="12" />
-      <line x1="8" y1="18" x2="21" y2="18" />
-      <line x1="4" y1="6" x2="4.01" y2="6" />
-      <line x1="4" y1="12" x2="4.01" y2="12" />
-      <line x1="4" y1="18" x2="4.01" y2="18" />
-    </svg>
-  ),
-  doc: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-      <polyline points="10 9 9 9 8 9" />
-    </svg>
-  ),
-  clipboard: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-      <rect x="9" y="3" width="6" height="4" rx="2" />
-      <line x1="9" y1="12" x2="15" y2="12" />
-      <line x1="9" y1="16" x2="15" y2="16" />
-    </svg>
-  ),
-  users: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  ),
-  logs: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-      <polyline points="10 9 9 9 8 9" />
-    </svg>
-  ),
-  book: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      <line x1="8" y1="6" x2="16" y2="6" />
-      <line x1="8" y1="10" x2="16" y2="10" />
-    </svg>
-  ),
+  infoArticulos: <Salad {...ni} strokeWidth={1.55} />,
+  users: <Users {...ni} />,
+  logs: <ScrollText {...ni} />,
+  book: <BookOpen {...ni} />,
 };
 
 export default function Home() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const configPanelId = useId();
+  const configToggleBtnId = useId();
+  const [configAbierto, setConfigAbierto] = useState(false);
+  const [viewportEsAncho, setViewportEsAncho] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches
+  );
   const esAdmin = puedeGestionarUsuarios(user);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)');
+    const actualizar = () => setViewportEsAncho(mq.matches);
+    actualizar();
+    mq.addEventListener('change', actualizar);
+    return () => mq.removeEventListener('change', actualizar);
+  }, []);
   const nombreCorto = user?.nombre?.split(' ')[0] || user?.nombre || '';
 
   const handleLogout = () => {
+    void hapticImpact('medium');
     logout();
     navigate('/login', { replace: true });
   };
 
   const visibleActions = actions.filter((a) => puedeAcceder(user, a.permiso));
 
+  const enlacesConfig = [];
+  if (puedeAcceder(user, 'manual-usuario') || esAdmin) {
+    enlacesConfig.push({
+      key: 'manual',
+      to: '/manual-usuario',
+      label: 'Manual de usuario',
+      icon: 'book',
+    });
+  }
+  if (esAdmin) {
+    enlacesConfig.push({
+      key: 'usuarios',
+      to: '/gestion-usuarios',
+      label: 'Gestión de usuarios',
+      icon: 'users',
+    });
+  }
+  if (puedeAcceder(user, 'logs') || esAdmin) {
+    enlacesConfig.push({
+      key: 'logs',
+      to: '/logs',
+      label: 'Historial de actividad',
+      icon: 'logs',
+    });
+  }
+
   return (
     <div className="home">
       <AppHeader
         leftContent={
           <div className="home-header-brand">
-            <span className="home-header-app">Compras Verdu</span>
-            <span className="home-header-tagline">Gestión de compras</span>
+            <HomeHeaderBrand />
           </div>
         }
         rightContent={
@@ -117,11 +120,7 @@ export default function Home() {
               title="Cerrar sesión"
               aria-label="Cerrar sesión"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
+              <LogOut aria-hidden strokeWidth={2} className="home-header-logout-icon" />
             </button>
           </div>
         }
@@ -139,44 +138,82 @@ export default function Home() {
 
         <nav className="home-nav" aria-label="Acciones principales">
           <ul className="home-nav-list">
-            {visibleActions.map((action) => (
-              <li key={action.to}>
-                <Link to={action.to} className={`home-nav-card home-nav-card--${action.variant}`} aria-label={`${action.title}, ${action.cta}`}>
-                  <span className="home-nav-card-icon" aria-hidden>
-                    {icons[action.icon]}
-                  </span>
-                  <span className="home-nav-card-content">
-                    <span className="home-nav-card-title">{action.title}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
+            {visibleActions.map((action) => {
+              const etiquetaTile = viewportEsAncho ? action.title : (action.tileLabel ?? action.title);
+              return (
+                <li key={action.to}>
+                  <Link
+                    to={action.to}
+                    className={`home-nav-card home-nav-card--${action.variant}`}
+                    aria-label={`${action.title}, ${action.cta}`}
+                    onClick={() => {
+                      void hapticImpact('light');
+                    }}
+                  >
+                    <span
+                      className={`home-nav-card-icon home-nav-card-icon--halo${action.icon === 'recepcion' ? ' home-nav-card-icon--package-check' : ''}`}
+                      aria-hidden
+                    >
+                      {icons[action.icon]}
+                    </span>
+                    <span className="home-nav-card-content">
+                      <span className="home-nav-card-title">{etiquetaTile}</span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
-        <section className="home-config" aria-label="Ayuda y configuración">
-          {(puedeAcceder(user, 'manual-usuario') || esAdmin) && (
-            <Link to="/manual-usuario" className="home-config-card">
-              <span className="home-config-icon" aria-hidden>{icons.book}</span>
-              <span className="home-config-label">Manual de usuario</span>
-              <span className="home-config-arrow" aria-hidden>→</span>
-            </Link>
-          )}
-          {esAdmin && (
-            <Link to="/gestion-usuarios" className="home-config-card">
-              <span className="home-config-icon" aria-hidden>{icons.users}</span>
-              <span className="home-config-label">Gestión de usuarios</span>
-              <span className="home-config-arrow" aria-hidden>→</span>
-            </Link>
-          )}
-          {(puedeAcceder(user, 'logs') || esAdmin) && (
-            <Link to="/logs" className="home-config-card">
-              <span className="home-config-icon" aria-hidden>{icons.logs}</span>
-              <span className="home-config-label">Historial de actividad</span>
-              <span className="home-config-arrow" aria-hidden>→</span>
-            </Link>
-          )}
-        </section>
+        {enlacesConfig.length > 0 && (
+          <section
+            className={`home-config${configAbierto ? ' home-config--abierto' : ''}`}
+            aria-label="Ayuda y administración"
+          >
+            <button
+              type="button"
+              id={configToggleBtnId}
+              className="home-config-toggle"
+              aria-expanded={viewportEsAncho || configAbierto}
+              aria-controls={configPanelId}
+              onClick={() => setConfigAbierto((v) => !v)}
+            >
+              <span className="home-config-toggle-leading" aria-hidden>
+                <LayoutGrid className="home-config-toggle-icon-svg" aria-hidden strokeWidth={1.75} />
+              </span>
+              <span className="home-config-toggle-label">Ayuda y administración</span>
+              <span className={`home-config-chevron${configAbierto ? ' home-config-chevron--arriba' : ''}`} aria-hidden>
+                <ChevronDown className="home-config-chevron-svg" aria-hidden strokeWidth={2} />
+              </span>
+            </button>
+            <div id={configPanelId} className="home-config-panel">
+              <div
+                className="home-config-panel-inner"
+                aria-hidden={!viewportEsAncho && !configAbierto}
+              >
+                {enlacesConfig.map((item) => (
+                  <Link
+                    key={item.key}
+                    to={item.to}
+                    className="home-config-card"
+                    onClick={() => {
+                      void hapticImpact('light');
+                    }}
+                  >
+                    <span className="home-config-icon" aria-hidden>
+                      {icons[item.icon]}
+                    </span>
+                    <span className="home-config-label">{item.label}</span>
+                    <span className="home-config-arrow" aria-hidden>
+                      <ChevronRight className="home-config-arrow-svg" aria-hidden strokeWidth={2} />
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         <footer className="home-footer">
           <span className="home-footer-brand">El Abastecedor</span>

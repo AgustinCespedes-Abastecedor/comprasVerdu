@@ -4,8 +4,10 @@ import { Capacitor } from '@capacitor/core';
 import * as XLSX from 'xlsx';
 import { compras, proveedores as apiProveedores } from '../api/client';
 import AppHeader from '../components/AppHeader';
+import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
+import { ChevronDown, Search, X } from 'lucide-react';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatNum, formatDate, todayStr } from '../lib/format';
 import './VerCompras.css';
@@ -185,9 +187,7 @@ export default function VerCompras() {
         leftContent={
           <>
             <Link to="/" className="vercompras-back" title="Volver al panel" aria-label="Volver al panel">
-              <svg className="vercompras-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M15 6l-6 6 6 6" />
-              </svg>
+              <BackNavIcon className="vercompras-back-icon" />
             </Link>
             <h1 className="vercompras-header-title">Ver Compras</h1>
           </>
@@ -233,9 +233,7 @@ export default function VerCompras() {
                     ? (proveedoresList.find((p) => p.id === proveedorId)?.nombre ?? 'Proveedor')
                     : 'Todos'}
                 </span>
-                <svg className="vercompras-provider-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
+                <ChevronDown className="vercompras-provider-picker-chevron" aria-hidden strokeWidth={2} />
               </button>
               {providerPickerOpen && (
                 <div
@@ -258,16 +256,11 @@ export default function VerCompras() {
                         onClick={() => setProviderPickerOpen(false)}
                         aria-label="Cerrar"
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                          <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
+                        <X className="vercompras-provider-picker-close-icon" aria-hidden strokeWidth={2} />
                       </button>
                     </div>
                     <div className="vercompras-provider-picker-search-wrap">
-                      <svg className="vercompras-provider-picker-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="m21 21-4.35-4.35" />
-                      </svg>
+                      <Search className="vercompras-provider-picker-search-icon" aria-hidden strokeWidth={2} />
                       <input
                         ref={providerSearchInputRef}
                         type="search"

@@ -35,6 +35,28 @@ node prisma/seed.js
 
 Para bajar el contenedor: `docker compose down`. Los datos se conservan en el volumen `compras_verdu_pgdata`.
 
+### 1b. Entorno Docker local (pruebas antes de producción)
+
+Levanta **PostgreSQL + API (modo desarrollo) + Vite con hot reload**; el código de `backend/` y `frontend/` está montado en volumen, así que los cambios se reflejan al guardar archivos.
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+- **App:** http://localhost:5173  
+- **API:** http://localhost:4000/api  
+- **Postgres en el host (opcional):** puerto `5433` (usuario/contraseña por defecto como en el compose de desarrollo).
+
+La primera vez, en otra terminal, podés cargar datos de prueba:
+
+```bash
+docker compose -f docker-compose.dev.yml exec backend npm run db:seed
+```
+
+Para integración con SQL Server en local, definí las variables `EXTERNAL_*` en el entorno antes de levantar el compose (o usá un archivo `--env-file` con solo esas variables; no reutilices `DATABASE_URL` de un `.env` pensado para el host si apunta a `localhost` del contenedor).
+
+Para detener: `docker compose -f docker-compose.dev.yml down` (los datos de Postgres de desarrollo quedan en el volumen `compras_verdu_pgdata_dev`).
+
 ### 2. Backend
 
 Si no usaste Docker, copiá `backend/.env.example` a `backend/.env` y configurá `DATABASE_URL` con tu PostgreSQL.
@@ -62,7 +84,38 @@ Iniciar el servidor:
 npm run dev
 ```
 
-### 3. Frontend
+### 3. Frontend (solo) o ambos servicios con un comando
+
+Desde la **raíz del repo**, con dependencias ya instaladas en `backend/` y `frontend/`:
+
+```bash
+npm install
+```
+
+Si no tenés PostgreSQL local con la misma `DATABASE_URL` que en `backend/.env`, levantá solo la base en Docker:
+
+```bash
+npm run dev:db
+```
+
+Luego:
+
+```bash
+npm run dev
+```
+
+Eso levanta **backend** (`http://localhost:4000`) y **frontend** (`http://localhost:5173`) a la vez. El frontend usa el proxy de Vite hacia el API en `/api`.
+
+Si el puerto **5432** del host ya está ocupado, antes de `npm run dev:db` podés usar `POSTGRES_HOST_PORT=5433` y en `backend/.env` poner `DATABASE_URL` con puerto `5433`.
+
+Para levantar solo uno:
+
+```bash
+npm run dev:backend
+npm run dev:frontend
+```
+
+Si preferís entrar a cada carpeta:
 
 ```bash
 cd frontend

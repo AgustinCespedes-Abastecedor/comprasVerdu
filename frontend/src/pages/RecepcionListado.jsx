@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { compras, recepciones } from '../api/client';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
+import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import { useResponse } from '../context/ResponseContext';
@@ -133,9 +134,7 @@ export default function RecepcionListado() {
         leftContent={
           <>
             <Link to="/" className="recepcion-listado-back" title="Volver al inicio" aria-label="Volver al inicio">
-              <svg className="recepcion-listado-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M15 6l-6 6 6 6" />
-              </svg>
+              <BackNavIcon className="recepcion-listado-back-icon" />
             </Link>
             <h1 className="recepcion-listado-header-title">Recepción de compras</h1>
           </>

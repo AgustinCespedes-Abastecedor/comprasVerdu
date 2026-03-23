@@ -1,0 +1,29 @@
+# Solo PostgreSQL para desarrollo local con npm run dev (backend + frontend en el host).
+# Uso:  npm run dev:db
+# Luego: npm run dev
+#
+# Por defecto el host usa 5433 para no chocar con otro Postgres en 5432.
+# Para usar 5432: POSTGRES_HOST_PORT=5432 y mismo puerto en backend/.env.
+
+name: comprasverdu-db
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: compras_verdu_db_local
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-compras_verdu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-compras_verdu_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-compras_verdu}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - compras_verdu_pgdata_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-compras_verdu} -d ${POSTGRES_DB:-compras_verdu}"]
+      interval: 5s
+      timeout: 5s
+      retries: 8
+
+volumes:
+  compras_verdu_pgdata_local:

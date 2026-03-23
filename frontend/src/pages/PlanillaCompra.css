@@ -42,20 +42,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   color: var(--planilla-muted);
   text-decoration: none;
-  border: 1px solid var(--planilla-border);
-  border-radius: 8px;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  transition: color 0.2s ease, background 0.2s ease;
   flex-shrink: 0;
 }
 
 .planilla-back:hover {
   color: var(--planilla-accent);
-  border-color: var(--planilla-border-hover);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .planilla-back:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .planilla-back:focus-visible {
@@ -64,8 +68,8 @@
 }
 
 .planilla-back-icon {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .planilla-header-title {
@@ -217,10 +221,10 @@
 }
 
 .planilla-item-btn {
-  width: 2.25rem;
-  height: 2.25rem;
-  min-width: 44px;
-  min-height: 44px;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 24px;
+  min-height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -623,9 +627,10 @@
   background: rgba(0, 0, 0, 0.05);
 }
 
-.planilla-provider-picker-close svg {
-  width: 1.25rem;
-  height: 1.25rem;
+.planilla-provider-picker-close svg,
+.planilla-provider-picker-close-icon {
+  width: 1.125rem;
+  height: 1.125rem;
 }
 
 .planilla-provider-picker-search-wrap {
@@ -975,10 +980,10 @@ html.is-native .planilla-item-input {
 }
 
 html.is-native .planilla-item-btn {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -1895,10 +1900,10 @@ html.is-native .planilla-table-wrap {
 /* ----- Móvil: quitar columnas fijas para que toda la grilla haga scroll horizontal ----- */
 @media (max-width: 768px) {
   .planilla-back {
-    min-width: 44px;
-    min-height: 44px;
-    width: 44px;
-    height: 44px;
+    min-width: 24px;
+    min-height: 24px;
+    width: 24px;
+    height: 24px;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -1960,7 +1965,7 @@ html.is-native .planilla-table-wrap {
   }
 
   .planilla-btn-primary {
-    min-height: 44px;
+    min-height: 38px;
     -webkit-tap-highlight-color: transparent;
   }
 }
@@ -2103,10 +2108,10 @@ html.is-native .planilla-btn-quitar {
 }
 
 html.is-native .planilla-back {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
   -webkit-tap-highlight-color: transparent;
 }
 

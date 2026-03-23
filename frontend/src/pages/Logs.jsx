@@ -4,8 +4,10 @@ import { logs as logsApi, users } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
+import BackNavIcon from '../components/icons/BackNavIcon';
 import AppLoader from '../components/AppLoader';
 import ThemeToggle from '../components/ThemeToggle';
+import { Eye } from 'lucide-react';
 import Modal from '../components/Modal';
 import { formatDateTime, formatDateOnly, formatMoneda, formatPct, todayStr } from '../lib/format';
 import './Logs.css';
@@ -133,9 +135,7 @@ export default function Logs() {
         leftContent={
           <>
             <Link to="/" className="logs-back" title="Volver al panel" aria-label="Volver al panel">
-              <svg className="logs-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M15 6l-6 6 6 6" />
-              </svg>
+              <BackNavIcon className="logs-back-icon" />
             </Link>
             <h1 className="logs-header-title">Historial de actividad</h1>
           </>
@@ -246,10 +246,7 @@ export default function Logs() {
                             title="Ver detalle completo de la acción"
                             aria-label="Ver detalle"
                           >
-                            <svg className="logs-btn-ver-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
+                            <Eye className="logs-btn-ver-icon" aria-hidden strokeWidth={2} />
                           </button>
                         </td>
                       </tr>

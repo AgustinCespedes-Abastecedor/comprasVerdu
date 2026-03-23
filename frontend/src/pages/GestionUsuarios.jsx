@@ -6,6 +6,7 @@ import { PANTALLAS } from '../lib/permisos';
 import { useAuth } from '../context/AuthContext';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
+import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import PasswordInput from '../components/PasswordInput';
 import AppLoader from '../components/AppLoader';
@@ -218,9 +219,7 @@ export default function GestionUsuarios() {
         leftContent={
           <>
             <Link to="/" className="gestion-usuarios-back" title="Volver al panel" aria-label="Volver al panel">
-              <svg className="gestion-usuarios-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M15 6l-6 6 6 6" />
-              </svg>
+              <BackNavIcon className="gestion-usuarios-back-icon" />
             </Link>
             <h1 className="gestion-usuarios-header-title">Usuarios y roles</h1>
           </>

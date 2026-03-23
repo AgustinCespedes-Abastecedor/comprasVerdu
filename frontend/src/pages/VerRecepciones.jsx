@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { recepciones } from '../api/client';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
+import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import Modal from '../components/Modal';
@@ -122,9 +123,7 @@ export default function VerRecepciones() {
         leftContent={
           <>
             <Link to="/" className="vercompras-back" title="Volver al panel" aria-label="Volver al panel">
-              <svg className="vercompras-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M15 6l-6 6 6 6" />
-              </svg>
+              <BackNavIcon className="vercompras-back-icon" />
             </Link>
             <h1 className="vercompras-header-title">Ver Recepciones</h1>
           </>

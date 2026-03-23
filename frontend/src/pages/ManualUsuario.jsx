@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import AppHeader from '../components/AppHeader';
+import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import './ManualUsuario.css';
@@ -126,9 +127,7 @@ export default function ManualUsuario() {
         leftContent={
           <>
             <Link to="/" className="manual-back" title="Volver al panel" aria-label="Volver al panel">
-              <svg className="manual-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M15 6l-6 6 6 6" />
-              </svg>
+              <BackNavIcon className="manual-back-icon" />
             </Link>
             <h1 className="manual-header-title">Manual de usuario</h1>
           </>

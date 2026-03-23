@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { formatForReport } from '../lib/errorReport';
+import { hapticImpact, hapticNotification } from '../lib/haptics';
 import './ResponseContext.css';
 
 const ResponseContext = createContext(null);
@@ -19,6 +20,7 @@ export function ResponseProvider({ children }) {
 
   const showSuccess = useCallback((message) => {
     setToast({ type: 'success', message });
+    void hapticNotification('success');
   }, []);
 
   /**
@@ -36,6 +38,7 @@ export function ResponseProvider({ children }) {
       ? messageOrPayload.reportText
       : formatForReport(message, errorCode);
     setToast({ type: 'error', message, code: errorCode, reportText });
+    void hapticNotification('error');
   }, []);
 
   const copyReport = useCallback(() => {
@@ -43,6 +46,7 @@ export function ResponseProvider({ children }) {
     if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     navigator.clipboard.writeText(toast.reportText).then(() => {
       setCopied(true);
+      void hapticImpact('light');
       copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
     }).catch(() => {});
   }, [toast?.reportText]);

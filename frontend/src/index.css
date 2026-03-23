@@ -4,6 +4,8 @@
 
 :root {
   --font: 'DM Sans', system-ui, sans-serif;
+  /* Botones / CTAs: estilo neón (display, mayúsculas en CSS) */
+  --font-button: 'Orbitron', 'DM Sans', system-ui, sans-serif;
   /*
    * Áreas seguras unificadas:
    * - iOS / Safari: env(safe-area-inset-*)
@@ -208,6 +210,32 @@ a {
   --legend-manual-fg: #f0a070;
   --legend-calculo-bg: #0d3320;
   --legend-calculo-fg: #56d364;
+
+  /* Botones: degradados suaves (verde / ámbar / rojo) */
+  --btn-grad-primary: linear-gradient(152deg, #153822 0%, #268038 42%, #3fb950 78%, #6fdc8f 100%);
+  --btn-grad-primary-hover: linear-gradient(152deg, #1a4528 0%, #2d9648 45%, #4bce68 100%);
+  /* Texto neón alineado al verde de iconos (--accent); brillo legible sobre degradé */
+  --btn-fg-on-primary: #e8fff0;
+  --btn-neon-glow-primary: 0 0 8px rgba(120, 255, 170, 0.65), 0 0 18px rgba(63, 185, 80, 0.45);
+
+  --btn-grad-warn: linear-gradient(152deg, #3d3208 0%, #6b5612 40%, #b8921e 78%, #e0c44a 100%);
+  --btn-grad-warn-hover: linear-gradient(152deg, #4a3d0c 0%, #806a18 45%, #c9a227 100%);
+  --btn-fg-on-warn: #fff9e6;
+  --btn-neon-glow-warn: 0 0 8px rgba(255, 220, 120, 0.55), 0 0 16px rgba(201, 162, 39, 0.4);
+
+  --btn-grad-danger: linear-gradient(152deg, #3f1014 0%, #7a1f26 45%, #c93c3c 82%, #f07575 100%);
+  --btn-grad-danger-hover: linear-gradient(152deg, #4c1419 0%, #922830 50%, #e04d4d 100%);
+  --btn-fg-on-danger: #fff5f3;
+  --btn-neon-glow-danger: 0 0 8px rgba(255, 150, 150, 0.55), 0 0 16px rgba(248, 81, 73, 0.4);
+
+  --btn-grad-green-soft: linear-gradient(145deg, rgba(63, 185, 80, 0.38) 0%, rgba(63, 185, 80, 0.1) 100%);
+  /* Mismo tono que iconos/outline verde */
+  --btn-fg-outline-green: var(--accent);
+  --btn-border-outline-green: rgba(63, 185, 80, 0.45);
+  --btn-neon-glow-outline-green: 0 0 10px rgba(63, 185, 80, 0.35);
+
+  --btn-grad-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+  --btn-fg-surface: var(--text);
 }
 
 /* ========== LIGHT THEME ========== */
@@ -309,6 +337,29 @@ a {
   --legend-manual-fg: #9a3b1a;
   --legend-calculo-bg: #b8e0c4;
   --legend-calculo-fg: #0f5c2e;
+
+  --btn-grad-primary: linear-gradient(152deg, #0d3d1c 0%, #146c2e 45%, #1f8839 82%, #3ccd63 100%);
+  --btn-grad-primary-hover: linear-gradient(152deg, #125a29 0%, #1a7f37 50%, #2da44e 100%);
+  --btn-fg-on-primary: #f4fff8;
+  --btn-neon-glow-primary: 0 0 6px rgba(180, 255, 210, 0.45), 0 0 12px rgba(26, 127, 55, 0.3);
+
+  --btn-grad-warn: linear-gradient(152deg, #5c4206 0%, #8a6810 42%, #b8890f 78%, #e0bc3a 100%);
+  --btn-grad-warn-hover: linear-gradient(152deg, #6b4e0a 0%, #9a7614 48%, #c9a227 100%);
+  --btn-fg-on-warn: #1f1600;
+  --btn-neon-glow-warn: 0 0 6px rgba(255, 210, 90, 0.4);
+
+  --btn-grad-danger: linear-gradient(152deg, #6b0f18 0%, #9e1a24 45%, #cf222e 80%, #e85d68 100%);
+  --btn-grad-danger-hover: linear-gradient(152deg, #7a121c 0%, #b51f2b 50%, #da343f 100%);
+  --btn-fg-on-danger: #ffffff;
+  --btn-neon-glow-danger: 0 0 6px rgba(255, 180, 180, 0.45);
+
+  --btn-grad-green-soft: linear-gradient(145deg, rgba(26, 127, 55, 0.22) 0%, rgba(26, 127, 55, 0.08) 100%);
+  --btn-fg-outline-green: var(--accent);
+  --btn-border-outline-green: rgba(26, 127, 55, 0.4);
+  --btn-neon-glow-outline-green: 0 0 8px rgba(26, 127, 55, 0.25);
+
+  --btn-grad-surface: linear-gradient(180deg, #ffffff 0%, #f0f3f6 100%);
+  --btn-fg-surface: var(--text);
 }
 
 /* Aplicar tema al body */

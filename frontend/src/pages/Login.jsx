@@ -6,6 +6,7 @@ import { formatForReport } from '../lib/errorReport';
 import { ROLES_REGISTRO, rolEtiqueta } from '../lib/roles';
 import ThemeToggle from '../components/ThemeToggle';
 import PasswordInput from '../components/PasswordInput';
+import { hapticNotification } from '../lib/haptics';
 import './Login.css';
 
 const LOGIN_EMAIL_KEY = 'compras_verdu_login_email';
@@ -70,8 +71,10 @@ export default function Login() {
         });
         login(u, token);
       }
+      void hapticNotification('success');
       navigate('/', { replace: true });
     } catch (err) {
+      void hapticNotification('error');
       setError(err?.message || 'Error');
       setErrorCode(err?.code ?? '');
     } finally {

@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import App from './App';
 import './index.css';
+import './app-motion.css';
 
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('is-native');

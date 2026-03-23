@@ -87,15 +87,15 @@
 
 /* ----- App/Android: header más compacto y profesional ----- */
 html.is-native .app-header {
-  min-height: 3.25rem;
-  padding: 0.5rem 0.75rem;
-  padding-left: max(0.75rem, calc(var(--app-safe-left) + 0.35rem));
-  padding-right: max(0.75rem, calc(var(--app-safe-right) + 0.35rem));
+  min-height: 3rem;
+  padding: 0.4rem 0.65rem;
+  padding-left: max(0.65rem, calc(var(--app-safe-left) + 0.3rem));
+  padding-right: max(0.65rem, calc(var(--app-safe-right) + 0.3rem));
 }
 
 html.is-native .app-header-left,
 html.is-native .app-header-right {
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 html.is-native .app-header-logo {
@@ -103,7 +103,7 @@ html.is-native .app-header-logo {
 }
 
 html.is-native .app-logo-img {
-  max-height: 1.75rem;
+  max-height: 1.5rem;
 }
 
 /* Títulos del header en APK: más chicos para no acercarse al logo central */
@@ -125,23 +125,41 @@ html.is-native .app-header .home-brand-meta {
   margin-top: 0.125rem;
 }
 
-/* Touch targets mínimo 44px (Material / Android) en APK */
 html.is-native .app-header .planilla-back,
 html.is-native .app-header .vercompras-back,
 html.is-native .app-header .recepcion-listado-back,
 html.is-native .app-header .gestion-usuarios-back,
 html.is-native .app-header .logs-back,
 html.is-native .app-header .manual-back {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
 }
 
 html.is-native .app-header .home-btn-logout,
 html.is-native .app-header .home-header-logout {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+/* Móvil en navegador: misma densidad que APK (sin depender de is-native) */
+@media (max-width: 768px) {
+  .app-header {
+    min-height: 3.25rem;
+    padding: 0.5rem 0.75rem;
+    padding-left: max(0.75rem, calc(var(--app-safe-left) + 0.35rem));
+    padding-right: max(0.75rem, calc(var(--app-safe-right) + 0.35rem));
+  }
+
+  .app-header-left,
+  .app-header-right {
+    gap: 0.5rem;
+  }
+
+  .app-logo-img {
+    max-height: 1.6rem;
+  }
 }

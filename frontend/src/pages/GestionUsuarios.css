@@ -11,24 +11,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   color: var(--text-muted);
   text-decoration: none;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  transition: color 0.2s ease, background 0.2s ease;
   flex-shrink: 0;
 }
 
 .gestion-usuarios-back:hover {
   color: var(--accent);
-  border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 [data-theme="light"] .gestion-usuarios-back:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .gestion-usuarios-back:focus-visible {
@@ -37,8 +37,8 @@
 }
 
 .gestion-usuarios-back-icon {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .gestion-usuarios-header-title {
@@ -986,10 +986,10 @@
 
 @media (max-width: 768px) {
   .gestion-usuarios-back {
-    min-width: 44px;
-    min-height: 44px;
-    width: 44px;
-    height: 44px;
+    min-width: 24px;
+    min-height: 24px;
+    width: 24px;
+    height: 24px;
   }
 
   .gestion-usuarios-search {
@@ -997,13 +997,13 @@
   }
 
   .gestion-usuarios-btn-edit {
-    min-height: 44px;
-    padding: 0.5rem 0.85rem;
+    min-height: 38px;
+    padding: 0.45rem 0.75rem;
     -webkit-tap-highlight-color: transparent;
   }
 
   .gestion-usuarios-btn-new {
-    min-height: 44px;
+    min-height: 38px;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -1045,8 +1045,8 @@ html.is-native .gestion-usuarios-tabs {
 
 html.is-native .gestion-usuarios-tab {
   flex: 1;
-  min-height: 44px;
-  padding: 0.6rem 0.75rem;
+  min-height: 38px;
+  padding: 0.5rem 0.65rem;
   font-size: 0.875rem;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1068,8 +1068,8 @@ html.is-native .gestion-usuarios-search {
   width: 100%;
   max-width: none;
   min-width: 0;
-  min-height: 44px;
-  padding: 0.6rem 0.75rem;
+  min-height: 40px;
+  padding: 0.55rem 0.7rem;
   font-size: max(1rem, 16px);
   -webkit-tap-highlight-color: transparent;
 }
@@ -1077,15 +1077,15 @@ html.is-native .gestion-usuarios-search {
 html.is-native .gestion-usuarios-select {
   min-width: 0;
   width: 100%;
-  min-height: 44px;
-  padding: 0.6rem 0.75rem;
+  min-height: 40px;
+  padding: 0.55rem 0.7rem;
   font-size: max(1rem, 16px);
   -webkit-tap-highlight-color: transparent;
 }
 
 html.is-native .gestion-usuarios-btn-new {
-  min-height: 44px;
-  padding: 0.6rem 1rem;
+  min-height: 38px;
+  padding: 0.5rem 0.9rem;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -1124,17 +1124,17 @@ html.is-native .gestion-usuarios-cell-actions .gestion-usuarios-btn-edit,
 html.is-native .gestion-usuarios-cell-actions .gestion-usuarios-btn-danger,
 html.is-native .gestion-usuarios-cell-actions .gestion-usuarios-btn-suspender,
 html.is-native .gestion-usuarios-cell-actions .gestion-usuarios-btn-activar {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0.5rem 0.65rem;
+  min-height: 38px;
+  min-width: 36px;
+  padding: 0.45rem 0.55rem;
   font-size: 0.75rem;
   -webkit-tap-highlight-color: transparent;
 }
 
 html.is-native .gestion-usuarios-btn-danger,
 html.is-native .gestion-usuarios-btn-edit {
-  min-height: 44px;
-  padding: 0.5rem 0.75rem;
+  min-height: 38px;
+  padding: 0.45rem 0.65rem;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -1165,8 +1165,8 @@ html.is-native .gestion-usuarios-modal--edit {
 }
 
 html.is-native .gestion-usuarios-checklist-item {
-  min-height: 44px;
-  padding: 0.65rem 0.5rem;
+  min-height: 40px;
+  padding: 0.55rem 0.45rem;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -1174,7 +1174,7 @@ html.is-native .gestion-usuarios-modal-actions .gestion-usuarios-btn-secondary,
 html.is-native .gestion-usuarios-modal-actions .gestion-usuarios-btn-primary,
 html.is-native .gestion-usuarios-modal-edit-actions .gestion-usuarios-modal-edit-btn-cancel,
 html.is-native .gestion-usuarios-modal-edit-actions .gestion-usuarios-modal-edit-btn-save {
-  min-height: 44px;
-  padding: 0.6rem 1rem;
+  min-height: 38px;
+  padding: 0.5rem 0.9rem;
   -webkit-tap-highlight-color: transparent;
 }

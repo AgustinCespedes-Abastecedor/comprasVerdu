@@ -1,0 +1,320 @@
+/* Botones: Orbitron (neón), texto muy compacto, color + brillo alineados a iconos */
+
+/* ----- Tipografía base: más chica, display neón ----- */
+.btn-primary,
+.planilla-btn-primary,
+.gestion-usuarios-btn-primary,
+.gestion-usuarios-btn-new,
+.gestion-usuarios-btn-edit,
+.gestion-usuarios-btn-activar,
+.gestion-usuarios-btn-secondary,
+.gestion-usuarios-btn-suspender,
+.gestion-usuarios-btn-danger,
+.gestion-usuarios-modal-edit-btn-cancel,
+.gestion-usuarios-modal-edit-btn-save,
+.logs-btn-refresh,
+.logs-pagination-btn,
+.recepcion-listado-btn-guardar,
+.vercompras-btn-export,
+.verrecepciones-btn-precio,
+.verrecepciones-modal-btn-cancel,
+.verrecepciones-modal-btn-save,
+.info-final-btn-guardar:not(.info-final-btn-guardar--guardado) {
+  font-family: var(--font-button);
+  font-weight: 600;
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Iconos heredan el color del texto del botón (mismo tono que la etiqueta) */
+.btn-primary svg,
+.planilla-btn-primary svg,
+.gestion-usuarios-btn-primary svg,
+.gestion-usuarios-btn-new svg,
+.gestion-usuarios-btn-edit svg,
+.gestion-usuarios-btn-activar svg,
+.gestion-usuarios-btn-secondary svg,
+.gestion-usuarios-btn-suspender svg,
+.gestion-usuarios-btn-danger svg,
+.gestion-usuarios-modal-edit-btn-cancel svg,
+.gestion-usuarios-modal-edit-btn-save svg,
+.logs-btn-refresh svg,
+.recepcion-listado-btn-guardar svg,
+.vercompras-btn-export svg,
+.verrecepciones-btn-precio svg,
+.verrecepciones-modal-btn-cancel svg,
+.verrecepciones-modal-btn-save svg,
+.info-final-btn-guardar:not(.info-final-btn-guardar--guardado) svg {
+  color: inherit;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+/* Verde: relleno + texto hielo-neón (familia del --accent de iconos) */
+.btn-primary,
+.planilla-btn-primary,
+.gestion-usuarios-btn-primary,
+.gestion-usuarios-btn-new,
+.logs-btn-refresh,
+.recepcion-listado-btn-guardar,
+.vercompras-btn-export,
+.info-final-btn-guardar:not(.info-final-btn-guardar--guardado) {
+  color: var(--btn-fg-on-primary);
+  text-shadow: var(--btn-neon-glow-primary);
+  background: var(--btn-grad-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+  transition:
+    filter 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled),
+.planilla-btn-primary:hover:not(:disabled),
+.gestion-usuarios-btn-primary:hover:not(:disabled),
+.gestion-usuarios-btn-new:hover:not(:disabled),
+.logs-btn-refresh:hover,
+.recepcion-listado-btn-guardar:hover:not(:disabled),
+.vercompras-btn-export:hover,
+.info-final-btn-guardar:hover:not(:disabled) {
+  background: var(--btn-grad-primary-hover);
+  filter: none;
+}
+
+.gestion-usuarios-modal-edit-btn-save {
+  color: var(--btn-fg-on-primary);
+  text-shadow: var(--btn-neon-glow-primary);
+  background: var(--btn-grad-primary);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.gestion-usuarios-modal-edit-btn-save:hover:not(:disabled) {
+  background: var(--btn-grad-primary-hover);
+  filter: none;
+}
+
+/* Verde contorno: mismo color que iconos --accent */
+.gestion-usuarios-btn-edit,
+.gestion-usuarios-btn-activar {
+  color: var(--btn-fg-outline-green);
+  text-shadow: var(--btn-neon-glow-outline-green);
+  background: var(--btn-grad-green-soft);
+  border: 1px solid var(--btn-border-outline-green);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.gestion-usuarios-btn-edit:hover,
+.gestion-usuarios-btn-activar:hover {
+  filter: brightness(1.08);
+}
+
+/* Ámbar */
+.gestion-usuarios-btn-secondary,
+.gestion-usuarios-modal-edit-btn-cancel,
+.verrecepciones-modal-btn-cancel {
+  color: var(--btn-fg-on-warn);
+  text-shadow: var(--btn-neon-glow-warn);
+  background: var(--btn-grad-warn);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.gestion-usuarios-btn-secondary:hover:not(:disabled),
+.gestion-usuarios-modal-edit-btn-cancel:hover:not(:disabled),
+.verrecepciones-modal-btn-cancel:hover {
+  background: var(--btn-grad-warn-hover);
+  color: var(--btn-fg-on-warn);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.gestion-usuarios-btn-suspender {
+  color: var(--btn-fg-on-warn);
+  text-shadow: var(--btn-neon-glow-warn);
+  background: var(--btn-grad-warn);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gestion-usuarios-btn-suspender:hover {
+  background: var(--btn-grad-warn-hover);
+}
+
+/* Rojo */
+.gestion-usuarios-btn-danger,
+.verrecepciones-btn-precio,
+.verrecepciones-modal-btn-save {
+  color: var(--btn-fg-on-danger);
+  text-shadow: var(--btn-neon-glow-danger);
+  background: var(--btn-grad-danger);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.gestion-usuarios-btn-danger:hover,
+.verrecepciones-btn-precio:hover,
+.verrecepciones-modal-btn-save:hover:not(:disabled) {
+  background: var(--btn-grad-danger-hover);
+  filter: none;
+}
+
+.logs-pagination-btn {
+  color: var(--btn-fg-surface);
+  text-shadow: none;
+  background: var(--btn-grad-surface);
+  border: 1px solid var(--border);
+  font-size: 0.5rem;
+  letter-spacing: 0.12em;
+}
+
+.logs-pagination-btn:hover:not(:disabled) {
+  border-color: var(--border-hover);
+  filter: brightness(1.05);
+}
+
+.planilla-btn-primary .planilla-btn-spinner {
+  border-top-color: var(--btn-fg-on-primary);
+}
+
+/* Planilla +/−: color alineado a acentos (mismo lenguaje que iconos Lucide) */
+.planilla-btn-duplicar {
+  font-family: var(--font-button);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent);
+  text-shadow: var(--btn-neon-glow-outline-green);
+  background: var(--btn-grad-green-soft);
+  border-color: var(--btn-border-outline-green);
+}
+
+.planilla-btn-duplicar:hover {
+  background: var(--btn-grad-primary);
+  color: var(--btn-fg-on-primary);
+  text-shadow: var(--btn-neon-glow-primary);
+  border-color: transparent;
+}
+
+.planilla-btn-quitar {
+  font-family: var(--font-button);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--danger);
+  text-shadow: var(--btn-neon-glow-danger);
+  background: var(--btn-grad-danger);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.planilla-btn-quitar:hover {
+  background: var(--btn-grad-danger-hover);
+  color: var(--btn-fg-on-danger);
+  text-shadow: var(--btn-neon-glow-danger);
+}
+
+/* ----- Home: título = mismo color que .home-nav-card-icon en cada variante ----- */
+.home-nav-card-title {
+  font-family: var(--font-button);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Compras / manual: verde = --home-accent (igual que el icono) */
+.home-nav-card--compras .home-nav-card-title,
+.home-nav-card--manual .home-nav-card-title {
+  color: var(--home-accent);
+  text-shadow:
+    0 0 10px rgba(63, 185, 80, 0.55),
+    0 0 22px rgba(63, 185, 80, 0.28);
+}
+
+/* Recepción: ámbar = --home-recepcion */
+.home-nav-card--recepcion .home-nav-card-title {
+  color: var(--home-recepcion);
+  text-shadow:
+    0 0 10px rgba(201, 162, 39, 0.5),
+    0 0 20px rgba(201, 162, 39, 0.28);
+}
+
+/* Info: mismo tono que icono */
+.home-nav-card--info .home-nav-card-title {
+  color: var(--home-info);
+  text-shadow:
+    0 0 10px rgba(224, 122, 122, 0.45),
+    0 0 20px rgba(224, 122, 122, 0.25);
+}
+
+@media (min-width: 640px) {
+  .home-nav-card-title {
+    font-size: 0.625rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .home-nav-card-title {
+    font-size: 0.5625rem;
+  }
+}
+
+.home-config-toggle-label,
+.home-config-label {
+  font-family: var(--font-button);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Ver historial: solo icono; mismo verde neón que el acento */
+.logs-btn-ver {
+  color: var(--accent);
+}
+
+.logs-btn-ver .logs-btn-ver-icon {
+  color: inherit;
+  filter: drop-shadow(0 0 5px rgba(63, 185, 80, 0.45));
+}
+
+[data-theme="light"] .logs-btn-ver .logs-btn-ver-icon {
+  filter: drop-shadow(0 0 4px rgba(26, 127, 55, 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .planilla-btn-primary,
+  .gestion-usuarios-btn-primary,
+  .gestion-usuarios-btn-new,
+  .logs-btn-refresh,
+  .recepcion-listado-btn-guardar,
+  .vercompras-btn-export,
+  .info-final-btn-guardar:not(.info-final-btn-guardar--guardado),
+  .gestion-usuarios-modal-edit-btn-save,
+  .gestion-usuarios-btn-secondary,
+  .gestion-usuarios-modal-edit-btn-cancel,
+  .verrecepciones-modal-btn-cancel,
+  .gestion-usuarios-btn-suspender,
+  .gestion-usuarios-btn-danger,
+  .verrecepciones-btn-precio,
+  .verrecepciones-modal-btn-save,
+  .gestion-usuarios-btn-edit,
+  .gestion-usuarios-btn-activar {
+    text-shadow: none;
+  }
+
+  .home-nav-card--compras .home-nav-card-title,
+  .home-nav-card--manual .home-nav-card-title,
+  .home-nav-card--recepcion .home-nav-card-title,
+  .home-nav-card--info .home-nav-card-title {
+    text-shadow: none;
+  }
+
+  .logs-btn-ver .logs-btn-ver-icon {
+    filter: none;
+  }
+}

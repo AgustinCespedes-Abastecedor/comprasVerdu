@@ -1,4 +1,9 @@
 ext {
+    /** Entero que debe subir en cada release (Play Console / instalaciones). */
+    androidVersionCode = 2
+    /** Texto visible para el usuario (ej. "1.0.3"). */
+    androidVersionName = "1.0.1"
+
     minSdkVersion = 24
     compileSdkVersion = 36
     targetSdkVersion = 36
