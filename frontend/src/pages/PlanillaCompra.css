@@ -297,6 +297,20 @@
   gap: 0.125rem;
 }
 
+.planilla-item-ref-stock-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+}
+
+.planilla-item-ref-bultos {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--planilla-muted);
+  white-space: nowrap;
+}
+
 .planilla-item-ref-label {
   font-size: 0.6875rem;
   font-weight: 600;

@@ -242,17 +242,18 @@ function sqlNormalizarCodigoArticulos(alias = 'a') {
  * El costo se calcula como: costo_base * (1 + IVA%/100), usando TablaIVA (Codigo, Porcentaje)
  * y articulos.IVA como FK a TablaIVA.Codigo. Porcentaje en TablaIVA: 21.000 = 21%, 10.5000 = 10.5%.
  * @param {string[]} codigos - Códigos de artículo (se normalizan internamente).
- * @returns {Promise<Object.<string, { costo: number, precioVenta: number, margenPorc: number }>>}
+ * @returns {Promise<Object.<string, { costo: number, precioVenta: number, margenPorc: number, uxb: number|null }>>}
  */
 export async function fetchPreciosDesdeArticulos(codigos) {
   if (!Array.isArray(codigos) || codigos.length === 0) return {};
   const unicos = [...new Set(codigos.map((c) => normalizarCodigoStock(c)).filter(Boolean))];
   if (unicos.length === 0) return {};
   const map = {};
-  for (const cod of unicos) map[cod] = { costo: 0, precioVenta: 0, margenPorc: 0 };
+  for (const cod of unicos) map[cod] = { costo: 0, precioVenta: 0, margenPorc: 0, uxb: null };
   try {
     const pool = await getSqlServerPool();
     const normCod = sqlNormalizarCodigoArticulos('a');
+    const uxbExpr = `TRY_CAST(a.[${COL_ARTICULOS_UXB}] AS DECIMAL(10,2))`;
     const costoExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_PRECIO_COSTO}] AS DECIMAL(18,2)), 0)`;
     const ventaExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_PRECIO_VENTA}] AS DECIMAL(18,2)), 0)`;
     const margenExpr = `ISNULL(TRY_CAST(a.[${COL_ARTICULOS_MARGEN}] AS DECIMAL(18,2)), 0)`;
@@ -263,7 +264,7 @@ export async function fetchPreciosDesdeArticulos(codigos) {
       const request = pool.request();
       request.input('codigos', sql.VarChar(4000), codigosStr);
       const sqlQuery = [
-        `SELECT ${normCod} AS codigo, ${costoExpr} AS costoBase, ${ivaPctExpr} AS ivaPorcentaje, ${ventaExpr} AS precioVenta, ${margenExpr} AS margenPorc`,
+        `SELECT ${normCod} AS codigo, ${uxbExpr} AS uxb, ${costoExpr} AS costoBase, ${ivaPctExpr} AS ivaPorcentaje, ${ventaExpr} AS precioVenta, ${margenExpr} AS margenPorc`,
         `FROM [${TABLE_ARTICULOS}] a`,
         `LEFT JOIN [${TABLE_IVA}] i ON i.[${COL_IVA_CODIGO}] = a.[${COL_ARTICULOS_IVA}]`,
         `WHERE ${normCod} IN (SELECT LTRIM(RTRIM(n.value('.', 'VARCHAR(50)'))) FROM (SELECT CAST('<r>' + REPLACE(@codigos, ',', '</r><r>') + '</r>' AS XML) AS x) t CROSS APPLY x.nodes('/r') AS a(n))`,
@@ -279,6 +280,8 @@ export async function fetchPreciosDesdeArticulos(codigos) {
         map[cod].costo = Math.round(costoConIva * 100) / 100;
         map[cod].precioVenta = Number(row.precioVenta) || 0;
         map[cod].margenPorc = Number(row.margenPorc) || 0;
+        const uxbVal = row.uxb != null && !Number.isNaN(Number(row.uxb)) ? Number(row.uxb) : null;
+        map[cod].uxb = uxbVal != null && uxbVal > 0 ? uxbVal : null;
       }
     }
     if (process.env.NODE_ENV !== 'production') {

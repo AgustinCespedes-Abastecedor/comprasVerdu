@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { proveedores, productos, compras } from '../api/client';
-import { todayStr } from '../lib/format';
+import { todayStr, formatEntero } from '../lib/format';
 import { useResponse } from '../context/ResponseContext';
 import AppHeader from '../components/AppHeader';
 import ThemeToggle from '../components/ThemeToggle';
@@ -27,6 +27,16 @@ function parseNum(str) {
   return isNaN(Number(x)) ? 0 : Number(x);
 }
 
+/** Bultos = unidades de stock / UxB (unidades por bulto). */
+function textoBultosDesdeStock(unidades, uxb) {
+  const u = Number(uxb);
+  if (uxb == null || Number.isNaN(u) || u <= 0) return '—';
+  const s = Number(unidades);
+  if (Number.isNaN(s)) return '—';
+  const bultos = s / u;
+  return `${bultos.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} bultos`;
+}
+
 function productToFila(p, filaId) {
   return {
     filaId,
@@ -42,6 +52,7 @@ function productToFila(p, filaId) {
     costo: p.costo,
     precioVenta: p.precioVenta,
     margenPorc: p.margenPorc,
+    uxb: p.uxb != null && !Number.isNaN(Number(p.uxb)) ? Number(p.uxb) : null,
     bultos: '',
     costoUnidad: '',
     costoTotal: '',
@@ -385,17 +396,36 @@ export default function PlanillaCompra() {
                 <div className="planilla-item-ref-block" aria-label="Datos de referencia ELABASTECEDOR">
                   <p className="planilla-item-ref-title">Datos de referencia (ELABASTECEDOR)</p>
                   <div className="planilla-item-ref-grid">
-                    <div className="planilla-item-ref-group">
+                    <div className="planilla-item-ref-group planilla-item-ref-group--stock">
                       <span className="planilla-item-ref-label">Stock Suc.</span>
-                      <span className="planilla-item-ref-value">{formatNum(f.stockSucursales) || '—'}</span>
+                      <div className="planilla-item-ref-stock-line">
+                        <span className="planilla-item-ref-value">{formatNum(f.stockSucursales) || '—'}</span>
+                        <span className="planilla-item-ref-bultos" aria-label={`Bultos equivalentes en sucursales: ${textoBultosDesdeStock(f.stockSucursales, f.uxb)}`}>
+                          {textoBultosDesdeStock(f.stockSucursales, f.uxb)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="planilla-item-ref-group">
+                    <div className="planilla-item-ref-group planilla-item-ref-group--stock">
                       <span className="planilla-item-ref-label">Stock CD</span>
-                      <span className="planilla-item-ref-value">{formatNum(f.stockCD) || '—'}</span>
+                      <div className="planilla-item-ref-stock-line">
+                        <span className="planilla-item-ref-value">{formatNum(f.stockCD) || '—'}</span>
+                        <span className="planilla-item-ref-bultos" aria-label={`Bultos equivalentes en CD: ${textoBultosDesdeStock(f.stockCD, f.uxb)}`}>
+                          {textoBultosDesdeStock(f.stockCD, f.uxb)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="planilla-item-ref-group planilla-item-ref-group--stock">
+                      <span className="planilla-item-ref-label">Stock total</span>
+                      <div className="planilla-item-ref-stock-line">
+                        <span className="planilla-item-ref-value">{formatNum((f.stockSucursales ?? 0) + (f.stockCD ?? 0)) || '—'}</span>
+                        <span className="planilla-item-ref-bultos" aria-label={`Bultos equivalentes totales: ${textoBultosDesdeStock((f.stockSucursales ?? 0) + (f.stockCD ?? 0), f.uxb)}`}>
+                          {textoBultosDesdeStock((f.stockSucursales ?? 0) + (f.stockCD ?? 0), f.uxb)}
+                        </span>
+                      </div>
                     </div>
                     <div className="planilla-item-ref-group">
-                      <span className="planilla-item-ref-label">Stock total</span>
-                      <span className="planilla-item-ref-value">{formatNum((f.stockSucursales ?? 0) + (f.stockCD ?? 0)) || '—'}</span>
+                      <span className="planilla-item-ref-label">UxB</span>
+                      <span className="planilla-item-ref-value">{formatEntero(f.uxb)}</span>
                     </div>
                     <div className="planilla-item-ref-group">
                       <span className="planilla-item-ref-label">Ventas N-1</span>

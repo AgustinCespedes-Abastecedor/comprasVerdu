@@ -127,6 +127,7 @@ router.get('/', soloComprarOVerCompras, async (req, res) => {
         const costo = precios != null ? precios.costo : 0;
         const precioVenta = precios != null ? precios.precioVenta : 0;
         const margenPorc = precios != null ? precios.margenPorc : 0;
+        const uxb = precios != null && precios.uxb != null ? precios.uxb : null;
         const ventas = ventasMap[codNorm];
         const ventasN1 = ventas != null ? ventas.ventasN1 : 0;
         const ventasN2 = ventas != null ? ventas.ventasN2 : 0;
@@ -144,6 +145,7 @@ router.get('/', soloComprarOVerCompras, async (req, res) => {
           costo,
           precioVenta,
           margenPorc,
+          uxb,
         };
       });
       const mul = sortDir === 'asc' ? 1 : -1;
@@ -215,6 +217,7 @@ router.get('/', soloComprarOVerCompras, async (req, res) => {
         const costo = precios != null ? precios.costo : (Number(p.costo) ?? 0);
         const precioVenta = precios != null ? precios.precioVenta : (Number(p.precioVenta) ?? 0);
         const margenPorc = precios != null ? precios.margenPorc : (Number(p.margenPorc) ?? 0);
+        const uxb = precios != null && precios.uxb != null ? precios.uxb : null;
         const ventas = ventasMap[codNorm];
         const ventasN1 = ventas != null ? ventas.ventasN1 : (p.ventasN1 ?? 0);
         const ventasN2 = ventas != null ? ventas.ventasN2 : (p.ventasN2 ?? 0);
@@ -229,6 +232,7 @@ router.get('/', soloComprarOVerCompras, async (req, res) => {
           costo,
           precioVenta,
           margenPorc,
+          uxb,
         };
       });
       const mul = sortDir === 'asc' ? 1 : -1;
@@ -280,6 +284,7 @@ router.get('/', soloComprarOVerCompras, async (req, res) => {
       const costo = precios != null ? precios.costo : (Number(p.costo) ?? 0);
       const precioVenta = precios != null ? precios.precioVenta : (Number(p.precioVenta) ?? 0);
       const margenPorc = precios != null ? precios.margenPorc : (Number(p.margenPorc) ?? 0);
+      const uxb = precios != null && precios.uxb != null ? precios.uxb : null;
       const ventas = ventasMap[codNorm];
       const ventasN1 = ventas != null ? ventas.ventasN1 : (p.ventasN1 ?? 0);
       const ventasN2 = ventas != null ? ventas.ventasN2 : (p.ventasN2 ?? 0);
@@ -294,6 +299,7 @@ router.get('/', soloComprarOVerCompras, async (req, res) => {
         costo,
         precioVenta,
         margenPorc,
+        uxb,
       };
     });
     res.json({ total, page, pageSize, items: listConStock });
