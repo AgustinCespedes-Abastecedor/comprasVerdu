@@ -1,6 +1,6 @@
 # Manual de usuario — Compras Verdu
 
-Este manual describe cómo usar la aplicación **Compras Verdu** para cargar compras a proveedores, registrar recepciones, definir precios de venta y consultar la información final de artículos. Está pensado para todos los usuarios (Comprador, Visor y Administrador).
+Este manual describe cómo usar la aplicación **Compras Verdu** para cargar compras a proveedores, registrar recepciones, definir precios de venta y consultar la información final de artículos. Está pensado para todos los usuarios (Comprador, Recepcionista, Visor y Administrador).
 
 ---
 
@@ -13,7 +13,7 @@ Este manual describe cómo usar la aplicación **Compras Verdu** para cargar com
 - **Cargar precios de venta** por recepción (y ver el margen calculado).
 - **Consultar** compras y recepciones, y comparar datos de recepción con el sistema Tecnolar en **Info Final de Artículos**.
 
-Lo que veas en pantalla depende de tu **rol** y permisos. Por ejemplo, un usuario **Visor** solo puede consultar; un **Comprador** puede además cargar compras y recepciones. Un **Administrador** puede gestionar usuarios y roles.
+Lo que veas en pantalla depende de tu **rol** y permisos. Por ejemplo, un usuario **Visor** solo puede consultar; un **Recepcionista** se enfoca en generar recepciones y consultas; un **Comprador** puede además cargar compras. Un **Administrador** puede gestionar usuarios y roles.
 
 ---
 
@@ -35,7 +35,7 @@ Si aparece un error, revisá email y contraseña. Si el problema continúa, cont
 Si tu organización permite el registro público:
 
 1. En la pantalla de login, elegí **Crear cuenta**.
-2. Completá: **Nombre**, **Email**, **Contraseña** (mínimo 6 caracteres) y **Rol** (por ejemplo Comprador o Visor).
+2. Completá: **Nombre**, **Email**, **Contraseña** (mínimo 6 caracteres) y **Rol** (por ejemplo Comprador, Recepcionista o Visor).
 3. Hacé clic en **Registrarme**.
 4. Entrás al panel con el rol elegido.
 
@@ -55,7 +55,7 @@ Podés cambiar entre tema claro y oscuro con el selector que aparece en el encab
 
 Después de iniciar sesión ves el **Panel de control**. Ahí tenés:
 
-- Un saludo con tu nombre y tu **rol** (por ejemplo Comprador, Visor, Administrador).
+- Un saludo con tu nombre y tu **rol** (por ejemplo Comprador, Recepcionista, Visor, Administrador).
 - **Tarjetas de acceso** a las pantallas a las que tenés permiso:
   - **Nueva compra** — Cargar compra a proveedores desde la planilla.
   - **Recepción de compras** — Elegir compra por fecha y cargar cantidades recibidas.
@@ -257,18 +257,18 @@ Esto sirve para auditoría y para revisar qué valores se cargaron en cada opera
 
 ## 11. Resumen rápido por rol
 
-| Acción | Visor | Comprador | Administrador |
-|--------|--------|-----------|----------------|
-| Ver panel (Home) | Sí | Sí | Sí |
-| Ver compras | Sí | Sí | Sí |
-| Ver recepciones | Sí | Sí | Sí |
-| Info Final de Artículos | Sí | Sí | Sí |
-| Nueva compra | No | Sí | Sí |
-| Recepción de compras | No | Sí | Sí |
-| Cargar precios de venta (Ver recepciones) | No | Sí | Sí |
-| Gestión de usuarios | No | No* | Sí |
-| Gestión de roles | No | No | Sí |
-| Historial de actividad | No | No* | Sí |
+| Acción | Visor | Recepcionista | Comprador | Administrador |
+|--------|--------|----------------|-----------|----------------|
+| Ver panel (Home) | Sí | Sí | Sí | Sí |
+| Ver compras | Sí | Sí | Sí | Sí |
+| Ver recepciones | Sí | Sí | Sí | Sí |
+| Info Final de Artículos | Sí | Sí | Sí | Sí |
+| Nueva compra | No | No | Sí | Sí |
+| Recepción de compras | No | Sí | Sí | Sí |
+| Cargar precios de venta (Ver recepciones) | No | Sí | Sí | Sí |
+| Gestión de usuarios | No | No* | No* | Sí |
+| Gestión de roles | No | No | No | Sí |
+| Historial de actividad | No | No* | No* | Sí |
 
 \* Salvo que el rol tenga explícitamente el permiso correspondiente.
 

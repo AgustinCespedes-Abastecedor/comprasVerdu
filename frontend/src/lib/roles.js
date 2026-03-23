@@ -33,7 +33,7 @@ export function puedeVerCompras(user) {
 }
 
 /** Valores permitidos en registro público (el backend mapea a roles por nombre). */
-export const ROLES_REGISTRO = ['COMPRADOR', 'VISOR'];
+export const ROLES_REGISTRO = ['COMPRADOR', 'RECEPCIONISTA', 'VISOR'];
 
 /** Etiqueta legible del rol para la UI */
 export function rolEtiqueta(roleOrUser) {
@@ -41,6 +41,7 @@ export function rolEtiqueta(roleOrUser) {
   const role = typeof roleOrUser === 'object' && roleOrUser.role ? roleOrUser.role : roleOrUser;
   if (typeof role === 'string') {
     if (role === 'COMPRADOR') return 'Comprador';
+    if (role === 'RECEPCIONISTA') return 'Recepcionista';
     if (role === 'VISOR') return 'Visor';
     if (role === 'ADMIN') return 'Administrador';
     return role;

@@ -1,15 +1,17 @@
 .app-loader {
-  min-height: 100vh;
-  min-height: calc(100vh - var(--app-safe-top) - var(--app-safe-bottom));
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  padding-top: max(2rem, var(--app-safe-top));
-  padding-bottom: max(2rem, var(--app-safe-bottom));
   background: var(--bg);
   color: var(--text-muted);
+  z-index: 2000;
 }
 
 .app-loader-wrap {

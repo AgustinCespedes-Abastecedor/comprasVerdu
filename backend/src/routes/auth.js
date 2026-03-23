@@ -40,12 +40,15 @@ router.post('/registro', async (req, res) => {
     if (roleId && typeof roleId === 'string') {
       role = await prisma.role.findUnique({ where: { id: roleId } });
       const nombreRol = role?.nombre?.toLowerCase();
-      if (nombreRol && nombreRol !== 'visor' && nombreRol !== 'comprador') {
+      if (nombreRol && nombreRol !== 'visor' && nombreRol !== 'comprador' && nombreRol !== 'recepcionista') {
         role = null; // no permitir Admin en registro público
       }
     }
     if (!role && req.body.rol === 'VISOR') {
       role = await prisma.role.findFirst({ where: { nombre: 'Visor' } });
+    }
+    if (!role && req.body.rol === 'RECEPCIONISTA') {
+      role = await prisma.role.findFirst({ where: { nombre: 'Recepcionista' } });
     }
     if (!role) {
       role = await prisma.role.findFirst({ where: { nombre: 'Comprador' } });

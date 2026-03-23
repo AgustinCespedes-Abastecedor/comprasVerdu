@@ -28,6 +28,7 @@ Las pantallas que podés marcar/desmarcar por rol son:
 |-----------------|-------------|----------------------|
 | **Administrador** | Acceso total | Todas (home, comprar, ver-compras, recepción, ver-recepciones, info-final-articulos, gestion-usuarios, gestion-roles). |
 | **Comprador**   | Cargar compras y ver historial | home, comprar, ver-compras, recepcion, ver-recepciones, info-final-articulos. |
+| **Recepcionista** | Su foco es generar recepciones y consultas; no crea compras | home, ver-compras, recepcion, ver-recepciones, info-final-articulos. |
 | **Visor**       | Solo lectura | home, ver-compras, ver-recepciones, info-final-articulos. |
 
 ## Control de acceso
@@ -39,10 +40,11 @@ Las pantallas que podés marcar/desmarcar por rol son:
 
 - **Frontend:** `frontend/src/lib/permisos.js` define `PANTALLAS` y `puedeAcceder(user, codigo)`. `frontend/src/lib/roles.js` usa `user.role.permisos` para `puedeComprar`, `puedeGestionarUsuarios`, `puedeGestionarRoles`.
 - **Backend:** modelo `Role` (nombre, descripcion, permisos JSON). `User.roleId` → `Role`. Rutas `GET/POST/PATCH/DELETE /api/roles` (crear/editar/eliminar solo con permiso `gestion-roles`; listar con `gestion-usuarios` o `gestion-roles`).
-- **Registro público:** solo se puede elegir Comprador o Visor; Administrador se asigna desde Gestión de usuarios.
+- **Registro público:** se puede elegir Comprador, Recepcionista o Visor; Administrador se asigna desde Gestión de usuarios.
 
 ## Cómo probar
 
 1. **Visor:** solo ve en el panel las pantallas permitidas (Ver compras, Ver recepciones, Info final). Si intenta abrir `/comprar` → redirige a `/`.
 2. **Comprador:** ve Nueva compra, recepción, ver compras, etc.; no ve Gestión de usuarios si no tiene ese permiso.
-3. **Administrador:** ve todo y puede entrar a Gestión de usuarios, pestaña Roles, y configurar permisos por pantalla para cada rol.
+3. **Recepcionista:** ve recepción, ver compras, ver recepciones e info final; no puede acceder a Nueva compra (`/comprar`).
+4. **Administrador:** ve todo y puede entrar a Gestión de usuarios, pestaña Roles, y configurar permisos por pantalla para cada rol.

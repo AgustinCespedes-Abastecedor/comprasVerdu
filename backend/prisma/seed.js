@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 const ROLES_DEFAULT = [
   { nombre: 'Administrador', descripcion: 'Acceso total', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos', 'gestion-usuarios', 'gestion-roles'] },
   { nombre: 'Comprador', descripcion: 'Cargar compras y ver historial', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'] },
+  { nombre: 'Recepcionista', descripcion: 'Recepción de compras y consultas. No puede crear compras.', permisos: ['home', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'] },
   { nombre: 'Visor', descripcion: 'Solo lectura', permisos: ['home', 'ver-compras', 'ver-recepciones', 'info-final-articulos'] },
 ];
 
@@ -13,7 +14,7 @@ async function main() {
   const hashAdmin = await bcrypt.hash('admin123', 10);
   const hashDevAdmin = await bcrypt.hash('admin1234', 10);
 
-  // Asegurar que existan los 3 roles por defecto (por si se corre seed sin migración previa o se borraron)
+  // Asegurar que existan los roles por defecto (por si se corre seed sin migración previa o se borraron)
   for (const r of ROLES_DEFAULT) {
     await prisma.role.upsert({
       where: { nombre: r.nombre },
@@ -24,8 +25,9 @@ async function main() {
 
   const roleAdmin = await prisma.role.findUnique({ where: { nombre: 'Administrador' } });
   const roleComprador = await prisma.role.findUnique({ where: { nombre: 'Comprador' } });
+  const roleRecepcionista = await prisma.role.findUnique({ where: { nombre: 'Recepcionista' } });
   const roleVisor = await prisma.role.findUnique({ where: { nombre: 'Visor' } });
-  if (!roleAdmin || !roleComprador || !roleVisor) throw new Error('Roles por defecto no encontrados');
+  if (!roleAdmin || !roleComprador || !roleRecepcionista || !roleVisor) throw new Error('Roles por defecto no encontrados');
 
   await prisma.user.upsert({
     where: { email: 'a.cespedes@elabastecedor.com.ar' },
@@ -57,6 +59,17 @@ async function main() {
       password: hashAdmin,
       nombre: 'Usuario Visor',
       roleId: roleVisor.id,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'recepcionista@comprasverdu.com' },
+    update: {},
+    create: {
+      email: 'recepcionista@comprasverdu.com',
+      password: hashAdmin,
+      nombre: 'Usuario Recepcionista',
+      roleId: roleRecepcionista.id,
     },
   });
 

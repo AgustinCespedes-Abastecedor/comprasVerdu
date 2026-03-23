@@ -1,6 +1,6 @@
 # Compras Verdu
 
-Sistema web para cargar y consultar compras a proveedores. Incluye login por usuario, roles **Comprador** y **Visor**, y una planilla de compra tipo Excel con campos por color (amarillo = datos de BD, salmón = ingreso manual, verde = cálculos).
+Sistema web para cargar y consultar compras a proveedores. Incluye login por usuario, roles **Comprador**, **Recepcionista** y **Visor**, y una planilla de compra tipo Excel con campos por color (amarillo = datos de BD, salmón = ingreso manual, verde = cálculos).
 
 ## Stack
 
@@ -53,6 +53,7 @@ npx prisma generate
 Usuarios de prueba creados por el seed:
 
 - **Comprador:** `comprador@comprasverdu.com` / `admin123`
+- **Recepcionista:** `recepcionista@comprasverdu.com` / `admin123`
 - **Visor:** `visor@comprasverdu.com` / `admin123`
 
 Iniciar el servidor:
@@ -80,10 +81,11 @@ El frontend corre en `http://localhost:5173` y usa el proxy a `http://localhost:
 
 ## Uso
 
-1. **Login / Registro:** en el login podés registrarte eligiendo rol **Comprador** o **Visor**.
+1. **Login / Registro:** en el login podés registrarte eligiendo rol **Comprador**, **Recepcionista** o **Visor**.
 2. **Comprador:** después del login tiene **Comprar** y **Ver Compras**.
    - En **Comprar** se muestra la planilla: fecha (por defecto hoy), selector de proveedor, tabla con productos. Los datos amarillos vienen de la BD; los salmones se completan a mano (bultos, precio por bulto, peso por bulto); los verdes se calculan (precio por kg, total por ítem). Al guardar se persiste la compra y se actualizan los totales del día.
-3. **Visor:** solo puede entrar a **Ver Compras** para consultar compras guardadas (filtros por fecha y proveedor).
+3. **Recepcionista:** no puede crear compras. Su foco es **Recepción de compras**, además de **Ver Compras**, **Ver recepciones** e **Info Final de Artículos**.
+4. **Visor:** solo puede entrar a **Ver Compras** para consultar compras guardadas (filtros por fecha y proveedor).
 
 ## CI/CD y despliegue
 
