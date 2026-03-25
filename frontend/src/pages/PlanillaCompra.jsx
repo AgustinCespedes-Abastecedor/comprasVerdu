@@ -14,6 +14,9 @@ import './PlanillaCompra.css';
 
 const isApp = () => Capacitor.isNativePlatform();
 
+/** Solo APK Android: el botón lápiz va sin etiqueta (en web se muestra «Manual» / «Manual activado»). */
+const isAndroidNative = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+
 const SEARCH_PAGE_SIZE = 25;
 const DEBOUNCE_MS = 300;
 
@@ -595,7 +598,7 @@ export default function PlanillaCompra() {
             <label className="planilla-proveedor-label">Proveedor de la compra</label>
             <button
               type="button"
-              className={`planilla-provider-manual-toggle ${providerManualMode ? 'planilla-provider-manual-toggle-active' : ''}`}
+              className={`planilla-provider-manual-toggle ${providerManualMode ? 'planilla-provider-manual-toggle-active' : ''}${isAndroidNative() ? ' planilla-provider-manual-toggle--icon-only' : ''}`}
               onClick={() => {
                 setProviderManualMode((prev) => {
                   const next = !prev;
@@ -614,12 +617,13 @@ export default function PlanillaCompra() {
               title={providerManualMode ? 'Desactivar carga manual' : 'Cargar proveedor manual'}
             >
               <Pencil className="planilla-provider-manual-toggle-icon" aria-hidden strokeWidth={2} />
-              <span className="planilla-provider-manual-toggle-text">
-                {providerManualMode ? 'Manual activado' : 'Manual'}
-              </span>
+              {!isAndroidNative() && (
+                <span className="planilla-provider-manual-toggle-text">
+                  {providerManualMode ? 'Manual activado' : 'Manual'}
+                </span>
+              )}
             </button>
           </div>
-          <p className="planilla-proveedor-hint">Asigná el proveedor antes de guardar (último paso).</p>
           {providerManualMode ? (
             <div className="planilla-proveedor-manual-wrap">
               <label className="planilla-proveedor-manual-label" htmlFor="planilla-proveedor-manual-input">

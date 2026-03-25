@@ -22,7 +22,7 @@ router.get('/', soloVerCompras, async (req, res) => {
     }
     const compras = await prisma.compra.findMany({
       where,
-      orderBy: { fecha: 'desc' },
+      orderBy: [{ numeroCompra: 'asc' }, { fecha: 'asc' }, { createdAt: 'asc' }],
       include: {
         proveedor: { select: { id: true, nombre: true } },
         user: { select: { id: true, nombre: true, email: true } },

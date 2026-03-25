@@ -789,12 +789,6 @@
   margin-bottom: 0.25rem;
 }
 
-.planilla-proveedor-hint {
-  margin: 0 0 0.75rem;
-  font-size: 0.8125rem;
-  color: var(--planilla-muted);
-}
-
 .planilla-proveedor-head {
   display: flex;
   align-items: center;
@@ -831,6 +825,12 @@
 .planilla-provider-manual-toggle:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--planilla-accent-soft);
+}
+
+/* APK Android: solo ícono lápiz (sin texto «Manual»). */
+.planilla-provider-manual-toggle--icon-only {
+  gap: 0;
+  padding: 0.45rem;
 }
 
 .planilla-provider-manual-toggle-icon {
@@ -1169,11 +1169,6 @@ html.is-native .planilla-section-proveedor {
   padding-right: max(1rem, var(--app-safe-right));
 }
 
-html.is-native .planilla-proveedor-hint {
-  font-size: 0.875rem;
-  margin-bottom: 0.75rem;
-}
-
 html.is-native .planilla-provider-picker-field-bottom {
   display: flex !important;
   min-height: 48px;
@@ -1200,6 +1195,12 @@ html.is-native .planilla-provider-manual-toggle {
   padding: 0.5rem 0.65rem;
   font-size: 0.8125rem;
   -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .planilla-provider-manual-toggle--icon-only {
+  padding: 0.5rem;
+  min-width: 44px;
+  justify-content: center;
 }
 
 html.is-native .planilla-proveedor-manual-input {

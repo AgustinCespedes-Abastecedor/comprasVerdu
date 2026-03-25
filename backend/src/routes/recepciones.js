@@ -18,7 +18,7 @@ router.get('/', soloVerRecepciones, async (req, res) => {
     }
     const recepciones = await prisma.recepcion.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ compra: { numeroCompra: 'asc' } }, { createdAt: 'asc' }],
       include: {
         compra: {
           select: {
