@@ -26,6 +26,25 @@ router.get('/iva', soloComprarOVerCompras, async (req, res) => {
   }
 });
 
+/** GET /productos/precios-actuales?codigos=1,2,3 - Precio de venta actual por código. */
+router.get('/precios-actuales', soloComprarOVerCompras, async (req, res) => {
+  try {
+    const raw = typeof req.query.codigos === 'string' ? req.query.codigos.trim() : '';
+    const codigos = raw ? raw.split(/[\s,]+/).filter(Boolean) : [];
+    if (codigos.length === 0) return res.json({});
+    const precios = await fetchPreciosDesdeArticulos(codigos);
+    const out = {};
+    codigos.forEach((codigo) => {
+      const codNorm = normalizarCodigoStock(codigo);
+      const item = precios[codNorm];
+      out[codigo] = item != null && Number.isFinite(Number(item.precioVenta)) ? Number(item.precioVenta) : null;
+    });
+    return res.json(out);
+  } catch (e) {
+    sendError(res, 500, 'No se pudieron obtener los precios de venta actuales.', 'PROD_003', e);
+  }
+});
+
 /** GET /productos - Lista/busca productos (con proveedor o por departamento). Requiere comprar o ver-compras. */
 router.get('/', soloComprarOVerCompras, async (req, res) => {
   try {

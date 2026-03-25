@@ -5,6 +5,7 @@ ext {
     androidVersionName = "1.0.1"
 
     minSdkVersion = 24
+    /** Debe coincidir con el Android SDK instalado (AndroidX reciente exige compileSdk 36+). */
     compileSdkVersion = 36
     targetSdkVersion = 36
     androidxActivityVersion = '1.11.0'

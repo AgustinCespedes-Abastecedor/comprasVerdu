@@ -108,6 +108,104 @@ export function normalizarProveedorParaArticulos(val) {
   return sinCeros;
 }
 
+/** Tabla Agrupados (ELABASTECEDOR): el valor de [GRUPO] es el que se usa en AgrupadosDetalle.GRUPO. */
+const TABLE_AGRUPADOS = process.env.EXTERNAL_AGRUPADOS_TABLE || 'Agrupados';
+/** Columna clave de grupo (join con AgrupadosDetalle). Por defecto GRUPO. */
+const COL_AGRUPADOS_GRUPO =
+  process.env.EXTERNAL_AGRUPADOS_COL_GRUPO || process.env.EXTERNAL_AGRUPADOS_COL_ID || 'GRUPO';
+/** Columna opcional en Agrupados para buscar la fila (ej. código de tabla); si no existe, el lookup usa GRUPO. */
+const COL_AGRUPADOS_CODIGO = process.env.EXTERNAL_AGRUPADOS_COL_CODIGO || 'codigo';
+
+/** AgrupadosDetalle: [GRUPO] = Agrupados.[GRUPO]; [codigo] = código de proveedor (tabla proveedores). */
+const TABLE_AGRUPADOS_DETALLE = process.env.EXTERNAL_AGRUPADOS_DETALLE_TABLE || 'AgrupadosDetalle';
+const COL_AGRUPADOS_DET_GRUPO = process.env.EXTERNAL_AGRUPADOS_DETALLE_GRUPO_COL || 'GRUPO';
+const COL_AGRUPADOS_DET_CODIGO =
+  process.env.EXTERNAL_AGRUPADOS_DETALLE_CODIGO_COL ||
+  process.env.EXTERNAL_AGRUPADOS_DETALLE_PROVEEDOR_COL ||
+  'codigo';
+
+/**
+ * Resuelve el valor GRUPO para filtrar AgrupadosDetalle (mismo valor que Agrupados.GRUPO).
+ * Prioridad: EXTERNAL_AGRUPADOS_GRUPO_ID → búsqueda por EXTERNAL_AGRUPADOS_GRUPO_CODIGO_TABLA en Agrupados
+ *   (columna codigo o GRUPO) → EXTERNAL_AGRUPADOS_GRUPO_ID_DEFAULT (por defecto 44).
+ * Deshabilitar: EXTERNAL_AGRUPADOS_USAR_DETALLE=false
+ * @returns {Promise<number|null>} valor GRUPO o null si está deshabilitado
+ */
+export async function resolveGrupoIdListadoProveedores() {
+  const disabled = process.env.EXTERNAL_AGRUPADOS_USAR_DETALLE === 'false' || process.env.EXTERNAL_AGRUPADOS_USAR_DETALLE === '0';
+  if (disabled) return null;
+
+  const direct = process.env.EXTERNAL_AGRUPADOS_GRUPO_ID;
+  if (direct != null && String(direct).trim() !== '') {
+    const n = parseInt(String(direct).trim(), 10);
+    if (!Number.isNaN(n)) return n;
+  }
+
+  const codigoTabla = process.env.EXTERNAL_AGRUPADOS_GRUPO_CODIGO_TABLA;
+  if (codigoTabla != null && String(codigoTabla).trim() !== '') {
+    const id = await fetchGrupoIdPorCodigoEnAgrupados(String(codigoTabla).trim());
+    if (id != null) return id;
+  }
+
+  const fallback = parseInt(process.env.EXTERNAL_AGRUPADOS_GRUPO_ID_DEFAULT || '44', 10);
+  return Number.isNaN(fallback) ? 44 : fallback;
+}
+
+/**
+ * Busca en Agrupados el valor GRUPO: por columna codigo o por coincidencia con GRUPO.
+ * @param {string} codigo
+ * @returns {Promise<number|null>}
+ */
+async function fetchGrupoIdPorCodigoEnAgrupados(codigo) {
+  try {
+    const pool = await getSqlServerPool();
+    const request = pool.request();
+    request.input('codigo', sql.VarChar(80), codigo);
+    const result = await request.query(
+      `SELECT TOP 1 [${COL_AGRUPADOS_GRUPO}] AS grupoId FROM [${TABLE_AGRUPADOS}] ` +
+        `WHERE CAST([${COL_AGRUPADOS_CODIGO}] AS VARCHAR(80)) = @codigo ` +
+        `OR CAST([${COL_AGRUPADOS_GRUPO}] AS VARCHAR(80)) = @codigo`
+    );
+    const row = result.recordset?.[0];
+    if (row == null || row.grupoId == null) return null;
+    const n = parseInt(String(row.grupoId), 10);
+    return Number.isNaN(n) ? null : n;
+  } catch (e) {
+    console.warn('SQL Server (Agrupados lookup grupo):', e.message);
+    return null;
+  }
+}
+
+/**
+ * Códigos de proveedor (tabla proveedores, campo codigo) presentes en AgrupadosDetalle para el GRUPO indicado.
+ * @param {number|null} grupoId — valor Agrupados.GRUPO = AgrupadosDetalle.GRUPO
+ * @returns {Promise<string[]>}
+ */
+export async function fetchCodigosProveedoresAgrupadosDetalle(grupoId) {
+  if (grupoId == null || Number.isNaN(Number(grupoId))) return [];
+  try {
+    const pool = await getSqlServerPool();
+    const request = pool.request();
+    request.input('grupo', sql.Int, Number(grupoId));
+    const result = await request.query(
+      `SELECT DISTINCT [${COL_AGRUPADOS_DET_CODIGO}] AS codigo ` +
+        `FROM [${TABLE_AGRUPADOS_DETALLE}] ` +
+        `WHERE [${COL_AGRUPADOS_DET_GRUPO}] = @grupo AND [${COL_AGRUPADOS_DET_CODIGO}] IS NOT NULL`
+    );
+    return (result.recordset || [])
+      .map((row) => {
+        const c = row.codigo;
+        if (c == null) return '';
+        return String(c).trim();
+      })
+      .filter(Boolean)
+      .map((c) => normalizarProveedorParaArticulos(c) || c);
+  } catch (e) {
+    console.warn('SQL Server (AgrupadosDetalle proveedores):', e.message);
+    return [];
+  }
+}
+
 /**
  * Obtiene la lista de artículos anexados al proveedor desde la base SQL Server externa.
  * Filtro: HabilCajas = 1. En ELABASTECEDOR articulos.proveedor puede ser el codigo del proveedor

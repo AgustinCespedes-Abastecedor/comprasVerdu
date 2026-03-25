@@ -777,76 +777,335 @@ html.is-native .vercompras-list.info-final-list {
   flex-shrink: 0;
 }
 
+/* Modal precios: más ancho que el preset large (720px) */
+.modal-box.verrecepciones-modal-box.modal-box--large {
+  max-width: min(96vw, 60rem);
+}
+
+html.is-native .modal-box.verrecepciones-modal-box.modal-box--large {
+  max-width: min(96vw, 60rem);
+  max-height: min(94vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
+}
+
+.modal-box.verrecepciones-modal-box .modal-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0 1.5rem 0;
+  gap: 0;
+}
+
+.verrecepciones-precio-modal-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+}
+
 .verrecepciones-modal-scroll {
   overflow: auto;
   flex: 1;
-  min-height: 28rem;
-  max-height: 65vh;
+  min-height: min(36vh, 20rem);
+  max-height: none;
+  padding: 0.75rem 0 1rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .verrecepciones-modal-table {
   margin: 0;
+  min-width: 100%;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9375rem;
+}
+
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table th,
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table td {
+  padding: 0.85rem 1rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Costo, Precio venta y Margen: misma línea base en la primera fila (números / input) */
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table .verrecepciones-col-costo,
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table .verrecepciones-col-precio,
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table .verrecepciones-col-margen {
+  vertical-align: top;
+}
+
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="light"] .modal-box.verrecepciones-modal-box .verrecepciones-modal-table tbody tr:hover td {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table .verrecepciones-col-codigo {
+  width: 7.5rem;
+  max-width: 9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table .verrecepciones-col-desc {
+  min-width: 12rem;
+  max-width: 22rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table .verrecepciones-col-costo {
+  width: 7rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table .verrecepciones-col-precio {
+  min-width: 15rem;
+  width: 18rem;
+  text-align: left;
+}
+
+.modal-box.verrecepciones-modal-box .verrecepciones-modal-table .verrecepciones-col-margen {
+  width: 6.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.verrecepciones-precio-input-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  min-height: 1.5em;
 }
 
 .verrecepciones-input-precio {
-  width: 5.5rem;
-  max-width: 100%;
-  padding: 0.3rem 0.4rem;
-  font-size: 0.8125rem;
+  width: auto;
+  min-width: 7rem;
+  max-width: 11rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.9375rem;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   background: var(--surface2);
   color: var(--text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .verrecepciones-input-precio:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.verrecepciones-input-precio:focus-visible {
+  outline: none;
+}
+
+.verrecepciones-precio-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  align-items: stretch;
+  width: 100%;
+}
+
+.verrecepciones-precio-options-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+  width: 100%;
+}
+
+.verrecepciones-check-actual {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text);
+  user-select: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.verrecepciones-check-actual input {
+  margin: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.verrecepciones-check-actual input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.verrecepciones-precio-actual-info {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  width: 100%;
+  padding-left: 1.5rem;
+}
+
+.verrecepciones-input-precio--readonly {
+  background: var(--surface);
+  color: var(--text-muted);
+  border-style: dashed;
+  border-color: var(--border-hover);
 }
 
 .verrecepciones-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  padding: 1.25rem 0 1.5rem;
+  margin-top: 0.25rem;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+  background: linear-gradient(180deg, transparent 0%, var(--surface) 12%);
 }
 
 .verrecepciones-modal-btn-cancel {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 1.35rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
   color: var(--text-muted);
   background: transparent;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.verrecepciones-modal-btn-cancel:hover {
+.verrecepciones-modal-btn-cancel:hover:not(:disabled) {
   color: var(--text);
   border-color: var(--border-hover);
+  background: var(--surface2);
+}
+
+.verrecepciones-modal-btn-cancel:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .verrecepciones-modal-btn-save {
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--surface);
-  background: var(--danger);
-  border: none;
-  border-radius: 6px;
+  min-height: 2.75rem;
+  padding: 0.6rem 1.75rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border: 1px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: filter 0.2s ease, transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .verrecepciones-modal-btn-save:hover:not(:disabled) {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
+}
+
+.verrecepciones-modal-btn-save:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.verrecepciones-modal-btn-save:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
 .verrecepciones-modal-btn-save:disabled {
-  opacity: 0.7;
+  opacity: 0.65;
   cursor: not-allowed;
+  transform: none;
+}
+
+html.is-native .verrecepciones-modal-btn-cancel,
+html.is-native .verrecepciones-modal-btn-save {
+  min-height: 48px;
+  font-size: max(0.9375rem, 16px);
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+/* Ver Recepciones — modal precios: misma UI en web y en APK (áreas seguras + táctil) */
+html.is-native .modal-box.verrecepciones-modal-box .modal-body {
+  padding-left: max(0.75rem, var(--app-safe-left));
+  padding-right: max(0.75rem, var(--app-safe-right));
+}
+
+html.is-native .verrecepciones-modal-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+html.is-native .verrecepciones-input-precio {
+  min-height: 48px;
+  font-size: max(1rem, 16px);
+  padding: 0.6rem 0.75rem;
+}
+
+html.is-native .verrecepciones-check-actual {
+  min-height: 44px;
+  padding: 0.2rem 0;
+  font-size: max(0.875rem, 16px);
+}
+
+html.is-native .verrecepciones-check-actual input {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+html.is-native .verrecepciones-precio-actual-info {
+  font-size: max(0.8125rem, 15px);
+}
+
+html.is-native .verrecepciones-modal-actions {
+  padding-bottom: max(1rem, calc(var(--app-safe-bottom) + 0.35rem));
+}
+
+html.is-native .verrecepciones-btn-precio {
+  min-height: 40px;
+  padding: 0.45rem 0.85rem;
+  font-size: max(0.875rem, 16px);
 }
 
 /* ----- Info Final de Artículos ----- */

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { recepciones } from '../api/client';
+import { productos, recepciones } from '../api/client';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
@@ -43,6 +43,9 @@ export default function VerRecepciones() {
   const [expandidoKey, setExpandidoKey] = useState(null);
   const [modalRecepcion, setModalRecepcion] = useState(null);
   const [preciosEdit, setPreciosEdit] = useState({});
+  const [usarPrecioActual, setUsarPrecioActual] = useState({});
+  const [preciosVentaActuales, setPreciosVentaActuales] = useState({});
+  const [cargandoPreciosActuales, setCargandoPreciosActuales] = useState(false);
   const [guardandoPrecios, setGuardandoPrecios] = useState(false);
   const { showSuccess, showError } = useResponse();
 
@@ -78,18 +81,53 @@ export default function VerRecepciones() {
     return () => registerRefresh(null);
   }, [loadList, registerRefresh]);
 
-  const abrirModalPrecios = (r) => {
+  const abrirModalPrecios = async (r) => {
     const initial = {};
     (r.detalles || []).forEach((d) => {
       const v = d.precioVenta;
       initial[d.id] = v != null && v !== '' ? String(v) : '';
     });
+    const checksInitial = {};
+    (r.detalles || []).forEach((d) => { checksInitial[d.id] = false; });
     setPreciosEdit(initial);
+    setUsarPrecioActual(checksInitial);
+    setPreciosVentaActuales({});
     setModalRecepcion(r);
+    const codigos = Array.from(
+      new Set((r.detalles || []).map((d) => d.detalleCompra?.producto?.codigo).filter(Boolean))
+    );
+    if (codigos.length === 0) return;
+    setCargandoPreciosActuales(true);
+    try {
+      const actuales = await productos.getPreciosActuales(codigos);
+      setPreciosVentaActuales(actuales || {});
+    } catch (e) {
+      showError(e ?? { message: 'No se pudo consultar el precio de venta actual.' });
+    } finally {
+      setCargandoPreciosActuales(false);
+    }
   };
 
   const setPrecioDetalle = (detalleId, value) => {
     setPreciosEdit((prev) => ({ ...prev, [detalleId]: value }));
+  };
+
+  const cerrarModalPrecios = () => {
+    setModalRecepcion(null);
+    setUsarPrecioActual({});
+    setPreciosVentaActuales({});
+    setCargandoPreciosActuales(false);
+  };
+
+  const toggleUsarPrecioActual = (detalleId, codigo) => {
+    const precioActual = codigo ? preciosVentaActuales[codigo] : null;
+    setUsarPrecioActual((prev) => {
+      const nextValue = !prev[detalleId];
+      if (nextValue && Number.isFinite(Number(precioActual))) {
+        setPreciosEdit((prevPrecios) => ({ ...prevPrecios, [detalleId]: String(Number(precioActual)) }));
+      }
+      return { ...prev, [detalleId]: nextValue };
+    });
   };
 
   const guardarPreciosVenta = async () => {
@@ -108,7 +146,7 @@ export default function VerRecepciones() {
     try {
       const actualizada = await recepciones.updatePrecios(modalRecepcion.id, { detalles });
       setList((prev) => prev.map((rec) => (rec.id === actualizada.id ? actualizada : rec)));
-      setModalRecepcion(null);
+      cerrarModalPrecios();
       showSuccess('Precios de venta y márgenes actualizados.');
     } catch (e) {
       showError(e ?? { message: 'Error al guardar precios' });
@@ -245,23 +283,24 @@ export default function VerRecepciones() {
 
       <Modal
         open={!!modalRecepcion}
-        onClose={() => setModalRecepcion(null)}
-        title="Agregar Precio de Venta"
-        size="wide"
+        onClose={cerrarModalPrecios}
+        title="Precio de venta"
+        size="large"
+        boxClassName="verrecepciones-modal-box"
         preventClose={guardandoPrecios}
-        subtitle={modalRecepcion ? `Recepción Nº ${getNumeroRecepcion(modalRecepcion)} — ${modalRecepcion.compra?.proveedor?.nombre}. Con costo y precio de venta se calcula el Margen % (MarkUP).` : ''}
+        subtitle={modalRecepcion ? `Recepción Nº ${getNumeroRecepcion(modalRecepcion)} · ${modalRecepcion.compra?.proveedor?.nombre}. Ingresá PrecVenta por artículo o usá el valor actual del sistema; el margen % se calcula sobre el costo.` : ''}
       >
         {modalRecepcion && (
-          <>
+          <div className="verrecepciones-precio-modal-layout">
             <div className="verrecepciones-modal-scroll">
               <table className="vercompras-detalle verrecepciones-modal-table">
                 <thead>
                   <tr>
-                    <th>Código</th>
-                    <th>Descripción</th>
-                    <th>Costo</th>
-                    <th>Precio Venta</th>
-                    <th>Margen %</th>
+                    <th className="verrecepciones-col-codigo" scope="col">Código</th>
+                    <th className="verrecepciones-col-desc" scope="col">Descripción</th>
+                    <th className="verrecepciones-col-costo" scope="col">Costo</th>
+                    <th className="verrecepciones-col-precio" scope="col">Precio venta</th>
+                    <th className="verrecepciones-col-margen" scope="col">Margen %</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -269,26 +308,55 @@ export default function VerRecepciones() {
                     const dc = d.detalleCompra;
                     const costo = costoPorUnidad(dc?.precioPorBulto, d.uxb);
                     const costoNum = costo !== '' ? Number(costo) : 0;
+                    const codigo = dc?.producto?.codigo;
+                    const checkedUsarActual = !!usarPrecioActual[d.id];
+                    const precioActual = codigo ? preciosVentaActuales[codigo] : null;
                     const pvInput = preciosEdit[d.id] ?? (d.precioVenta != null ? String(d.precioVenta) : '');
                     const pvNum = pvInput !== '' ? Number(pvInput) : null;
                     const margen = pvNum != null && costoNum > 0 ? margenPorc(pvNum, costoNum) : null;
                     return (
                       <tr key={d.id}>
-                        <td>{dc?.producto?.codigo}</td>
-                        <td>{dc?.producto?.descripcion}</td>
-                        <td>{costo !== '' ? formatNum(costo) : '—'}</td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={pvInput}
-                            onChange={(e) => setPrecioDetalle(d.id, e.target.value)}
-                            className="verrecepciones-input-precio"
-                            placeholder="0"
-                          />
+                        <td className="verrecepciones-col-codigo">{dc?.producto?.codigo}</td>
+                        <td className="verrecepciones-col-desc">{dc?.producto?.descripcion}</td>
+                        <td className="verrecepciones-col-costo">{costo !== '' ? formatNum(costo) : '—'}</td>
+                        <td className="verrecepciones-col-precio">
+                          <div className="verrecepciones-precio-edit-wrap">
+                            <div className="verrecepciones-precio-input-row">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={pvInput}
+                                onChange={(e) => setPrecioDetalle(d.id, e.target.value)}
+                                className={`verrecepciones-input-precio ${checkedUsarActual ? 'verrecepciones-input-precio--readonly' : ''}`}
+                                placeholder={cargandoPreciosActuales ? 'Consultando...' : '0'}
+                                disabled={checkedUsarActual}
+                                aria-disabled={checkedUsarActual}
+                                aria-label="Precio de venta a registrar"
+                              />
+                            </div>
+                            <div className="verrecepciones-precio-options-row">
+                              <label className="verrecepciones-check-actual">
+                                <input
+                                  type="checkbox"
+                                  checked={checkedUsarActual}
+                                  onChange={() => toggleUsarPrecioActual(d.id, codigo)}
+                                  disabled={cargandoPreciosActuales || precioActual == null}
+                                  aria-label="Usar PrecVenta actual del sistema"
+                                />
+                                <span>Usar PrecVenta actual</span>
+                              </label>
+                              <span className="verrecepciones-precio-actual-info" aria-live="polite">
+                                {cargandoPreciosActuales
+                                  ? 'PrecVenta actual: consultando...'
+                                  : (precioActual == null
+                                      ? 'PrecVenta actual: no disponible'
+                                      : `PrecVenta actual: ${formatNum(precioActual)}`)}
+                              </span>
+                            </div>
+                          </div>
                         </td>
-                        <td>{margen != null ? formatPct(margen) : '—'}</td>
+                        <td className="verrecepciones-col-margen">{margen != null ? formatPct(margen) : '—'}</td>
                       </tr>
                     );
                   })}
@@ -296,14 +364,14 @@ export default function VerRecepciones() {
               </table>
             </div>
             <div className="verrecepciones-modal-actions">
-              <button type="button" className="verrecepciones-modal-btn-cancel" onClick={() => setModalRecepcion(null)}>
+              <button type="button" className="verrecepciones-modal-btn-cancel" onClick={cerrarModalPrecios} disabled={guardandoPrecios}>
                 Cancelar
               </button>
               <button type="button" className="verrecepciones-modal-btn-save" onClick={guardarPreciosVenta} disabled={guardandoPrecios}>
                 {guardandoPrecios ? 'Guardando…' : 'Guardar precios'}
               </button>
             </div>
-          </>
+          </div>
         )}
       </Modal>
     </div>

@@ -95,10 +95,25 @@ router.post('/', soloComprador, async (req, res) => {
     if (!req.userId) {
       return sendError(res, 401, MSG.COMPRAS_USUARIO_NO_IDENTIFICADO, 'COMPRAS_003');
     }
-    const { fecha, proveedorId, detalles } = req.body;
-    if (!fecha || !proveedorId || !Array.isArray(detalles) || detalles.length === 0) {
+    const { fecha, proveedorId, proveedorNombreManual, detalles } = req.body;
+    const proveedorManualLimpio = (proveedorNombreManual || '').toString().trim();
+    if (!fecha || (!proveedorId && !proveedorManualLimpio) || !Array.isArray(detalles) || detalles.length === 0) {
       return sendError(res, 400, MSG.COMPRAS_FALTAN_DATOS, 'COMPRAS_004');
     }
+
+    const resolverProveedorId = async () => {
+      if (proveedorId) return proveedorId;
+      const existente = await prisma.proveedor.findFirst({
+        where: { nombre: { equals: proveedorManualLimpio, mode: 'insensitive' } },
+        select: { id: true },
+      });
+      if (existente) return existente.id;
+      const creado = await prisma.proveedor.create({
+        data: { nombre: proveedorManualLimpio },
+        select: { id: true },
+      });
+      return creado.id;
+    };
     // Resolver productoId: puede ser el id (cuid) de Prisma o el codigo (lista desde SQL Server)
     const resolverProductoId = async (d) => {
       const idOrCodigo = (d.productoId || d.codigo || '').toString().trim();
@@ -145,6 +160,7 @@ router.post('/', soloComprador, async (req, res) => {
     }
     const { _max } = await prisma.compra.aggregate({ _max: { numeroCompra: true } });
     const numeroCompra = (Number(_max?.numeroCompra) || 0) + 1;
+    const proveedorIdFinal = await resolverProveedorId();
     const compra = await prisma.compra.create({
       data: {
         numeroCompra,
@@ -152,7 +168,7 @@ router.post('/', soloComprador, async (req, res) => {
         totalBultos,
         totalMonto,
         userId: req.userId,
-        proveedorId,
+        proveedorId: proveedorIdFinal,
         detalles: { create: detallesCrear },
       },
       include: {

@@ -8,7 +8,8 @@ import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
-import { ChevronDown, Search, X } from 'lucide-react';
+import Modal from '../components/Modal';
+import { ChevronDown, Pencil, Search, X } from 'lucide-react';
 import './PlanillaCompra.css';
 
 const isApp = () => Capacitor.isNativePlatform();
@@ -80,13 +81,49 @@ export default function PlanillaCompra() {
   const searchInputRef = useRef(null);
   const [providerPickerOpen, setProviderPickerOpen] = useState(false);
   const [providerSearch, setProviderSearch] = useState('');
+  const [providerManualMode, setProviderManualMode] = useState(false);
+  const [providerManualName, setProviderManualName] = useState('');
+  const [providerMergeBusy, setProviderMergeBusy] = useState(false);
+  const [providerReplaceModalOpen, setProviderReplaceModalOpen] = useState(false);
+  const [providerReplaceCandidate, setProviderReplaceCandidate] = useState(null);
   const providerSearchInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!isApp() || !providerPickerOpen) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const writeInset = () => {
+      const inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      document.documentElement.style.setProperty('--app-keyboard-inset', `${inset}px`);
+    };
+
+    writeInset();
+    vv.addEventListener('resize', writeInset);
+    vv.addEventListener('scroll', writeInset);
+    return () => {
+      vv.removeEventListener('resize', writeInset);
+      vv.removeEventListener('scroll', writeInset);
+      document.documentElement.style.setProperty('--app-keyboard-inset', '0px');
+    };
+  }, [providerPickerOpen]);
 
   const filteredProveedores = useMemo(() => {
     if (!providerSearch.trim()) return proveedoresList;
     const q = providerSearch.trim().toLowerCase();
     return proveedoresList.filter((p) => (p.nombre || '').toLowerCase().includes(q));
   }, [proveedoresList, providerSearch]);
+
+  const providerManualSuggestion = useMemo(() => {
+    const raw = providerManualName.trim();
+    if (!raw) return null;
+    const q = raw.toLowerCase();
+    const exact = proveedoresList.find((p) => (p.nombre || '').trim().toLowerCase() === q);
+    if (exact) return { type: 'exact', provider: exact };
+    const partial = proveedoresList.find((p) => (p.nombre || '').toLowerCase().includes(q));
+    if (partial) return { type: 'partial', provider: partial };
+    return null;
+  }, [providerManualName, proveedoresList]);
 
   useEffect(() => {
     if (providerPickerOpen && providerSearchInputRef.current) {
@@ -222,8 +259,9 @@ export default function PlanillaCompra() {
   }, [filas]);
 
   const handleGuardar = async () => {
-    if (!proveedorId) {
-      setMensaje({ tipo: 'error', text: 'Seleccioná un proveedor' });
+    const manualNombre = providerManualName.trim();
+    if (!proveedorId && !manualNombre) {
+      setMensaje({ tipo: 'error', text: 'Seleccioná un proveedor o ingresá uno manual' });
       return;
     }
     const detalles = filas
@@ -250,6 +288,7 @@ export default function PlanillaCompra() {
       await compras.create({
         fecha,
         proveedorId,
+        proveedorNombreManual: manualNombre || undefined,
         detalles,
       });
       showSuccess('Compra guardada correctamente. Podés consultarla en Ver Compras.');
@@ -264,6 +303,56 @@ export default function PlanillaCompra() {
     } finally {
       setGuardando(false);
     }
+  };
+
+  const handleUseExistingProvider = async (provider) => {
+    const manualNombre = providerManualName.trim();
+    const providerNombre = (provider?.nombre || '').trim();
+    if (!provider?.id) return;
+
+    const nombreManualLower = manualNombre.toLowerCase();
+    const nombreDestinoLower = providerNombre.toLowerCase();
+    const requiereConfirmacion = manualNombre && nombreManualLower !== nombreDestinoLower;
+
+    if (requiereConfirmacion) {
+      setProviderReplaceCandidate(provider);
+      setProviderReplaceModalOpen(true);
+      return;
+    }
+
+    try {
+      if (manualNombre) {
+        setProviderMergeBusy(true);
+        const mergeRes = await proveedores.mergeManual({
+          manualNombre,
+          proveedorDestinoId: provider.id,
+        });
+        if (mergeRes?.merged) {
+          setMensaje({
+            tipo: 'ok',
+            text: `Proveedor unificado: "${manualNombre}" ahora usa "${providerNombre}".`,
+          });
+        }
+      }
+      setProveedorId(provider.id);
+      setProviderManualName('');
+      setProviderManualMode(false);
+      setProviderSearch(provider.nombre);
+    } catch (e) {
+      setMensaje({ tipo: 'error', text: e.message || 'No se pudo unificar el proveedor manual.' });
+    } finally {
+      setProviderMergeBusy(false);
+    }
+  };
+
+  const confirmarReemplazoProveedor = async () => {
+    if (!providerReplaceCandidate) {
+      setProviderReplaceModalOpen(false);
+      return;
+    }
+    setProviderReplaceModalOpen(false);
+    await handleUseExistingProvider(providerReplaceCandidate);
+    setProviderReplaceCandidate(null);
   };
 
   return (
@@ -502,9 +591,70 @@ export default function PlanillaCompra() {
         )}
 
         <section className="planilla-section planilla-section-proveedor">
-          <label className="planilla-proveedor-label">Proveedor de la compra</label>
+          <div className="planilla-proveedor-head">
+            <label className="planilla-proveedor-label">Proveedor de la compra</label>
+            <button
+              type="button"
+              className={`planilla-provider-manual-toggle ${providerManualMode ? 'planilla-provider-manual-toggle-active' : ''}`}
+              onClick={() => {
+                setProviderManualMode((prev) => {
+                  const next = !prev;
+                  if (next) {
+                    setProviderPickerOpen(false);
+                    setProveedorId('');
+                    setProviderSearch('');
+                  } else {
+                    setProviderManualName('');
+                  }
+                  return next;
+                });
+              }}
+              aria-pressed={providerManualMode}
+              aria-label={providerManualMode ? 'Desactivar carga manual de proveedor' : 'Activar carga manual de proveedor'}
+              title={providerManualMode ? 'Desactivar carga manual' : 'Cargar proveedor manual'}
+            >
+              <Pencil className="planilla-provider-manual-toggle-icon" aria-hidden strokeWidth={2} />
+              <span className="planilla-provider-manual-toggle-text">
+                {providerManualMode ? 'Manual activado' : 'Manual'}
+              </span>
+            </button>
+          </div>
           <p className="planilla-proveedor-hint">Asigná el proveedor antes de guardar (último paso).</p>
-          {isApp() ? (
+          {providerManualMode ? (
+            <div className="planilla-proveedor-manual-wrap">
+              <label className="planilla-proveedor-manual-label" htmlFor="planilla-proveedor-manual-input">
+                Nombre del proveedor (manual)
+              </label>
+              <input
+                id="planilla-proveedor-manual-input"
+                type="text"
+                value={providerManualName}
+                onChange={(e) => setProviderManualName(e.target.value)}
+                placeholder="Ej: Proveedor Nuevo S.A."
+                className="planilla-input planilla-proveedor-manual-input"
+                autoComplete="off"
+                aria-label="Nombre manual del proveedor"
+              />
+              {providerManualSuggestion && (
+                <div className="planilla-proveedor-manual-suggestion" role="status" aria-live="polite">
+                  <span className="planilla-proveedor-manual-suggestion-text">
+                    {providerManualSuggestion.type === 'exact'
+                      ? `Ya existe: ${providerManualSuggestion.provider.nombre}`
+                      : `Coincidencia encontrada: ${providerManualSuggestion.provider.nombre}`}
+                  </span>
+                  <button
+                    type="button"
+                    className="planilla-proveedor-manual-suggestion-btn"
+                    onClick={() => handleUseExistingProvider(providerManualSuggestion.provider)}
+                    aria-label={`Usar proveedor existente ${providerManualSuggestion.provider.nombre}`}
+                    disabled={providerMergeBusy}
+                  >
+                    {providerMergeBusy ? 'Unificando...' : 'Usar existente'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : isApp() ? (
             <>
               <button
                 type="button"
@@ -524,7 +674,7 @@ export default function PlanillaCompra() {
               </button>
               {providerPickerOpen && (
                 <div
-                  className="planilla-provider-picker-backdrop"
+                  className="planilla-provider-picker-backdrop planilla-provider-picker-backdrop--top"
                   onClick={() => setProviderPickerOpen(false)}
                   role="presentation"
                 >
@@ -667,6 +817,51 @@ export default function PlanillaCompra() {
           </button>
         </section>
       </main>
+      <Modal
+        open={providerReplaceModalOpen}
+        onClose={() => {
+          if (providerMergeBusy) return;
+          setProviderReplaceModalOpen(false);
+          setProviderReplaceCandidate(null);
+        }}
+        title="Confirmar reemplazo de proveedor"
+        size="medium"
+        preventClose={providerMergeBusy}
+        subtitle={
+          providerReplaceCandidate
+            ? `Existe un proveedor en sistema "${providerReplaceCandidate.nombre}".`
+            : ''
+        }
+      >
+        <div className="planilla-provider-replace-modal-content">
+          <p className="planilla-provider-replace-modal-text">
+            {providerReplaceCandidate
+              ? `¿Desea utilizar "${providerReplaceCandidate.nombre}"? Si confirma, se reemplazará "${providerManualName.trim()}" por "${providerReplaceCandidate.nombre}" y se unificarán las compras del proveedor manual.`
+              : '¿Desea continuar con la unificación del proveedor?'}
+          </p>
+          <div className="planilla-provider-replace-modal-actions">
+            <button
+              type="button"
+              className="planilla-provider-replace-btn-cancel"
+              onClick={() => {
+                setProviderReplaceModalOpen(false);
+                setProviderReplaceCandidate(null);
+              }}
+              disabled={providerMergeBusy}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="planilla-provider-replace-btn-confirm"
+              onClick={confirmarReemplazoProveedor}
+              disabled={providerMergeBusy}
+            >
+              {providerMergeBusy ? 'Unificando...' : 'Confirmar'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

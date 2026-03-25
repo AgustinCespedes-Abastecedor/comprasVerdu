@@ -75,6 +75,7 @@ export const auth = {
 
 export const proveedores = {
   list: () => api('/proveedores'),
+  mergeManual: (body) => api('/proveedores/merge-manual', { method: 'POST', body: JSON.stringify(body) }),
 };
 
 export const productos = {
@@ -91,6 +92,12 @@ export const productos = {
     if (!Array.isArray(codigos) || codigos.length === 0) return Promise.resolve({});
     const q = new URLSearchParams({ codigos: codigos.join(',') }).toString();
     return api(`/productos/iva?${q}`);
+  },
+  /** Precio de venta actual por código desde origen externo. codigos: string[] -> { [codigo]: number|null } */
+  getPreciosActuales: (codigos) => {
+    if (!Array.isArray(codigos) || codigos.length === 0) return Promise.resolve({});
+    const q = new URLSearchParams({ codigos: codigos.join(',') }).toString();
+    return api(`/productos/precios-actuales?${q}`);
   },
 };
 
