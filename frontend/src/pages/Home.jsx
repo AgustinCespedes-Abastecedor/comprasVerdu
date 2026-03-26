@@ -77,14 +77,12 @@ export default function Home() {
   const visibleActions = actions.filter((a) => puedeAcceder(user, a.permiso));
 
   const enlacesConfig = [];
-  if (puedeAcceder(user, 'manual-usuario') || esAdmin) {
-    enlacesConfig.push({
-      key: 'manual',
-      to: '/manual-usuario',
-      label: 'Manual de usuario',
-      icon: 'book',
-    });
-  }
+  enlacesConfig.push({
+    key: 'manual',
+    to: '/manual-usuario',
+    label: 'Manual de usuario',
+    icon: 'book',
+  });
   if (esAdmin) {
     enlacesConfig.push({
       key: 'usuarios',

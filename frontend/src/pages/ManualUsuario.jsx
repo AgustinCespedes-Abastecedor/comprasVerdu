@@ -8,6 +8,39 @@ import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import './ManualUsuario.css';
 
+function buildManualCandidates() {
+  const base = import.meta.env.BASE_URL || '/';
+  const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+  const candidates = [
+    `${normalizedBase}manual-usuario.md`,
+    '/manual-usuario.md',
+    'manual-usuario.md',
+  ];
+  return [...new Set(candidates)];
+}
+
+async function fetchManualContent() {
+  const candidates = buildManualCandidates();
+  let lastError = null;
+
+  for (const url of candidates) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) {
+        lastError = new Error(`No disponible (${res.status}) en ${url}`);
+        continue;
+      }
+      const text = await res.text();
+      if (text?.trim()) return text;
+      lastError = new Error(`Contenido vacío en ${url}`);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(`Error al cargar ${url}`);
+    }
+  }
+
+  throw lastError || new Error('No se pudo cargar el manual de usuario');
+}
+
 /** Genera un id tipo slug para usar como ancla (ej: "2.1 Iniciar sesión" → "21-iniciar-sesion") */
 function slugify(text) {
   if (!text || typeof text !== 'string') return '';
@@ -53,11 +86,7 @@ export default function ManualUsuario() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/manual-usuario.md')
-      .then((res) => {
-        if (!res.ok) throw new Error('No se pudo cargar el manual');
-        return res.text();
-      })
+    fetchManualContent()
       .then((text) => {
         if (!cancelled) {
           setContent(text);
@@ -65,7 +94,10 @@ export default function ManualUsuario() {
         }
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message);
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : 'No se pudo cargar el manual';
+          setError(message);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

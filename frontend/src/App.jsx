@@ -126,7 +126,7 @@ function AppRoutes() {
       <Route
         path="/manual-usuario"
         element={
-          <PrivateRoute permiso="manual-usuario" permitirAdmin>
+          <PrivateRoute>
             <ManualUsuario />
           </PrivateRoute>
         }
