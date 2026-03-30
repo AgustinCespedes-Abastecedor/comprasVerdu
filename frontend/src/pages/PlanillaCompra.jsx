@@ -521,7 +521,6 @@ export default function PlanillaCompra() {
                         : 'planilla-item-ref-body planilla-item-ref-body--with-thumb'
                     }
                   >
-                    <PlanillaArticuloRefImagenWeb codigo={f.codigo} />
                     <div className="planilla-item-ref-grid">
                     <div className="planilla-item-ref-group planilla-item-ref-group--stock">
                       <span className="planilla-item-ref-label">Stock Suc.</span>
@@ -579,6 +578,7 @@ export default function PlanillaCompra() {
                       <span className="planilla-item-ref-value">{formatNum(f.margenPorc) != null && formatNum(f.margenPorc) !== '' ? `${formatNum(f.margenPorc)} %` : '—'}</span>
                     </div>
                     </div>
+                    <PlanillaArticuloRefImagenWeb codigo={f.codigo} />
                   </div>
                 </div>
                 <div className="planilla-item-compra-title">Datos a cargar (compra)</div>

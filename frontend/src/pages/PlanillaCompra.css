@@ -283,7 +283,7 @@
   color: var(--planilla-th-bd-fg, #e6c229);
 }
 
-/* Cuerpo del bloque referencia: en web, miniatura a la izquierda + grilla (APK: solo grilla). */
+/* Cuerpo del bloque referencia: en web, grilla + miniatura a la derecha (APK: solo grilla). */
 .planilla-item-ref-body--with-thumb {
   display: flex;
   flex-direction: row;
@@ -331,7 +331,7 @@
     width: 100%;
     max-width: 7.5rem;
     height: 5rem;
-    margin: 0 auto 0.25rem;
+    margin: 0.75rem auto 0;
   }
 }
 
