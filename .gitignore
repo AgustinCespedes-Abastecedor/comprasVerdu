@@ -12,6 +12,9 @@ frontend/dist/
 frontend/.vite/
 backend/generated/
 
+# Imágenes de artículos (solo en disco local o en el servidor de build; no versionar)
+img/
+
 # Logs y OS
 *.log
 .DS_Store
