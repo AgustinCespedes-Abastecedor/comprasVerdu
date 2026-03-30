@@ -40,6 +40,36 @@ function textoBultosDesdeStock(unidades, uxb) {
   return `${bultos.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} bultos`;
 }
 
+/** Solo caracteres seguros para nombre de archivo (evita path traversal). */
+function codigoParaNombreArchivoArticulo(codigo) {
+  const c = String(codigo ?? '').trim();
+  if (!c) return null;
+  if (!/^[a-zA-Z0-9_-]+$/.test(c)) return null;
+  return c;
+}
+
+/**
+ * Miniatura del artículo desde /img/articulos/{codigo}.jpg (solo navegador; en APK no se renderiza).
+ */
+function PlanillaArticuloRefImagenWeb({ codigo }) {
+  const [ocultar, setOcultar] = useState(false);
+  const safe = useMemo(() => codigoParaNombreArchivoArticulo(codigo), [codigo]);
+  if (isApp() || ocultar || !safe) return null;
+  const src = `/img/articulos/${encodeURIComponent(safe)}.jpg`;
+  return (
+    <div className="planilla-item-ref-thumb-wrap" aria-hidden="true">
+      <img
+        src={src}
+        alt=""
+        className="planilla-item-ref-thumb-img"
+        loading="lazy"
+        decoding="async"
+        onError={() => setOcultar(true)}
+      />
+    </div>
+  );
+}
+
 function productToFila(p, filaId) {
   return {
     filaId,
@@ -484,7 +514,15 @@ export default function PlanillaCompra() {
                 </div>
                 <div className="planilla-item-ref-block" aria-label="Datos de referencia ELABASTECEDOR">
                   <p className="planilla-item-ref-title">Datos de referencia (ELABASTECEDOR)</p>
-                  <div className="planilla-item-ref-grid">
+                  <div
+                    className={
+                      isApp()
+                        ? 'planilla-item-ref-body'
+                        : 'planilla-item-ref-body planilla-item-ref-body--with-thumb'
+                    }
+                  >
+                    <PlanillaArticuloRefImagenWeb codigo={f.codigo} />
+                    <div className="planilla-item-ref-grid">
                     <div className="planilla-item-ref-group planilla-item-ref-group--stock">
                       <span className="planilla-item-ref-label">Stock Suc.</span>
                       <div className="planilla-item-ref-stock-line">
@@ -539,6 +577,7 @@ export default function PlanillaCompra() {
                     <div className="planilla-item-ref-group">
                       <span className="planilla-item-ref-label">Margen %</span>
                       <span className="planilla-item-ref-value">{formatNum(f.margenPorc) != null && formatNum(f.margenPorc) !== '' ? `${formatNum(f.margenPorc)} %` : '—'}</span>
+                    </div>
                     </div>
                   </div>
                 </div>
