@@ -50,8 +50,9 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      # Raíz del repo: permite copiar img/ hacia public/img (el symlink local no vale en Docker).
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         VITE_API_URL: /api
     container_name: compras_verdu_frontend

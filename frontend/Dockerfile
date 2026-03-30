@@ -11,10 +11,14 @@ WORKDIR /app
 ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
 
-COPY package*.json ./
+COPY frontend/package*.json ./
 RUN npm ci
 
-COPY . .
+COPY frontend/ .
+# public/img suele ser symlink a ../../img; dentro del contenedor el destino no existe y vite build falla.
+RUN rm -rf public/img
+COPY img ./public/img
+
 RUN npm run build
 
 # -----------------------------------------------------------------------------
@@ -23,7 +27,7 @@ RUN npm run build
 FROM nginx:alpine AS production
 
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
