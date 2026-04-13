@@ -68,7 +68,8 @@ export async function ensurePrismaUserFromExterno(p) {
         nombre: nombreFinal,
         roleId,
         externUserId,
-        // No tocar activo: la suspensión en la app debe persistir entre logins.
+        /* Login exitoso implica Habilitado en SQL; alineamos Postgres para listados/UI */
+        activo: true,
       },
       include: { role: { select: { id: true, nombre: true, permisos: true } } },
     });

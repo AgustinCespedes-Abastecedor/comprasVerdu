@@ -9,6 +9,26 @@
   justify-content: center;
   z-index: 1000;
   padding: 1.25rem;
+  animation: modal-overlay-in 0.18s ease-out;
+}
+
+@keyframes modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modal pegado arriba (evita scroll enorme del overlay con cajas cortas) */
+.modal-overlay--top {
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: max(1.25rem, env(safe-area-inset-top, 0px));
+  padding-bottom: 1rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-box {
@@ -20,6 +40,18 @@
   border: 1px solid var(--border);
   border-radius: 16px;
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.2);
+  animation: modal-box-in 0.22s ease-out;
+}
+
+@keyframes modal-box-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .modal-box--medium {
@@ -124,6 +156,11 @@ html.is-native .modal-overlay {
   -webkit-overflow-scrolling: touch;
 }
 
+html.is-native .modal-overlay--top {
+  align-items: flex-start;
+  padding-top: max(1rem, var(--app-safe-top));
+}
+
 html.is-native .modal-box--medium {
   max-height: min(90vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
 }
@@ -146,4 +183,11 @@ html.is-native .modal-close {
 
 html.is-native .modal-body {
   -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-box {
+    animation: none;
+  }
 }

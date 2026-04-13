@@ -4,24 +4,23 @@ import { soloGestionRoles, soloGestionUsuariosOroles } from '../middleware/auth.
 import { TODOS_LOS_PERMISOS } from '../lib/permisos.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
+import { getUsuarioCountsByRoleEffective, synchronizeUserRolesWithElab } from '../lib/rolesUsuarioCounts.js';
 
 const router = Router();
 
-/** Listar todos los roles con cantidad de usuarios. Quien tiene gestion-usuarios o gestion-roles puede listar. */
+/** Listar todos los roles con cantidad de usuarios (alineada con listado de gestión cuando hay login ELAB). */
 router.get('/', soloGestionUsuariosOroles, async (req, res) => {
   try {
-    const roles = await prisma.role.findMany({
-      orderBy: { nombre: 'asc' },
-      include: {
-        _count: { select: { users: true } },
-      },
-    });
+    const [roles, countMap] = await Promise.all([
+      prisma.role.findMany({ orderBy: { nombre: 'asc' } }),
+      getUsuarioCountsByRoleEffective(),
+    ]);
     const list = roles.map((r) => ({
       id: r.id,
       nombre: r.nombre,
       descripcion: r.descripcion,
       permisos: Array.isArray(r.permisos) ? r.permisos : [],
-      usuariosCount: r._count.users,
+      usuariosCount: countMap.get(r.id) ?? 0,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
@@ -136,6 +135,7 @@ router.patch('/:id', soloGestionRoles, async (req, res) => {
 router.delete('/:id', soloGestionRoles, async (req, res) => {
   try {
     const { id } = req.params;
+    await synchronizeUserRolesWithElab();
     const role = await prisma.role.findUnique({
       where: { id },
       include: { _count: { select: { users: true } } },

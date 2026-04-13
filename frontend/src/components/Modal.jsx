@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 import './Modal.css';
 
@@ -13,6 +13,8 @@ import './Modal.css';
  * @param {'medium'|'wide'|'large'} [size='medium'] - Ancho/alto del modal
  * @param {boolean} [preventClose=false] - Si true, no se cierra con Escape ni click fuera (ej. mientras guarda)
  * @param {string} [boxClassName] - Clases adicionales para la caja del modal (ej. variantes por pantalla)
+ * @param {string} [overlayClassName] - Clases extra en el overlay (ej. modal-overlay--top)
+ * @param {string} [ariaDescribedBy] - id del nodo que describe el diálogo (accesibilidad)
  * @param {React.ReactNode} children - Contenido del cuerpo (scroll interno)
  */
 export default function Modal({
@@ -25,9 +27,12 @@ export default function Modal({
   size = 'medium',
   preventClose = false,
   boxClassName,
+  overlayClassName,
+  ariaDescribedBy,
   children,
 }) {
-  const id = titleId || `modal-title-${Math.random().toString(36).slice(2, 9)}`;
+  const autoTitleId = useId();
+  const id = titleId || autoTitleId;
 
   useEffect(() => {
     if (!open) return;
@@ -38,6 +43,15 @@ export default function Modal({
     return () => window.removeEventListener('keydown', handleEscape);
   }, [open, preventClose, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   const handleOverlayClick = () => {
@@ -46,11 +60,12 @@ export default function Modal({
 
   return (
     <div
-      className="modal-overlay"
+      className={`modal-overlay${overlayClassName ? ` ${overlayClassName}` : ''}`}
       onClick={handleOverlayClick}
       role="dialog"
       aria-modal="true"
       aria-labelledby={id}
+      {...(ariaDescribedBy ? { 'aria-describedby': ariaDescribedBy } : {})}
     >
       <div
         className={`modal-box modal-box--${size}${boxClassName ? ` ${boxClassName}` : ''}`}

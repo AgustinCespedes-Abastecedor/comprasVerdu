@@ -172,9 +172,7 @@ router.post('/login', async (req, res) => {
         }
         return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_044', e);
       }
-      if (user.activo === false) {
-        return sendError(res, 403, MSG.AUTH_CUENTA_SUSPENDIDA, 'AUTH_007');
-      }
+      /* Acceso externo: lo define ELABASTECEDOR (filtro Habilitado en login SQL), no Postgres.activo */
       const token = jwt.sign(
         { userId: user.id, email: user.email },
         getJwtSecret(),

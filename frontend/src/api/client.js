@@ -136,6 +136,9 @@ export const users = {
     const q = new URLSearchParams(params || {}).toString();
     return api(`/users${q ? `?${q}` : ''}`);
   },
+  /** Datos desde dbo.Usuarios (ELABASTECEDOR) por código. Solo con login externo. */
+  elabDetalle: (externUserId) =>
+    api(`/users/extern/${encodeURIComponent(String(externUserId))}/elab`),
   create: (body) => api('/users', { method: 'POST', body: JSON.stringify(body) }),
   update: (id, body) => api(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
 };

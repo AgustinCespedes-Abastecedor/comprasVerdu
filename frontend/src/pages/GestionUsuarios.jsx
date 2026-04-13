@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { Link } from 'react-router-dom';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { users, roles as rolesApi, auth as authApi } from '../api/client';
-import { rolEtiqueta, puedeGestionarRoles } from '../lib/roles';
+import { puedeGestionarRoles } from '../lib/roles';
 import { PANTALLAS } from '../lib/permisos';
 import { useAuth } from '../context/AuthContext';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
@@ -11,29 +12,52 @@ import ThemeToggle from '../components/ThemeToggle';
 import PasswordInput from '../components/PasswordInput';
 import AppLoader from '../components/AppLoader';
 import Modal from '../components/Modal';
-import { formatDateShort } from '../lib/format';
 import { formatForReport } from '../lib/errorReport';
+import UsuarioListCard from '../components/gestion/UsuarioListCard';
+import UsuarioTableRow from '../components/gestion/UsuarioTableRow';
+import UsuarioElabDetailModal from '../components/gestion/UsuarioElabDetailModal';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useIsNativeApp } from '../hooks/useIsNativeApp';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import './GestionUsuarios.css';
+
+/** Espera a que el usuario deje de escribir antes de consultar al servidor (ms). */
+const BUSCAR_USUARIOS_DEBOUNCE_MS = 380;
 
 export default function GestionUsuarios() {
   const { user } = useAuth();
   const [list, setList] = useState([]);
   const [rolesList, setRolesList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  /** Solo la primera carga de la lista: pantalla completa con AppLoader. */
+  const [initialLoading, setInitialLoading] = useState(true);
+  /** Refetch por búsqueda/filtro: indicador discreto, lista anterior visible. */
+  const [listRefreshing, setListRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, BUSCAR_USUARIOS_DEBOUNCE_MS);
   const [roleFilter, setRoleFilter] = useState('');
-  const [activoFilter, setActivoFilter] = useState(''); // '' = todos, 'true' = activos, 'false' = inactivos
+  const initialUsersFetchDoneRef = useRef(false);
+  const listFetchSeqRef = useRef(0);
   const [tab, setTab] = useState('usuarios'); // 'usuarios' | 'roles'
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
   const [copyFeedback, setCopyFeedback] = useState(false);
+  /** Confirmación in-app para eliminar rol (evita window.confirm). */
+  const [roleDeleteConfirm, setRoleDeleteConfirm] = useState(null);
+  const [deletingRole, setDeletingRole] = useState(false);
   /** Tras GET /auth/config: si es true, la lista mezcla ELABASTECEDOR + Postgres. */
   const [externalAuthLogin, setExternalAuthLogin] = useState(false);
   const [authConfigReady, setAuthConfigReady] = useState(false);
 
   const puedeRoles = puedeGestionarRoles(user);
+  const escritorioLg = useMediaQuery('(min-width: 1024px)');
+  const isNativeApp = useIsNativeApp();
+  /** Tabla densa en navegador de escritorio; tarjetas en móvil y en APK. */
+  const vistaTablaEscritorio = escritorioLg && !isNativeApp;
+  /** Texto distinto al valor ya aplicado en servidor (esperando debounce). */
+  const busquedaPendiente = search !== debouncedSearch;
+  const deleteRoleDescriptionId = useId();
 
   useEffect(() => {
     authApi.getPublicConfig()
@@ -47,20 +71,38 @@ export default function GestionUsuarios() {
       });
   }, []);
 
+  const buildUserListParams = useCallback(() => {
+    const params = {};
+    if (debouncedSearch.trim()) params.q = debouncedSearch.trim();
+    if (roleFilter) params.roleId = roleFilter;
+    return params;
+  }, [debouncedSearch, roleFilter]);
+
+  /** Petición al servidor para la lista (compartida por efecto y acciones manuales). */
+  const fetchUserListFromServer = useCallback(
+    () => users.list(buildUserListParams()),
+    [buildUserListParams],
+  );
+
   const loadUsers = useCallback(async () => {
+    const seq = ++listFetchSeqRef.current;
     try {
-      const params = {};
-      if (search.trim()) params.q = search.trim();
-      if (roleFilter) params.roleId = roleFilter;
-      if (activoFilter) params.activo = activoFilter;
-      const data = await users.list(params);
+      const data = await fetchUserListFromServer();
+      if (seq !== listFetchSeqRef.current) return;
       setList(data);
+      setError('');
+      setErrorCode('');
     } catch (e) {
+      if (seq !== listFetchSeqRef.current) return;
       setList([]);
       setError(e.message);
       setErrorCode(e?.code ?? '');
+    } finally {
+      if (seq === listFetchSeqRef.current) {
+        setListRefreshing(false);
+      }
     }
-  }, [search, roleFilter, activoFilter]);
+  }, [fetchUserListFromServer]);
 
   const loadRoles = useCallback(async () => {
     if (!puedeRoles) return;
@@ -73,24 +115,66 @@ export default function GestionUsuarios() {
   }, [puedeRoles]);
 
   useEffect(() => {
-    setLoading(true);
-    setError('');
-    setErrorCode('');
-    Promise.all([
-      loadUsers(),
-      rolesApi.list().then(setRolesList).catch(() => setRolesList([])),
-    ]).finally(() => setLoading(false));
-  }, [loadUsers]);
+    rolesApi.list().then(setRolesList).catch(() => setRolesList([]));
+  }, []);
 
   useEffect(() => {
-    if (modal === null && !loading) loadUsers();
-  }, [modal, loading, loadUsers]);
+    let cancelled = false;
+    const seq = ++listFetchSeqRef.current;
+    const isFirst = !initialUsersFetchDoneRef.current;
+    if (isFirst) setInitialLoading(true);
+    else setListRefreshing(true);
+    setError('');
+    setErrorCode('');
+
+    (async () => {
+      try {
+        const data = await fetchUserListFromServer();
+        if (cancelled || seq !== listFetchSeqRef.current) return;
+        setList(data);
+        setError('');
+        setErrorCode('');
+      } catch (e) {
+        if (cancelled || seq !== listFetchSeqRef.current) return;
+        setList([]);
+        setError(e.message);
+        setErrorCode(e?.code ?? '');
+      } finally {
+        if (cancelled || seq !== listFetchSeqRef.current) return;
+        initialUsersFetchDoneRef.current = true;
+        setInitialLoading(false);
+        setListRefreshing(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedSearch, roleFilter, fetchUserListFromServer]);
 
   const { registerRefresh } = usePullToRefresh();
   const doRefresh = useCallback(async () => {
-    await loadUsers();
-    if (puedeRoles) await loadRoles();
+    setListRefreshing(true);
+    setError('');
+    setErrorCode('');
+    try {
+      await loadUsers();
+      if (puedeRoles) await loadRoles();
+    } catch {
+      /* loadUsers ya limpia estado y listRefreshing en finally */
+    }
   }, [loadUsers, loadRoles, puedeRoles]);
+
+  const openUsuarioModal = useCallback((u) => {
+    setError('');
+    setErrorCode('');
+    const ext = u.externUserId != null && String(u.externUserId).trim() !== '';
+    if (ext) {
+      setModal({ type: 'elab-detail', user: u });
+      return;
+    }
+    setModal({ type: 'edit', user: u });
+  }, []);
   useEffect(() => {
     registerRefresh(doRefresh);
     return () => registerRefresh(null);
@@ -123,27 +207,21 @@ export default function GestionUsuarios() {
     }
   };
 
-  const handleUpdateUser = async (e, id, options = {}) => {
+  const handleUpdateUser = async (e, id) => {
     e.preventDefault();
-    const { soloActivoExterno } = options;
     const form = e.target;
-    const activo = form.estado.value === 'true';
     setSaving(true);
     setError('');
     setErrorCode('');
     try {
-      if (soloActivoExterno) {
-        await users.update(id, { activo });
-      } else {
-        const nombre = form.nombre.value.trim();
-        const email = form.email?.value?.trim().toLowerCase();
-        const roleId = form.roleId.value;
-        const password = form.password.value;
-        const body = { nombre, roleId, activo };
-        if (email !== undefined) body.email = email;
-        if (password.length > 0) body.password = password;
-        await users.update(id, body);
-      }
+      const nombre = form.nombre.value.trim();
+      const email = form.email?.value?.trim().toLowerCase();
+      const roleId = form.roleId.value;
+      const password = form.password.value;
+      const body = { nombre, roleId };
+      if (email !== undefined) body.email = email;
+      if (password.length > 0) body.password = password;
+      await users.update(id, body);
       setModal(null);
       loadUsers();
     } catch (err) {
@@ -151,23 +229,6 @@ export default function GestionUsuarios() {
       setErrorCode(err?.code ?? '');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleToggleActivo = async (u) => {
-    if (!u.id) {
-      setError('Este usuario aún no ingresó a la aplicación. El estado en la app se puede cambiar después del primer acceso.');
-      setErrorCode('');
-      return;
-    }
-    setError('');
-    setErrorCode('');
-    try {
-      await users.update(u.id, { activo: !u.activo });
-      loadUsers();
-    } catch (err) {
-      setError(err.message);
-      setErrorCode(err?.code ?? '');
     }
   };
 
@@ -224,17 +285,28 @@ export default function GestionUsuarios() {
     }
   };
 
-  const handleDeleteRole = async (role) => {
-    if (!window.confirm(`¿Eliminar el rol "${role.nombre}"? No se puede si tiene usuarios asignados.`)) return;
+  const handleDeleteRoleClick = (role) => {
+    setError('');
+    setErrorCode('');
+    setRoleDeleteConfirm(role);
+  };
+
+  const handleDeleteRoleConfirm = async () => {
+    const role = roleDeleteConfirm;
+    if (!role) return;
+    setDeletingRole(true);
     setError('');
     setErrorCode('');
     try {
       await rolesApi.delete(role.id);
-      loadRoles();
-      loadUsers();
+      setRoleDeleteConfirm(null);
+      await loadRoles();
+      await loadUsers();
     } catch (err) {
       setError(err.message);
       setErrorCode(err?.code ?? '');
+    } finally {
+      setDeletingRole(false);
     }
   };
 
@@ -252,11 +324,15 @@ export default function GestionUsuarios() {
         rightContent={<ThemeToggle />}
       />
 
-      <main className="gestion-usuarios-main">
+      <main className="gestion-usuarios-main" aria-label="Gestión de usuarios y roles">
         {puedeRoles && (
-          <div className="gestion-usuarios-tabs">
+          <div className="gestion-usuarios-tabs" role="tablist" aria-label="Secciones">
             <button
               type="button"
+              role="tab"
+              id="gestion-tab-usuarios"
+              aria-selected={tab === 'usuarios'}
+              aria-controls="gestion-panel-usuarios"
               className={`gestion-usuarios-tab ${tab === 'usuarios' ? 'gestion-usuarios-tab--active' : ''}`}
               onClick={() => setTab('usuarios')}
             >
@@ -264,6 +340,10 @@ export default function GestionUsuarios() {
             </button>
             <button
               type="button"
+              role="tab"
+              id="gestion-tab-roles"
+              aria-selected={tab === 'roles'}
+              aria-controls="gestion-panel-roles"
               className={`gestion-usuarios-tab ${tab === 'roles' ? 'gestion-usuarios-tab--active' : ''}`}
               onClick={() => setTab('roles')}
             >
@@ -273,25 +353,32 @@ export default function GestionUsuarios() {
         )}
 
         {tab === 'usuarios' && (
-          <>
+          <section
+            id="gestion-panel-usuarios"
+            role="tabpanel"
+            {...(puedeRoles
+              ? { 'aria-labelledby': 'gestion-tab-usuarios' }
+              : { 'aria-label': 'Usuarios' })}
+            className="gestion-usuarios-tab-panel"
+          >
             {authConfigReady && externalAuthLogin && (
-              <div className="gestion-usuarios-external-banner" role="region" aria-label="Información sobre usuarios">
-                <p>
-                  Los usuarios se definen en la base <strong>ELABASTECEDOR</strong> (tabla de usuarios del sistema).
-                  Aquí ves el listado combinado con la app: podés <strong>suspender o reactivar</strong> el acceso a Compras Verdu.
-                  No se pueden crear usuarios ni cambiar nombre, correo, rol ni contraseña desde esta pantalla.
+              <section className="gestion-usuarios-info-strip" aria-label="Información sobre usuarios">
+                <p className="gestion-usuarios-info-strip__lead">
+                  Usuarios desde <strong>El Abastecedor</strong>: el ingreso lo define la base SQL (<strong>Habilitado</strong>); el <strong>rol</strong> mostrado sale del <strong>Nivel</strong>.
                 </p>
-              </div>
+              </section>
             )}
             <div className="gestion-usuarios-toolbar">
               <div className="gestion-usuarios-filters">
                 <input
                   type="search"
-                  placeholder={authConfigReady && externalAuthLogin ? 'Buscar en El Abastecedor (nombre, email, código)…' : 'Buscar por nombre o email...'}
+                  placeholder={authConfigReady && externalAuthLogin ? 'Nombre, email o usuario…' : 'Buscar por nombre o email…'}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="gestion-usuarios-search"
                   aria-label="Buscar usuarios"
+                  autoComplete="off"
+                  spellCheck="false"
                 />
                 <select
                   value={roleFilter}
@@ -304,22 +391,31 @@ export default function GestionUsuarios() {
                     <option key={r.id} value={r.id}>{r.nombre}</option>
                   ))}
                 </select>
-                <select
-                  value={activoFilter}
-                  onChange={(e) => setActivoFilter(e.target.value)}
-                  className="gestion-usuarios-select"
-                  aria-label="Filtrar por estado"
-                >
-                  <option value="">Todos</option>
-                  <option value="true">Activos</option>
-                  <option value="false">Inactivos</option>
-                </select>
               </div>
-              {authConfigReady && !externalAuthLogin && (
-                <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('create'); setError(''); setErrorCode(''); }}>
-                  Nuevo usuario
-                </button>
-              )}
+              <div className="gestion-usuarios-toolbar-right">
+                {(busquedaPendiente || listRefreshing) && !initialLoading && (
+                  <p className="gestion-usuarios-search-status" role="status" aria-live="polite">
+                    {listRefreshing ? (
+                      <>
+                        <Loader2 className="gestion-usuarios-search-status__icon" aria-hidden strokeWidth={2} />
+                        <span>Actualizando resultados…</span>
+                      </>
+                    ) : (
+                      <span className="gestion-usuarios-search-status__hint">Buscando…</span>
+                    )}
+                  </p>
+                )}
+                {!initialLoading && list.length > 0 && (
+                  <p className="gestion-usuarios-count" aria-live="polite">
+                    {list.length} {list.length === 1 ? 'usuario' : 'usuarios'}
+                  </p>
+                )}
+                {authConfigReady && !externalAuthLogin && (
+                  <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('create'); setError(''); setErrorCode(''); }}>
+                    Nuevo usuario
+                  </button>
+                )}
+              </div>
             </div>
 
             {error && (
@@ -343,118 +439,98 @@ export default function GestionUsuarios() {
               </div>
             )}
 
-            {loading ? (
+            {initialLoading ? (
               <AppLoader message="Cargando usuarios..." />
+            ) : list.length === 0 ? (
+              <div className="gestion-usuarios-table-wrap gestion-usuarios-table-wrap--list">
+                <div className="gestion-usuarios-empty">
+                  <p>No hay usuarios que coincidan con los filtros.</p>
+                  <p className="gestion-usuarios-empty-hint">
+                    {authConfigReady && externalAuthLogin
+                      ? 'Probá otra búsqueda. Los usuarios nuevos se crean en El Abastecedor.'
+                      : 'Probá cambiando la búsqueda o agregá un nuevo usuario.'}
+                  </p>
+                </div>
+              </div>
+            ) : vistaTablaEscritorio ? (
+              <div
+                className={`gestion-usuarios-table-wrap gestion-usuarios-table-wrap--dense${listRefreshing ? ' gestion-usuarios-table-wrap--refreshing' : ''}`}
+                aria-busy={listRefreshing}
+              >
+                <table
+                  className="gestion-usuarios-table gestion-usuarios-dense-table"
+                  role="grid"
+                  aria-label="Listado de usuarios"
+                >
+                  <thead>
+                    <tr>
+                      <th scope="col" className="gestion-usuarios-col-nombre">Nombre</th>
+                      <th scope="col" className="gestion-usuarios-col-mail">Email / usuario</th>
+                      <th scope="col" className="gestion-usuarios-col-rol">Rol</th>
+                      <th scope="col" className="gestion-usuarios-col-app">En la app</th>
+                      <th scope="col" className="gestion-usuarios-col-n">Compras</th>
+                      <th scope="col" className="gestion-usuarios-col-fecha">Alta</th>
+                      <th scope="col" className="gestion-usuarios-col-actions">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {list.map((u) => (
+                      <UsuarioTableRow
+                        key={u.id ?? `ext-${u.externUserId ?? u.email}`}
+                        u={u}
+                        externalAuthLogin={externalAuthLogin}
+                        authConfigReady={authConfigReady}
+                        onEdit={openUsuarioModal}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
-              <div className="gestion-usuarios-table-wrap">
-                {list.length === 0 ? (
-                  <div className="gestion-usuarios-empty">
-                    <p>No hay usuarios que coincidan con los filtros.</p>
-                    <p className="gestion-usuarios-empty-hint">
-                      {authConfigReady && externalAuthLogin
-                        ? 'Probá otra búsqueda. Los usuarios nuevos se crean en El Abastecedor.'
-                        : 'Probá cambiando la búsqueda o agregá un nuevo usuario.'}
-                    </p>
-                  </div>
-                ) : (
-                  <table className="gestion-usuarios-table gestion-usuarios-table--users">
-                    <thead>
-                      <tr>
-                        <th>Nombre</th>
-                        <th>Email / login</th>
-                        {authConfigReady && externalAuthLogin && <th className="gestion-usuarios-th-cod">Código</th>}
-                        {authConfigReady && externalAuthLogin && <th>Origen</th>}
-                        <th>Rol</th>
-                        {authConfigReady && externalAuthLogin && <th className="gestion-usuarios-th-erp">ERP</th>}
-                        <th>En la app</th>
-                        <th>Fecha de alta</th>
-                        <th>Compras</th>
-                        <th className="gestion-usuarios-th-actions">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {list.map((u) => {
-                        const rowKey = u.id ?? `ext-${u.externUserId ?? u.email}`;
-                        const esCuentaLocal = !u.externUserId;
-                        const puedeAcciones = Boolean(u.id);
-                        return (
-                          <tr key={rowKey} className={u.activo === false ? 'gestion-usuarios-row-inactivo' : ''}>
-                            <td>{u.nombre}</td>
-                            <td>{u.email || '—'}</td>
-                            {authConfigReady && externalAuthLogin && (
-                              <td className="gestion-usuarios-td-cod">{u.externUserId ?? '—'}</td>
-                            )}
-                            {authConfigReady && externalAuthLogin && (
-                              <td>
-                                <span className="gestion-usuarios-origin gestion-usuarios-origin--elab">El Abastecedor</span>
-                              </td>
-                            )}
-                            <td>
-                              <span className="gestion-usuarios-rol-badge">
-                                {u.rol || rolEtiqueta(u)}
-                              </span>
-                              {u.sinAccesoApp ? (
-                                <span className="gestion-usuarios-sin-nivel" title="El Nivel del usuario no está dentro de los rangos configurados para esta aplicación">
-                                  {' '}Sin acceso app
-                                </span>
-                              ) : null}
-                            </td>
-                            {authConfigReady && externalAuthLogin && (
-                              <td>
-                                {u.habilitadoEnErp === null ? '—' : (
-                                  <span className={u.habilitadoEnErp ? 'gestion-usuarios-erp-si' : 'gestion-usuarios-erp-no'}>
-                                    {u.habilitadoEnErp ? 'Sí' : 'No'}
-                                  </span>
-                                )}
-                              </td>
-                            )}
-                            <td>
-                              {!puedeAcciones ? (
-                                <span className="gestion-usuarios-estado-pendiente" title="Sin ingreso aún">Pendiente</span>
-                              ) : (
-                                <span className={`gestion-usuarios-estado-badge ${u.activo !== false ? 'gestion-usuarios-estado-activo' : 'gestion-usuarios-estado-inactivo'}`}>
-                                  {u.activo !== false ? 'Activo' : 'Suspendido'}
-                                </span>
-                              )}
-                            </td>
-                            <td>{u.createdAt ? formatDateShort(u.createdAt) : '—'}</td>
-                            <td>{u._count?.compras ?? 0}</td>
-                            <td>
-                              <div className="gestion-usuarios-cell-actions">
-                                <button
-                                  type="button"
-                                  className="gestion-usuarios-btn-edit"
-                                  onClick={() => { setModal({ type: 'edit', user: u }); setError(''); setErrorCode(''); }}
-                                  title={esCuentaLocal ? 'Editar usuario' : (puedeAcciones ? 'Estado en la app' : 'Ver detalle')}
-                                >
-                                  {esCuentaLocal ? 'Editar' : (puedeAcciones ? 'Estado' : 'Detalle')}
-                                </button>
-                                <button
-                                  type="button"
-                                  className={u.activo !== false ? 'gestion-usuarios-btn-suspender' : 'gestion-usuarios-btn-activar'}
-                                  onClick={() => handleToggleActivo(u)}
-                                  disabled={!puedeAcciones}
-                                  title={!puedeAcciones ? 'Disponible tras el primer ingreso' : (u.activo !== false ? 'Suspender acceso a la app' : 'Reactivar acceso')}
-                                >
-                                  {u.activo !== false ? 'Suspender' : 'Activar'}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
+              <div
+                className={`gestion-usuarios-table-wrap gestion-usuarios-table-wrap--list${listRefreshing ? ' gestion-usuarios-table-wrap--refreshing' : ''}`}
+                aria-busy={listRefreshing}
+              >
+                <ul className="gestion-user-cards" role="list">
+                  {list.map((u) => {
+                    const rowKey = u.id ?? `ext-${u.externUserId ?? u.email}`;
+                    return (
+                      <li key={rowKey} className="gestion-user-cards__item">
+                        <UsuarioListCard
+                          u={u}
+                          externalAuthLogin={externalAuthLogin}
+                          authConfigReady={authConfigReady}
+                          onEdit={openUsuarioModal}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             )}
-          </>
+          </section>
         )}
 
         {tab === 'roles' && puedeRoles && (
-          <>
+          <section
+            id="gestion-panel-roles"
+            role="tabpanel"
+            aria-labelledby="gestion-tab-roles"
+            className="gestion-usuarios-tab-panel"
+          >
+            {authConfigReady && externalAuthLogin && (
+              <section className="gestion-usuarios-info-strip" aria-label="Roles y nivel en El Abastecedor">
+                <p className="gestion-usuarios-info-strip__lead">
+                  Con El Abastecedor, el <strong>rol</strong> lo define el <strong>Nivel</strong> en SQL (p. ej. <strong>100</strong> = Administrador). Cada tarjeta indica qué Nivel corresponde y qué hace ese rol en la app.
+                </p>
+              </section>
+            )}
             <div className="gestion-usuarios-toolbar">
-              <span className="gestion-usuarios-toolbar-label">Permisos por pantalla: marcá qué puede ver y acceder cada rol.</span>
+              <p className="gestion-usuarios-toolbar-hint">
+                {authConfigReady && externalAuthLogin
+                  ? 'Los permisos de pantalla deberían coincidir con el rol que asigna el Nivel en El Abastecedor.'
+                  : 'Cada rol define qué pantallas puede usar quien lo tenga asignado.'}
+              </p>
               <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('role-create'); setError(''); setErrorCode(''); }}>
                 Nuevo rol
               </button>
@@ -479,54 +555,48 @@ export default function GestionUsuarios() {
                 </button>
               </div>
             )}
-            <div className="gestion-usuarios-table-wrap">
+            <div className="gestion-usuarios-table-wrap gestion-usuarios-table-wrap--flush">
               {rolesList.length === 0 ? (
                 <div className="gestion-usuarios-empty">
-                  <p>No hay roles. Creá uno desde &quot;Nuevo rol&quot;.</p>
+                  <p>No hay roles. Creá uno con &quot;Nuevo rol&quot;.</p>
                 </div>
               ) : (
-                <table className="gestion-usuarios-table gestion-usuarios-table--roles">
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Descripción</th>
-                      <th>Usuarios</th>
-                      <th className="gestion-usuarios-th-actions">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rolesList.map((r) => (
-                      <tr key={r.id}>
-                        <td><strong>{r.nombre}</strong></td>
-                        <td>{r.descripcion || '—'}</td>
-                        <td>{r.usuariosCount ?? 0}</td>
-                        <td>
-                          <div className="gestion-usuarios-cell-actions">
-                            <button
-                              type="button"
-                              className="gestion-usuarios-btn-edit"
-                              onClick={() => { setModal({ type: 'role-edit', role: r }); setError(''); setErrorCode(''); }}
+                <ul className="gestion-role-cards" role="list">
+                  {rolesList.map((r) => (
+                    <li key={r.id} className="gestion-role-cards__item">
+                      <article className="gestion-role-card" aria-labelledby={`gestion-role-${r.id}`}>
+                        <div className="gestion-role-card__body">
+                          <p id={`gestion-role-${r.id}`} className="gestion-role-card__title">{r.nombre}</p>
+                          <p className="gestion-role-card__desc">{r.descripcion?.trim() ? r.descripcion : 'Sin descripción.'}</p>
+                          <p className="gestion-role-card__meta">
+                            <span className="gestion-role-card__badge">{r.usuariosCount ?? 0} {(r.usuariosCount ?? 0) === 1 ? 'usuario' : 'usuarios'}</span>
+                          </p>
+                        </div>
+                        <div className="gestion-role-card__actions">
+                          <button
+                            type="button"
+                            className="gestion-usuarios-btn-edit"
+                            onClick={() => { setModal({ type: 'role-edit', role: r }); setError(''); setErrorCode(''); }}
                               title="Editar rol"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              className="gestion-usuarios-btn-danger"
-                              onClick={() => handleDeleteRole(r)}
-                              title="Eliminar rol"
-                            >
-                              Eliminar
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="gestion-usuarios-btn-danger"
+                            onClick={() => handleDeleteRoleClick(r)}
+                            title="Eliminar rol"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </article>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
-          </>
+          </section>
         )}
 
         {/* Modal Nuevo usuario */}
@@ -561,71 +631,21 @@ export default function GestionUsuarios() {
               </form>
         </Modal>
 
-        {/* Modal Editar usuario */}
+        <UsuarioElabDetailModal
+          open={modal?.type === 'elab-detail' && !!modal?.user}
+          user={modal?.type === 'elab-detail' ? modal.user : null}
+          onClose={() => setModal(null)}
+        />
+
+        {/* Modal Editar usuario (solo cuentas locales sin El Abastecedor) */}
         <Modal
           open={modal?.type === 'edit' && !!modal?.user}
           onClose={() => !saving && setModal(null)}
-          title={
-            !modal?.user
-              ? ''
-              : (!authConfigReady || !externalAuthLogin || !modal.user.externUserId)
-                ? 'Editar usuario'
-                : modal.user.id
-                  ? 'Acceso a Compras Verdu'
-                  : 'Usuario en El Abastecedor'
-          }
+          title="Editar usuario"
           preventClose={saving}
           boxClassName="gestion-usuarios-modal gestion-usuarios-modal--edit"
         >
-          {modal?.type === 'edit' && modal?.user && authConfigReady && externalAuthLogin && modal.user.externUserId && !modal.user.id && (
-            <div className="gestion-usuarios-modal-readonly">
-              <p><strong>{modal.user.nombre}</strong></p>
-              <p className="gestion-usuarios-modal-readonly-meta">Código: {modal.user.externUserId}</p>
-              <p className="gestion-usuarios-modal-readonly-hint">
-                Este usuario aún no inició sesión en Compras Verdu. Cuando ingrese por primera vez se creará la cuenta en la app
-                y podrás suspender o reactivar el acceso desde esta pantalla.
-              </p>
-              <div className="gestion-usuarios-modal-edit-actions">
-                <button type="button" className="gestion-usuarios-modal-edit-btn-cancel" onClick={() => setModal(null)}>Cerrar</button>
-              </div>
-            </div>
-          )}
-          {modal?.type === 'edit' && modal?.user && authConfigReady && externalAuthLogin && modal.user.externUserId && modal.user.id && (
-            <form
-              className="gestion-usuarios-modal-edit-form"
-              onSubmit={(e) => handleUpdateUser(e, modal.user.id, { soloActivoExterno: true })}
-            >
-              <p className="gestion-usuarios-modal-readonly-hint">
-                Los datos personales y el rol vienen de <strong>El Abastecedor</strong>. Solo podés cambiar si la cuenta puede usar esta aplicación.
-              </p>
-              <div className="gestion-usuarios-modal-edit-field gestion-usuarios-modal-edit-field--readonly">
-                <label>Nombre</label>
-                <span className="gestion-usuarios-readonly-value">{modal.user.nombre}</span>
-              </div>
-              <div className="gestion-usuarios-modal-edit-field gestion-usuarios-modal-edit-field--readonly">
-                <label>Email / login</label>
-                <span className="gestion-usuarios-readonly-value">{modal.user.email || '—'}</span>
-              </div>
-              <div className="gestion-usuarios-modal-edit-field gestion-usuarios-modal-edit-field--readonly">
-                <label>Rol en la app</label>
-                <span className="gestion-usuarios-readonly-value">{modal.user.rol || '—'}</span>
-              </div>
-              <div className="gestion-usuarios-modal-edit-field">
-                <label htmlFor="edit-estado-ext">Acceso a Compras Verdu</label>
-                <select id="edit-estado-ext" name="estado" defaultValue={modal.user.activo !== false ? 'true' : 'false'}>
-                  <option value="true">Permitido (activo)</option>
-                  <option value="false">Suspendido</option>
-                </select>
-              </div>
-              <div className="gestion-usuarios-modal-edit-actions">
-                <button type="button" className="gestion-usuarios-modal-edit-btn-cancel" onClick={() => !saving && setModal(null)} disabled={saving}>Cancelar</button>
-                <button type="submit" className="gestion-usuarios-modal-edit-btn-save" disabled={saving}>
-                  {saving ? 'Guardando…' : 'Guardar'}
-                </button>
-              </div>
-            </form>
-          )}
-          {modal?.type === 'edit' && modal?.user && (!modal.user.externUserId || (authConfigReady && !externalAuthLogin)) && (
+          {modal?.type === 'edit' && modal?.user && !modal.user.externUserId && (
             <form className="gestion-usuarios-modal-edit-form" onSubmit={(e) => handleUpdateUser(e, modal.user.id)}>
               <div className="gestion-usuarios-modal-edit-field">
                 <label htmlFor="edit-nombre">Nombre</label>
@@ -634,13 +654,6 @@ export default function GestionUsuarios() {
               <div className="gestion-usuarios-modal-edit-field">
                 <label htmlFor="edit-email">Email</label>
                 <input id="edit-email" name="email" type="email" required defaultValue={modal.user.email} placeholder="usuario@ejemplo.com" autoComplete="email" />
-              </div>
-              <div className="gestion-usuarios-modal-edit-field">
-                <label htmlFor="edit-estado">Estado</label>
-                <select id="edit-estado" name="estado" defaultValue={modal.user.activo !== false ? 'true' : 'false'}>
-                  <option value="true">Activo</option>
-                  <option value="false">Inactivo</option>
-                </select>
               </div>
               <div className="gestion-usuarios-modal-edit-field">
                 <label htmlFor="edit-roleId">Rol</label>
@@ -667,6 +680,11 @@ export default function GestionUsuarios() {
         {/* Modal Nuevo rol */}
         <Modal open={modal === 'role-create'} onClose={() => !saving && setModal(null)} title="Nuevo rol" size="wide" preventClose={saving} boxClassName="gestion-usuarios-modal gestion-usuarios-modal--role" subtitle="Definí el nombre y qué pantallas podrá ver y usar este rol.">
           <form onSubmit={handleCreateRole} className="gestion-usuarios-role-form">
+                {authConfigReady && externalAuthLogin && (
+                  <p className="gestion-usuarios-role-nivel-hint" role="note">
+                    Si usás El Abastecedor: indicá Nivel ELAB y qué puede hacerse en la app.
+                  </p>
+                )}
                 <section className="gestion-usuarios-modal-section">
                   <div className="gestion-usuarios-form-group">
                     <label htmlFor="role-create-nombre">Nombre del rol</label>
@@ -674,7 +692,13 @@ export default function GestionUsuarios() {
                   </div>
                   <div className="gestion-usuarios-form-group">
                     <label htmlFor="role-create-desc">Descripción <span className="gestion-usuarios-optional">(opcional)</span></label>
-                    <input id="role-create-desc" name="descripcion" type="text" placeholder="Breve descripción del rol" />
+                    <textarea
+                      id="role-create-desc"
+                      name="descripcion"
+                      rows={3}
+                      className="gestion-usuarios-textarea-desc"
+                      placeholder="Nivel ELAB y alcance en la app"
+                    />
                   </div>
                 </section>
                 <section className="gestion-usuarios-modal-section gestion-usuarios-modal-section--permisos">
@@ -711,6 +735,11 @@ export default function GestionUsuarios() {
         <Modal open={modal?.type === 'role-edit' && !!modal?.role} onClose={() => !saving && setModal(null)} title="Editar rol" size="wide" preventClose={saving} boxClassName="gestion-usuarios-modal gestion-usuarios-modal--role" subtitle="Modificá el nombre y los permisos de pantalla de este rol.">
           {modal?.type === 'role-edit' && modal?.role && (
               <form onSubmit={(e) => handleUpdateRole(e, modal.role.id)} className="gestion-usuarios-role-form">
+                {authConfigReady && externalAuthLogin && (
+                  <p className="gestion-usuarios-role-nivel-hint" role="note">
+                    En El Abastecedor el rol lo define el <strong>Nivel</strong> en SQL; esta descripción es solo referencia.
+                  </p>
+                )}
                 <section className="gestion-usuarios-modal-section">
                   <div className="gestion-usuarios-form-group">
                     <label htmlFor="role-edit-nombre">Nombre del rol</label>
@@ -718,7 +747,14 @@ export default function GestionUsuarios() {
                   </div>
                   <div className="gestion-usuarios-form-group">
                     <label htmlFor="role-edit-desc">Descripción <span className="gestion-usuarios-optional">(opcional)</span></label>
-                    <input id="role-edit-desc" name="descripcion" type="text" defaultValue={modal.role.descripcion || ''} placeholder="Breve descripción" />
+                    <textarea
+                      id="role-edit-desc"
+                      name="descripcion"
+                      rows={3}
+                      className="gestion-usuarios-textarea-desc"
+                      defaultValue={modal.role.descripcion || ''}
+                      placeholder="Nivel ELAB y alcance en la app"
+                    />
                   </div>
                 </section>
                 <section className="gestion-usuarios-modal-section gestion-usuarios-modal-section--permisos">
@@ -755,6 +791,45 @@ export default function GestionUsuarios() {
                 </div>
               </form>
           )}
+        </Modal>
+
+        <Modal
+          open={roleDeleteConfirm != null}
+          onClose={() => !deletingRole && setRoleDeleteConfirm(null)}
+          title="Eliminar rol"
+          preventClose={deletingRole}
+          size="medium"
+          ariaDescribedBy={deleteRoleDescriptionId}
+        >
+          <div className="gestion-usuarios-delete-role">
+            <div className="gestion-usuarios-delete-role__icon-wrap" aria-hidden>
+              <AlertTriangle className="gestion-usuarios-delete-role__icon" strokeWidth={2} />
+            </div>
+            <div id={deleteRoleDescriptionId} className="gestion-usuarios-delete-role__copy">
+              <p className="gestion-usuarios-delete-role__lead">Esta acción no se puede deshacer.</p>
+              <p className="gestion-usuarios-delete-role__text">
+                Se eliminará el rol <strong>{roleDeleteConfirm?.nombre}</strong>. Solo es posible si ningún usuario lo tiene asignado.
+              </p>
+            </div>
+            <div className="gestion-usuarios-modal-actions gestion-usuarios-modal-actions--danger">
+              <button
+                type="button"
+                className="gestion-usuarios-btn-secondary"
+                onClick={() => !deletingRole && setRoleDeleteConfirm(null)}
+                disabled={deletingRole}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="gestion-usuarios-btn-danger gestion-usuarios-btn-danger--solid"
+                onClick={handleDeleteRoleConfirm}
+                disabled={deletingRole}
+              >
+                {deletingRole ? 'Eliminando…' : 'Eliminar rol'}
+              </button>
+            </div>
+          </div>
         </Modal>
       </main>
     </div>

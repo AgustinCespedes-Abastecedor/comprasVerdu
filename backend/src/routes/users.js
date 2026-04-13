@@ -7,8 +7,29 @@ import { createLog } from '../lib/logs.js';
 import { validateEmail, validatePassword, validateNombre } from '../lib/validation.js';
 import { isExternalAuthLoginEnabled } from '../lib/configAuthExterno.js';
 import { getMergedUsersForGestion } from '../lib/usuariosListMerged.js';
+import { fetchUsuarioExternoDetallePorCodigo } from '../lib/usuariosSqlServer.js';
 
 const router = Router();
+
+/** Detalle de usuario en ELABASTECEDOR (debe ir antes de rutas /:id si se agregan GET por id). */
+router.get('/extern/:externUserId/elab', soloGestionUsuarios, async (req, res) => {
+  try {
+    if (!isExternalAuthLoginEnabled()) {
+      return sendError(res, 404, MSG.USERS_NO_ENCONTRADO, 'USERS_027');
+    }
+    const externUserId = String(req.params.externUserId ?? '').trim();
+    if (!externUserId) {
+      return sendError(res, 400, MSG.USERS_NO_ENCONTRADO, 'USERS_008');
+    }
+    const row = await fetchUsuarioExternoDetallePorCodigo(externUserId);
+    if (!row) {
+      return sendError(res, 404, MSG.USERS_NO_ENCONTRADO, 'USERS_008');
+    }
+    return res.json(row);
+  } catch (e) {
+    return sendError(res, 503, MSG.USERS_SQL_DETALLE, 'USERS_026', e);
+  }
+});
 
 router.get('/', soloGestionUsuarios, async (req, res) => {
   try {
@@ -152,6 +173,9 @@ router.patch('/:id', soloGestionUsuarios, async (req, res) => {
   try {
     const { id } = req.params;
     const { nombre, email, roleId, password, activo } = req.body;
+    if (isExternalAuthLoginEnabled() && activo !== undefined) {
+      return sendError(res, 403, MSG.USERS_ACTIVO_SOLO_ERP, 'USERS_023');
+    }
     const user = await prisma.user.findUnique({
       where: { id },
       include: { role: { select: { id: true, nombre: true } } },

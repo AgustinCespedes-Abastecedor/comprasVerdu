@@ -71,8 +71,12 @@ export const MSG = {
   USERS_EMAIL_LARGO: 'El email no puede superar 255 caracteres.',
   USERS_NOMBRE_LARGO: 'El nombre no puede superar 200 caracteres.',
   USERS_EXTERNO_NO_CREAR: 'Los usuarios se administran en El Abastecedor. No se pueden crear cuentas desde esta pantalla.',
-  USERS_EXTERNO_NO_EDITAR: 'Este usuario se sincroniza desde El Abastecedor: solo podés suspender o reactivar la cuenta aquí.',
+  USERS_EXTERNO_NO_EDITAR: 'Este usuario se sincroniza desde El Abastecedor: no podés editar datos desde esta aplicación.',
+  USERS_ACTIVO_SOLO_ERP:
+    'El estado habilitado/deshabilitado se define en El Abastecedor (SQL Server), no desde esta aplicación.',
   USERS_SQL_LISTAR: 'No se pudo obtener el listado de usuarios desde El Abastecedor. Revisá la conexión a SQL Server o intentá más tarde.',
+  USERS_SQL_DETALLE:
+    'No se pudo cargar el detalle del usuario desde El Abastecedor. Revisá la conexión a SQL Server o que exista la fila en la tabla de usuarios.',
 
   // Roles
   ROLES_LISTAR: 'No se pudo cargar la lista de roles.',

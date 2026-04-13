@@ -75,6 +75,101 @@ const COL_ACTIVO = process.env.EXTERNAL_USUARIOS_COL_ACTIVO || 'Habilitado';
 const IGNORE_ACTIVO = process.env.EXTERNAL_USUARIOS_IGNORE_ACTIVO === 'true'
   || process.env.EXTERNAL_USUARIOS_IGNORE_ACTIVO === '1';
 
+const COL_LEGAJO = process.env.EXTERNAL_USUARIOS_COL_LEGAJO || 'Legajo';
+const COL_SUCURSAL = process.env.EXTERNAL_USUARIOS_COL_SUCURSAL || 'Sucursal';
+const COL_SECTOR = process.env.EXTERNAL_USUARIOS_COL_SECTOR || 'Sector';
+const COL_TELEFONO = process.env.EXTERNAL_USUARIOS_COL_TELEFONO || 'Telefono';
+const COL_INTERNO = process.env.EXTERNAL_USUARIOS_COL_INTERNO || 'Interno';
+
+/** Catálogo ELAB: código de sucursal → nombre (JOIN en detalle de usuario). */
+const TABLE_SUCURSALES = process.env.EXTERNAL_SUCURSALES_TABLE || 'sucursales';
+const COL_SUCURSALES_CODIGO = process.env.EXTERNAL_SUCURSALES_CODIGO || 'codigo';
+const COL_SUCURSALES_DESCRIPCION = process.env.EXTERNAL_SUCURSALES_DESCRIPCION || 'Descripcion';
+
+/**
+ * @param {string} colName
+ * @param {number} len
+ */
+function nvarcharTrimCast(colName, len) {
+  return `LTRIM(RTRIM(CAST(u.[${colName}] AS NVARCHAR(${len}))))`;
+}
+
+/**
+ * Detalle de un usuario (gestión) por código de `Codigo` / EXTERNAL_USUARIOS_COL_ID.
+ * Sin contraseña; columnas configurables por env.
+ *
+ * @param {string} externUserId
+ * @returns {Promise<{
+ *   nombreCompleto: string | null,
+ *   usuario: string | null,
+ *   legajo: string | null,
+ *   nivel: string | null,
+ *   sucursal: string | null,
+ *   sector: string | null,
+ *   telefono: string | null,
+ *   interno: string | null,
+ *   email: string | null, codigo: string
+ * } | null>}
+ */
+export async function fetchUsuarioExternoDetallePorCodigo(externUserId) {
+  const cod = String(externUserId ?? '').trim();
+  if (!cod) return null;
+
+  const pool = await getSqlServerPool();
+  const request = pool.request();
+  request.input('cod', sql.NVarChar(64), cod);
+
+  const sucursalNombreExpr = `NULLIF(LTRIM(RTRIM(CAST(sc.[${COL_SUCURSALES_DESCRIPCION}] AS NVARCHAR(255)))), '')`;
+  const sucursalCodigoUsuarioExpr = nvarcharTrimCast(COL_SUCURSAL, 255);
+  const sucursalDisplay = `COALESCE(${sucursalNombreExpr}, ${sucursalCodigoUsuarioExpr}) AS sucursal`;
+
+  const joinSucursales = [
+    `LEFT JOIN [${TABLE_SUCURSALES}] sc ON `,
+    `LTRIM(RTRIM(CAST(sc.[${COL_SUCURSALES_CODIGO}] AS NVARCHAR(50)))) = `,
+    `LTRIM(RTRIM(CAST(u.[${COL_SUCURSAL}] AS NVARCHAR(50))))`,
+  ].join('');
+
+  const q = [
+    'SELECT TOP 1',
+    `  ${nvarcharTrimCast(COL_NOMBRE, 500)} AS nombreCompleto,`,
+    `  ${nvarcharTrimCast(COL_USUARIO, 255)} AS usuario,`,
+    `  ${nvarcharTrimCast(COL_LEGAJO, 80)} AS legajo,`,
+    `  LTRIM(RTRIM(CAST(u.[${COL_NIVEL}] AS NVARCHAR(80)))) AS nivel,`,
+    `  ${sucursalDisplay},`,
+    `  ${nvarcharTrimCast(COL_SECTOR, 255)} AS sector,`,
+    `  ${nvarcharTrimCast(COL_TELEFONO, 80)} AS telefono,`,
+    `  ${nvarcharTrimCast(COL_INTERNO, 80)} AS interno,`,
+    `  ${nvarcharTrimCast(COL_EMAIL, 255)} AS email,`,
+    `  LTRIM(RTRIM(CAST(u.[${COL_ID}] AS NVARCHAR(64)))) AS codigo`,
+    `FROM [${TABLE}] u`,
+    joinSucursales,
+    `WHERE LTRIM(RTRIM(CAST(u.[${COL_ID}] AS NVARCHAR(64)))) = @cod`,
+  ].join(' ');
+
+  const result = await request.query(q);
+  const row = result.recordset?.[0];
+  if (!row) return null;
+
+  const s = (v) => {
+    if (v == null || v === '') return null;
+    const t = String(v).trim();
+    return t.length ? t : null;
+  };
+
+  return {
+    nombreCompleto: s(row.nombreCompleto),
+    usuario: s(row.usuario),
+    legajo: s(row.legajo),
+    nivel: s(row.nivel),
+    sucursal: s(row.sucursal),
+    sector: s(row.sector),
+    telefono: s(row.telefono),
+    interno: s(row.interno),
+    email: s(row.email),
+    codigo: s(row.codigo) ?? cod,
+  };
+}
+
 /**
  * Modos:
  * - auto (recomendado): prueba plain, md5_hex, md5_hex_upper, bcrypt y PWDCOMPARE en SQL Server.

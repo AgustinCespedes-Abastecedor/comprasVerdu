@@ -64,6 +64,8 @@ export async function getMergedUsersForGestion(query) {
       email,
       nombre: p?.nombre ?? row.nombre,
       externUserId: row.externUserId,
+      /** Columna `Usuario` en ELABASTECEDOR (login corto / código legado distinto de `Codigo`). */
+      loginUsuario: String(row.loginUsuario ?? '').trim() || null,
       rol: nivelRolNombre ?? '—',
       roleId: roleIdFromNivel,
       nivel: row.nivel,
