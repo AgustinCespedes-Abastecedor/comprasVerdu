@@ -1,6 +1,27 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { verifyUsuarioPassword } from './usuariosSqlServer.js';
+import {
+  bufferClaveToComparableString,
+  normalizeSqlPasswordColumnValue,
+  verifyUsuarioPassword,
+} from './usuariosSqlServer.js';
+
+describe('bufferClaveToComparableString / normalizeSqlPasswordColumnValue', () => {
+  it('UTF-8 ASCII en Buffer → mismo texto', () => {
+    const buf = Buffer.from('Sinergia2025', 'utf8');
+    assert.equal(bufferClaveToComparableString(buf), 'Sinergia2025');
+    assert.equal(normalizeSqlPasswordColumnValue(buf), 'Sinergia2025');
+  });
+
+  it('UTF-16LE ASCII en Buffer → mismo texto', () => {
+    const buf = Buffer.from('Ab12', 'utf16le');
+    assert.equal(bufferClaveToComparableString(buf), 'Ab12');
+  });
+
+  it('string pasa sin cambios', () => {
+    assert.equal(normalizeSqlPasswordColumnValue('x'), 'x');
+  });
+});
 
 describe('verifyUsuarioPassword modo plain', () => {
   it('acepta contraseña con espacios al final (trimEnd)', async () => {

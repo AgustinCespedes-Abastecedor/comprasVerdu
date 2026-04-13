@@ -1,13 +1,65 @@
 /**
  * Login contra dbo.Usuarios (ELABASTECEDOR).
- * La columna Clave suele ser NVARCHAR con bytes 0–255 representados como caracteres (no es MD5 hex
- * ni texto plano legible). El modo `auto` prueba: texto plano, MD5 hex, bcrypt y PWDCOMPARE(@pwd,@bin)
- * reconstruyendo VARBINARY con el byte bajo de cada carácter (compatible con hashes del motor SQL).
+ * La columna Clave puede ser NVARCHAR, VARCHAR o VARBINARY: el driver puede devolver `string` o `Buffer`.
+ * Texto plano ASCII/UTF-8 en VARBINARY se normaliza con {@link bufferClaveToComparableString}.
+ * Hashes legacy (PWDENCRYPT, etc.) suelen leerse como NVARCHAR con bytes 0–255 por carácter; el modo
+ * `auto` prueba: plain (Node + SQL), MD5 hex, bcrypt y PWDCOMPARE (Node latin1 + CONVERT en T-SQL).
  */
 import crypto from 'crypto';
 import sql from 'mssql';
 import bcrypt from 'bcryptjs';
 import { getSqlServerPool } from './sqlserver.js';
+
+/**
+ * Convierte VARBINARY/IMAGE (Buffer) a string para comparar con la contraseña tecleada.
+ * - Si son bytes ASCII/UTF-8 de texto plano → utf8.
+ * - Si es UTF-16LE (longitud par, texto legible) → utf16le.
+ * - Si parece hash binario (PWDENCRYPT, etc.) → latin1 (un code point por byte bajo).
+ * @param {Buffer} buf
+ * @returns {string}
+ */
+function isAsciiPrintableText(s) {
+  if (!s) return false;
+  for (let i = 0; i < s.length; i += 1) {
+    const c = s.charCodeAt(i);
+    if (c === 9 || c === 10 || c === 13) continue;
+    if (c >= 32 && c <= 126) continue;
+    return false;
+  }
+  return true;
+}
+
+export function bufferClaveToComparableString(buf) {
+  if (!buf || buf.length === 0) return '';
+  const u8 = buf.toString('utf8');
+  const looksUtf8Text = isAsciiPrintableText(u8);
+  if (looksUtf8Text && u8.length > 0) return u8;
+  if (buf.length % 2 === 0) {
+    const u16 = buf.toString('utf16le').replace(/\0+$/g, '');
+    if (u16.length > 0 && isAsciiPrintableText(u16)) {
+      return u16;
+    }
+  }
+  return buf.toString('latin1');
+}
+
+/**
+ * El driver `mssql` puede devolver `Buffer`/`Uint8Array` si la columna es VARBINARY/IMAGE.
+ * `String(buffer)` en Node no es el contenido: produce "[object Object]" o hex, no la clave real.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function normalizeSqlPasswordColumnValue(value) {
+  if (value == null) return '';
+  if (Buffer.isBuffer(value)) {
+    return bufferClaveToComparableString(value);
+  }
+  if (value instanceof Uint8Array) {
+    return bufferClaveToComparableString(Buffer.from(value));
+  }
+  if (typeof value === 'string') return value;
+  return String(value);
+}
 
 const TABLE = process.env.EXTERNAL_USUARIOS_TABLE || 'Usuarios';
 const COL_ID = process.env.EXTERNAL_USUARIOS_COL_ID || 'Codigo';
@@ -122,6 +174,7 @@ async function verifyPlainEqualsInSql(plainPassword, storedRaw) {
           OR LTRIM(RTRIM(@pwd)) = LTRIM(RTRIM(@stored))
           OR @pwd = LTRIM(RTRIM(@stored))
           OR LTRIM(RTRIM(@pwd)) = @stored
+          OR LOWER(LTRIM(RTRIM(@pwd))) = LOWER(LTRIM(RTRIM(@stored)))
         THEN 1 ELSE 0 END AS ok`);
     return Number(r.recordset?.[0]?.ok) === 1;
   } catch {
@@ -136,7 +189,9 @@ function plainMatchesInNode(plain, storedTrimmed) {
   const variants = [...new Set([p, p.trimEnd(), p.trim()].filter((x) => x.length > 0))];
   for (const pv of variants) {
     if (timingSafeEqualUtf8(pv, s)) return true;
+    if (pv.length === s.length && timingSafeEqualUtf8(pv.toLowerCase(), s.toLowerCase())) return true;
   }
+  if (p.trim().toLowerCase() === s.toLowerCase()) return true;
   return false;
 }
 
@@ -237,6 +292,11 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
     ? ` AND (u.[${COL_ACTIVO}] = 1 OR TRY_CAST(u.[${COL_ACTIVO}] AS INT) = 1)`
     : '';
 
+  const codigoMatch = `LTRIM(RTRIM(CAST(u.[${COL_ID}] AS NVARCHAR(40)))) = @login`;
+  const orderBy = matchUsuario
+    ? ` ORDER BY CASE WHEN ${codigoMatch} THEN 0 WHEN ${emailExpr} = @login THEN 1 WHEN ${usuarioExpr} = @login THEN 2 ELSE 9 END`
+    : '';
+
   const q = [
     'SELECT TOP 1',
     `  CAST(u.[${COL_ID}] AS NVARCHAR(64)) AS externUserId,`,
@@ -244,10 +304,11 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
     `  LTRIM(RTRIM(CAST(u.[${COL_USUARIO}] AS NVARCHAR(255)))) AS loginUsuario,`,
     `  LTRIM(RTRIM(CAST(u.[${COL_NOMBRE}] AS NVARCHAR(255)))) AS nombre,`,
     `  u.[${COL_NIVEL}] AS nivel,`,
-    `  CAST(u.[${COL_PASSWORD}] AS NVARCHAR(MAX)) AS passwordStored`,
+    `  u.[${COL_PASSWORD}] AS passwordStored`,
     `FROM [${TABLE}] u`,
     `WHERE ${loginWhere}`,
     activoSql,
+    orderBy,
   ].join(' ');
 
   const result = await request.query(q);
@@ -265,6 +326,6 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
     login: loginDisplay,
     nombre: String(row.nombre ?? '').trim() || loginDisplay,
     nivel: row.nivel,
-    passwordStored: row.passwordStored != null ? String(row.passwordStored) : '',
+    passwordStored: normalizeSqlPasswordColumnValue(row.passwordStored),
   };
 }

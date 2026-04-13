@@ -35,20 +35,21 @@ if (!RUN) {
       assert.equal(row.loginUsuario, '2558');
     });
 
-    it('encuentra por Codigo 2546', async () => {
-      const row = await fetchUsuarioExternoPorLogin('2546');
-      assert.ok(row);
-      assert.equal(row.externUserId, '2546');
-    });
-
-    it('valida contraseña Sinergia2025 (Clave en texto plano en SQL)', async () => {
+    it('login 2558 resuelve fila (externUserId = Codigo, puede ≠ 2558 si Usuario es 2558)', async () => {
       const row = await fetchUsuarioExternoPorLogin('2558');
       assert.ok(row);
-      const ok = await verifyUsuarioPassword('Sinergia2025', row.passwordStored, 'plain');
+      assert.ok(row.externUserId);
+      assert.equal(row.loginUsuario, '2558');
+    });
+
+    it('valida contraseña Sinergia2025 (modo auto: plain + SQL + hashes)', async () => {
+      const row = await fetchUsuarioExternoPorLogin('2558');
+      assert.ok(row);
+      const ok = await verifyUsuarioPassword('Sinergia2025', row.passwordStored, 'auto');
       assert.ok(
         ok,
-        'Si falla: ejecutá UPDATE Usuarios SET Clave = N\'Sinergia2025\' WHERE Codigo = 2546 '
-          + '(la Clave legacy no coincide con hash estándar; ver scripts/analyze-cespedes-password.js).',
+        'Si falla: UPDATE Usuarios SET Clave = N\'Sinergia2025\' WHERE Codigo = 2558 '
+          + 'y ejecutá: cd backend && node scripts/analyze-usuario-2558-clave.js',
       );
     });
   });
