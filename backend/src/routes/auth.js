@@ -5,7 +5,12 @@ import { prisma } from '../lib/prisma.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { getPrismaConnectionFailureResponse } from '../lib/prismaConnection.js';
 import { getJwtSecret } from '../lib/config.js';
-import { validateEmail, validatePassword, validateNombre } from '../lib/validation.js';
+import {
+  validateEmail,
+  validatePassword,
+  validatePasswordForLogin,
+  validateNombre,
+} from '../lib/validation.js';
 import { isExternalAuthLoginEnabled } from '../lib/configAuthExterno.js';
 import {
   fetchUsuarioExternoPorLogin,
@@ -116,28 +121,32 @@ router.post('/registro', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-    const password = typeof body.password === 'string' ? body.password : '';
-    if (!email || !password) {
+    /** Correo, usuario o código (nunca exigir formato email si ELAB está activo). */
+    const loginId = String(body.email ?? body.login ?? '').trim().toLowerCase();
+    const password = typeof body.password === 'string' ? body.password : String(body.password ?? '');
+    const externalAuth = isExternalAuthLoginEnabled();
+    if (!loginId || !password) {
       return sendError(res, 400, MSG.AUTH_EMAIL_PASSWORD_REQUERIDOS, 'AUTH_005');
     }
-    const emailVal = validateEmail(email);
+    const emailVal = validateEmail(loginId);
     if (!emailVal.ok) {
       if (emailVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_EMAIL_LARGO, 'AUTH_028');
-      if (!isExternalAuthLoginEnabled() && emailVal.error === 'invalid') {
+      if (!externalAuth && emailVal.error === 'invalid') {
         return sendError(res, 400, MSG.AUTH_FALTAN_DATOS, 'AUTH_001');
       }
     }
-    const pwdVal = validatePassword(password);
+    const pwdVal = validatePasswordForLogin(password, { externalAuth });
     if (!pwdVal.ok) {
-      if (pwdVal.error === 'too_short') return sendError(res, 400, MSG.AUTH_EMAIL_PASSWORD_REQUERIDOS, 'AUTH_005');
+      if (pwdVal.error === 'empty' || pwdVal.error === 'too_short') {
+        return sendError(res, 400, MSG.AUTH_EMAIL_PASSWORD_REQUERIDOS, 'AUTH_005');
+      }
       if (pwdVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_PASSWORD_LARGA, 'AUTH_029');
     }
 
-    if (isExternalAuthLoginEnabled()) {
+    if (externalAuth) {
       let row;
       try {
-        row = await fetchUsuarioExternoPorLogin(email);
+        row = await fetchUsuarioExternoPorLogin(loginId);
       } catch (e) {
         return sendError(res, 503, MSG.AUTH_SQL_NO_DISPONIBLE, 'AUTH_040', e);
       }
@@ -162,7 +171,7 @@ router.post('/login', async (req, res) => {
       }
       let user;
       try {
-        const prismaEmail = resolvePrismaEmailForExternoUser(email, row.loginMail);
+        const prismaEmail = resolvePrismaEmailForExternoUser(loginId, row.loginMail);
         user = await ensurePrismaUserFromExterno({
           externUserId: row.externUserId,
           emailNorm: prismaEmail,
@@ -196,7 +205,7 @@ router.post('/login', async (req, res) => {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: loginId.toLowerCase() },
       include: { role: { select: { id: true, nombre: true, permisos: true } } },
     });
     if (!user) {

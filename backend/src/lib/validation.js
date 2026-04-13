@@ -38,6 +38,21 @@ export function validatePassword(password) {
 }
 
 /**
+ * Login: si `externalAuth` es true (ELAB), no exige 8 caracteres — el ERP puede tener claves cortas.
+ * @param {unknown} password
+ * @param {{ externalAuth?: boolean }} opts
+ */
+export function validatePasswordForLogin(password, opts = {}) {
+  const s = typeof password === 'string' ? password : String(password ?? '');
+  if (s.length === 0) return { ok: false, error: 'empty' };
+  if (s.length > LIMITS.PASSWORD_MAX_LENGTH) return { ok: false, error: 'too_long' };
+  if (!opts.externalAuth && s.length < LIMITS.PASSWORD_MIN_LENGTH) {
+    return { ok: false, error: 'too_short' };
+  }
+  return { ok: true };
+}
+
+/**
  * Valida nombre: no vacío después de trim, longitud máxima.
  * @param {string} nombre
  * @returns {{ ok: boolean, error?: 'empty'|'too_long' }}
