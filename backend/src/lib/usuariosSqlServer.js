@@ -30,7 +30,16 @@ const IGNORE_ACTIVO = process.env.EXTERNAL_USUARIOS_IGNORE_ACTIVO === 'true'
  */
 export function getExternalUsuariosPasswordMode() {
   const m = (process.env.EXTERNAL_USUARIOS_PASSWORD_MODE || 'auto').trim().toLowerCase();
-  const allowed = ['auto', 'plain', 'bcrypt', 'md5_hex', 'md5_hex_upper', 'sql_pwdccompare'];
+  const allowed = [
+    'auto',
+    'plain',
+    'bcrypt',
+    'md5_hex',
+    'md5_hex_upper',
+    'sql_pwdccompare',
+    'sql_pwdccompare_convert',
+    'sql_plain_equal',
+  ];
   if (allowed.includes(m)) return m;
   return 'auto';
 }
@@ -55,23 +64,86 @@ export function nvarcharClaveToLatin1Bytes(stored) {
 }
 
 async function verifyPwdccompareInSql(plainPassword, storedNvarchar) {
-  const buf = nvarcharClaveToLatin1Bytes(storedNvarchar);
-  if (buf.length === 0) return false;
+  const raw = storedNvarchar == null ? '' : typeof storedNvarchar === 'string' ? storedNvarchar : String(storedNvarchar);
+  const candidates = [...new Set([raw, raw.trim()].filter((c) => c.length > 0))];
+  for (const c of candidates) {
+    const buf = nvarcharClaveToLatin1Bytes(c);
+    if (buf.length === 0) continue;
+    try {
+      const pool = await getSqlServerPool();
+      const r = await pool.request()
+        .input('pwd', sql.NVarChar(4000), String(plainPassword))
+        .input('h', sql.VarBinary, buf)
+        .query('SELECT CAST(PWDCOMPARE(@pwd, @h) AS INT) AS ok');
+      if (Number(r.recordset?.[0]?.ok) === 1) return true;
+    } catch {
+      // siguiente candidato
+    }
+  }
+  return false;
+}
+
+/**
+ * PWDCOMPARE dejando que SQL Server convierta NVARCHAR→VARBINARY (a veces coincide cuando
+ * la reconstrucción byte-a-byte en Node no alinea con el motor).
+ */
+async function verifyPwdccompareConvertInSql(plainPassword, storedNvarchar) {
+  const raw = storedNvarchar == null ? '' : typeof storedNvarchar === 'string' ? storedNvarchar : String(storedNvarchar);
+  const candidates = [...new Set([raw, raw.trim()].filter((c) => c.length > 0))];
+  for (const c of candidates) {
+    try {
+      const pool = await getSqlServerPool();
+      const r = await pool.request()
+        .input('pwd', sql.NVarChar(4000), String(plainPassword))
+        .input('h', sql.NVarChar(sql.MAX), c)
+        .query('SELECT CAST(PWDCOMPARE(@pwd, CONVERT(VARBINARY(MAX), @h)) AS INT) AS ok');
+      if (Number(r.recordset?.[0]?.ok) === 1) return true;
+    } catch {
+      // siguiente candidato
+    }
+  }
+  return false;
+}
+
+/**
+ * Igualdad de texto en el propio SQL Server (colación y espacios CHAR igual que en el ERP).
+ */
+async function verifyPlainEqualsInSql(plainPassword, storedRaw) {
+  const stored = storedRaw == null ? '' : typeof storedRaw === 'string' ? storedRaw : String(storedRaw);
+  if (stored === '' && String(plainPassword ?? '') === '') return false;
   try {
     const pool = await getSqlServerPool();
     const r = await pool.request()
-      .input('pwd', sql.NVarChar, String(plainPassword))
-      .input('h', sql.VarBinary, buf)
-      .query('SELECT CAST(PWDCOMPARE(@pwd, @h) AS INT) AS ok');
+      .input('pwd', sql.NVarChar(4000), String(plainPassword ?? ''))
+      .input('stored', sql.NVarChar(sql.MAX), stored)
+      .query(`
+        SELECT CASE WHEN
+          @pwd = @stored
+          OR LTRIM(RTRIM(@pwd)) = LTRIM(RTRIM(@stored))
+          OR @pwd = LTRIM(RTRIM(@stored))
+          OR LTRIM(RTRIM(@pwd)) = @stored
+        THEN 1 ELSE 0 END AS ok`);
     return Number(r.recordset?.[0]?.ok) === 1;
   } catch {
     return false;
   }
 }
 
+function plainMatchesInNode(plain, storedTrimmed) {
+  const s = storedTrimmed;
+  if (!s) return false;
+  const p = String(plain ?? '');
+  const variants = [...new Set([p, p.trimEnd(), p.trim()].filter((x) => x.length > 0))];
+  for (const pv of variants) {
+    if (timingSafeEqualUtf8(pv, s)) return true;
+  }
+  return false;
+}
+
 async function verifyUsuarioPasswordSingle(plain, stored, mode) {
   if (stored == null) return false;
-  const s = typeof stored === 'string' ? stored.trim() : String(stored);
+  const raw = typeof stored === 'string' ? stored : String(stored);
+  const s = raw.trim();
   if (s === '') return false;
 
   if (mode === 'bcrypt') {
@@ -90,9 +162,15 @@ async function verifyUsuarioPasswordSingle(plain, stored, mode) {
     return timingSafeEqualUtf8(h, s.toUpperCase());
   }
   if (mode === 'sql_pwdccompare') {
-    return verifyPwdccompareInSql(plain, s);
+    return verifyPwdccompareInSql(plain, raw);
   }
-  return timingSafeEqualUtf8(String(plain), s);
+  if (mode === 'sql_pwdccompare_convert') {
+    return verifyPwdccompareConvertInSql(plain, raw);
+  }
+  if (mode === 'sql_plain_equal') {
+    return verifyPlainEqualsInSql(plain, raw);
+  }
+  return plainMatchesInNode(plain, s);
 }
 
 /**
@@ -104,7 +182,15 @@ export async function verifyUsuarioPassword(plain, stored, mode) {
   if (mode !== 'auto') {
     return verifyUsuarioPasswordSingle(plain, stored, mode);
   }
-  const chain = ['plain', 'md5_hex', 'md5_hex_upper', 'bcrypt', 'sql_pwdccompare'];
+  const chain = [
+    'plain',
+    'sql_plain_equal',
+    'md5_hex',
+    'md5_hex_upper',
+    'bcrypt',
+    'sql_pwdccompare',
+    'sql_pwdccompare_convert',
+  ];
   for (const m of chain) {
     if (await verifyUsuarioPasswordSingle(plain, stored, m)) return true;
   }
@@ -158,7 +244,7 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
     `  LTRIM(RTRIM(CAST(u.[${COL_USUARIO}] AS NVARCHAR(255)))) AS loginUsuario,`,
     `  LTRIM(RTRIM(CAST(u.[${COL_NOMBRE}] AS NVARCHAR(255)))) AS nombre,`,
     `  u.[${COL_NIVEL}] AS nivel,`,
-    `  CAST(u.[${COL_PASSWORD}] AS NVARCHAR(4000)) AS passwordStored`,
+    `  CAST(u.[${COL_PASSWORD}] AS NVARCHAR(MAX)) AS passwordStored`,
     `FROM [${TABLE}] u`,
     `WHERE ${loginWhere}`,
     activoSql,
