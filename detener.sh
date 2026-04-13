@@ -12,7 +12,7 @@ cd "$SCRIPT_DIR"
 echo ""
 echo "Deteniendo contenedores de Compras Verdu..."
 echo ""
-docker compose down
+./scripts/docker-compose-env.sh down
 echo ""
 echo "Proyecto detenido. Para volver a levantarlo: ./levantar.sh"
 echo ""

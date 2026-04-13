@@ -13,7 +13,7 @@ Wants=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=/home/adm_agustin/comprasVerdu
-ExecStart=/usr/bin/docker compose up -d
+ExecStart=/usr/bin/bash -lc 'exec ./scripts/docker-compose-env.sh up -d'
 TimeoutStartSec=120
 StandardOutput=journal
 StandardError=journal

@@ -1,8 +1,8 @@
 # =============================================================================
 # Docker Compose - Compras Verdu (producción)
 # =============================================================================
-# Variables ${...}: Compose las lee del archivo `.env` en ESTA misma carpeta (raíz del repo),
-# no de `backend/.env`. Copiá ahí EXTERNAL_AUTH_LOGIN=true y EXTERNAL_DB_* o exportalas en el shell.
+# Variables ${...}: Compose las lee del archivo pasado con --env-file (ver scripts/docker-compose-env.sh).
+# En este repo el archivo versionado suele llamarse `env` (no confundir con backend/.env).
 # Uso: desde la raíz del proyecto:  docker compose up -d --build
 # Frontend accesible en http://localhost:8081 (no usa puerto 80 para convivir con Ticketador).
 # =============================================================================

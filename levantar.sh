@@ -29,29 +29,30 @@ if ! docker compose version &> /dev/null; then
   exit 1
 fi
 
-if [ ! -f .env ]; then
+if [ ! -f env ] && [ ! -f .env ]; then
   if [ -f .env.example ]; then
-    echo "No existe .env. Se crea a partir de .env.example."
+    echo "No existe env ni .env. Se crea .env a partir de .env.example."
     cp .env.example .env
     echo ""
-    echo "IMPORTANTE: Editá el archivo .env y configurá al menos:"
-    echo "  - JWT_SECRET    (clave segura en producción)"
-    echo "  - FRONTEND_URL  (ej. http://TU_IP:8081)"
-    echo "  - EXTERNAL_DB_* (si usás integración con El Abastecedor)"
+    echo "IMPORTANTE: Editá .env (o creá el archivo versionado env) y configurá:"
+    echo "  - JWT_SECRET, FRONTEND_URL, EXTERNAL_DB_* y EXTERNAL_AUTH_LOGIN=true si usás SQL Server"
     echo ""
-    echo "Ver docs/ENV.md para diferencias con el .env de Ticketador."
-    echo ""
-    echo "Cuando termines, ejecutá de nuevo: ./levantar.sh"
+    echo "Ver docs/ENV.md. Cuando termines: ./levantar.sh"
     exit 0
   else
-    echo "[ERROR] No existe .env ni .env.example en esta carpeta."
+    echo "[ERROR] No existe env, .env ni .env.example."
     exit 1
   fi
 fi
 
 echo "Levantando servicios (db, backend, frontend)..."
+if [ -f env ]; then
+  echo "(variables Compose: archivo env)"
+else
+  echo "(variables Compose: archivo .env)"
+fi
 echo ""
-docker compose up -d --build
+./scripts/docker-compose-env.sh up -d --build
 
 echo ""
 echo "============================================"

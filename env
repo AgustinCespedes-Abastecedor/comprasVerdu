@@ -1,8 +1,10 @@
 # =============================================================================
 # Variables de entorno - Compras Verdu (Docker Compose + Backend)
 # =============================================================================
-# Copiar a .env en la raíz del proyecto:  cp .env.example .env
-# La base PostgreSQL se crea sola en el contenedor Docker; solo ajustá JWT_SECRET y FRONTEND_URL (y EXTERNAL_DB_SERVER si usás El Abastecedor).
+# Este archivo se llama `env` (no .env) y está versionado. Docker Compose NO lo
+# lee solo: usá ./levantar.sh o ./scripts/docker-compose-env.sh para que se
+# pase con --env-file env (sustitución de ${EXTERNAL_AUTH_LOGIN}, etc.).
+# Alternativa: cp env .env y luego docker compose up (no recomendado: dos copias).
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -17,7 +19,8 @@ POSTGRES_DB=compras_verdu
 # Backend (API) - obligatorias en producción
 # -----------------------------------------------------------------------------
 JWT_SECRET=Abastecedor_Retail_ComprasVerdu2026!$#_9xKzP2q_wMvL8nB4j_uT5yR7e_iO1pA3sD6fG
-FRONTEND_URL=http://localhost:8081
+# Producción HTTPS (CORS y cookies): usar la URL pública real.
+FRONTEND_URL=https://cverdu.elabastecedor.com.ar
 
 # -----------------------------------------------------------------------------
 # SQL Server externo (El Abastecedor) - obligatorias si usás integración
@@ -28,6 +31,8 @@ EXTERNAL_DB_PORT=1433
 EXTERNAL_DB_DATABASE=ELABASTECEDOR
 EXTERNAL_DB_USER=shs
 EXTERNAL_DB_PASSWORD=
+# Login contra tabla Usuarios (código / usuario / email). Compose inyecta esto al contenedor.
+EXTERNAL_AUTH_LOGIN=true
 
 # -----------------------------------------------------------------------------
 # SQL Server - Proveedores (por defecto: proveedores / codigo / Nombre)
