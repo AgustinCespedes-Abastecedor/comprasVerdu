@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { tienePermiso } from '../lib/permisos.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { getJwtSecret } from '../lib/config.js';
+import { getPrismaConnectionFailureResponse } from '../lib/prismaConnection.js';
 
 /**
  * Carga usuario con rol y permisos. Asigna req.userId, req.rol (objeto Role), req.permisos (array de códigos).
@@ -43,6 +44,10 @@ export async function authMiddleware(req, res, next) {
   } catch (e) {
     if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError') {
       return sendError(res, 401, MSG.AUTH_TOKEN_INVALIDO, 'AUTH_018');
+    }
+    const conn = getPrismaConnectionFailureResponse(e);
+    if (conn) {
+      return sendError(res, conn.status, conn.message, conn.clientCode, e);
     }
     return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_019', e);
   }

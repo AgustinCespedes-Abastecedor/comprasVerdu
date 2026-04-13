@@ -329,3 +329,70 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
     passwordStored: normalizeSqlPasswordColumnValue(row.passwordStored),
   };
 }
+
+/**
+ * Lista filas de dbo.Usuarios sin exponer la columna de contraseña (para gestión / administración).
+ * @param {{ q?: string, limit?: number }} opts
+ * @returns {Promise<Array<{ externUserId: string, loginMail: string, loginUsuario: string, nombre: string, nivel: unknown, habilitadoEnErp: boolean | null }>>}
+ */
+export async function listUsuariosExternos(opts = {}) {
+  const qRaw = typeof opts.q === 'string' ? opts.q.trim() : '';
+  const envDefault = parseInt(process.env.EXTERNAL_USUARIOS_LIST_LIMIT || '2000', 10) || 2000;
+  const lim = Math.min(Math.max(parseInt(String(opts.limit ?? envDefault), 10) || envDefault, 1), 8000);
+
+  const pool = await getSqlServerPool();
+  const request = pool.request();
+
+  let whereSearch = '';
+  if (qRaw) {
+    request.input('q1', sql.NVarChar(255), `%${qRaw}%`);
+    whereSearch = ` AND (
+      LTRIM(RTRIM(CAST(u.[${COL_NOMBRE}] AS NVARCHAR(255)))) LIKE @q1
+      OR LTRIM(RTRIM(CAST(u.[${COL_EMAIL}] AS NVARCHAR(255)))) LIKE @q1
+      OR LTRIM(RTRIM(CAST(u.[${COL_USUARIO}] AS NVARCHAR(255)))) LIKE @q1
+      OR LTRIM(RTRIM(CAST(u.[${COL_ID}] AS NVARCHAR(64)))) LIKE @q1
+    )`;
+  }
+
+  const habilitadoExpr = IGNORE_ACTIVO || !String(COL_ACTIVO || '').trim()
+    ? 'CAST(1 AS BIT)'
+    : `(CASE WHEN u.[${COL_ACTIVO}] = 1 OR TRY_CAST(u.[${COL_ACTIVO}] AS INT) = 1 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END)`;
+
+  const query = [
+    `SELECT TOP (${lim})`,
+    `  CAST(u.[${COL_ID}] AS NVARCHAR(64)) AS externUserId,`,
+    `  LTRIM(RTRIM(CAST(u.[${COL_EMAIL}] AS NVARCHAR(255)))) AS loginMail,`,
+    `  LTRIM(RTRIM(CAST(u.[${COL_USUARIO}] AS NVARCHAR(255)))) AS loginUsuario,`,
+    `  LTRIM(RTRIM(CAST(u.[${COL_NOMBRE}] AS NVARCHAR(255)))) AS nombre,`,
+    `  u.[${COL_NIVEL}] AS nivel,`,
+    `  ${habilitadoExpr} AS habilitadoEnErp`,
+    `FROM [${TABLE}] u`,
+    'WHERE 1=1',
+    whereSearch,
+    `ORDER BY LTRIM(RTRIM(CAST(u.[${COL_NOMBRE}] AS NVARCHAR(255))))`,
+  ].join(' ');
+
+  const result = await request.query(query);
+  const rows = result.recordset || [];
+  return rows
+    .map((row) => {
+      const externUserId = String(row.externUserId ?? '').trim();
+      const loginMail = String(row.loginMail ?? '').trim();
+      const loginUsuario = String(row.loginUsuario ?? '').trim();
+      const nombre = String(row.nombre ?? '').trim() || loginMail || loginUsuario || externUserId;
+      let habilitadoEnErp = null;
+      if (!IGNORE_ACTIVO && COL_ACTIVO) {
+        const v = row.habilitadoEnErp;
+        habilitadoEnErp = v === true || v === 1 || v === '1';
+      }
+      return {
+        externUserId,
+        loginMail,
+        loginUsuario,
+        nombre,
+        nivel: row.nivel,
+        habilitadoEnErp,
+      };
+    })
+    .filter((r) => r.externUserId.length > 0);
+}

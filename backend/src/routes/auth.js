@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { sendError, MSG } from '../lib/errors.js';
+import { getPrismaConnectionFailureResponse } from '../lib/prismaConnection.js';
 import { getJwtSecret } from '../lib/config.js';
 import { validateEmail, validatePassword, validateNombre } from '../lib/validation.js';
 import { isExternalAuthLoginEnabled } from '../lib/configAuthExterno.js';
@@ -104,6 +105,10 @@ router.post('/registro', async (req, res) => {
       token,
     });
   } catch (e) {
+    const conn = getPrismaConnectionFailureResponse(e);
+    if (conn) {
+      return sendError(res, conn.status, conn.message, conn.clientCode, e);
+    }
     sendError(res, 500, MSG.ERROR_SERVIDOR, 'AUTH_004', e);
   }
 });
@@ -227,6 +232,10 @@ router.post('/login', async (req, res) => {
       token,
     });
   } catch (e) {
+    const conn = getPrismaConnectionFailureResponse(e);
+    if (conn) {
+      return sendError(res, conn.status, conn.message, conn.clientCode, e);
+    }
     sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_010', e);
   }
 });
@@ -260,6 +269,10 @@ router.get('/me', async (req, res) => {
   } catch (e) {
     if (e.name === 'JsonWebTokenError' || e.name === 'TokenExpiredError') {
       return sendError(res, 401, MSG.AUTH_TOKEN_INVALIDO, 'AUTH_013');
+    }
+    const conn = getPrismaConnectionFailureResponse(e);
+    if (conn) {
+      return sendError(res, conn.status, conn.message, conn.clientCode, e);
     }
     return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_014', e);
   }

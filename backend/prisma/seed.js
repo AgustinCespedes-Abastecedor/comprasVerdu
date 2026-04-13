@@ -1,21 +1,40 @@
+/**
+ * Seed mínimo: solo roles en Postgres (permisos de la app).
+ * Los usuarios y contraseñas vienen exclusivamente de ELABASTECEDOR (SQL Server) cuando EXTERNAL_AUTH_LOGIN=true.
+ */
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 const ROLES_DEFAULT = [
-  { nombre: 'Administrador', descripcion: 'Acceso total (cuenta local de soporte; no viene de Nivel en SQL)', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos', 'gestion-usuarios', 'gestion-roles'] },
-  { nombre: 'Comprador', descripcion: 'Cargar compras y ver historial', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'] },
-  { nombre: 'Recepcionista', descripcion: 'Recepción de compras y consultas. No puede crear compras.', permisos: ['home', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'] },
-  { nombre: 'Administrativo', descripcion: 'Nivel 35–40 en El Abastecedor: consulta compras/recepciones e info final de artículos', permisos: ['home', 'ver-compras', 'ver-recepciones', 'info-final-articulos'] },
-  { nombre: 'Visor', descripcion: 'Solo lectura', permisos: ['home', 'ver-compras', 'ver-recepciones', 'info-final-articulos'] },
+  {
+    nombre: 'Administrador',
+    descripcion: 'Acceso total. En ELABASTECEDOR: Nivel = EXTERNAL_NIVEL_ADMIN_SISTEMA (por defecto 100).',
+    permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos', 'gestion-usuarios', 'gestion-roles'],
+  },
+  {
+    nombre: 'Comprador',
+    descripcion: 'Cargar compras. Nivel entre EXTERNAL_NIVEL_COMP_MIN y EXTERNAL_NIVEL_COMP_MAX (por defecto 25–30).',
+    permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'],
+  },
+  {
+    nombre: 'Recepcionista',
+    descripcion: 'Recepción de compras. Nivel entre EXTERNAL_NIVEL_RECEP_MIN y EXTERNAL_NIVEL_RECEP_MAX (por defecto 0–20).',
+    permisos: ['home', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'],
+  },
+  {
+    nombre: 'Administrativo',
+    descripcion: 'Consultas. Nivel entre EXTERNAL_NIVEL_ADMIN_MIN y EXTERNAL_NIVEL_ADMIN_MAX (por defecto 35–40).',
+    permisos: ['home', 'ver-compras', 'ver-recepciones', 'info-final-articulos'],
+  },
+  {
+    nombre: 'Visor',
+    descripcion: 'Solo lectura (reservado; el acceso típico se define por Nivel en ELABASTECEDOR).',
+    permisos: ['home', 'ver-compras', 'ver-recepciones', 'info-final-articulos'],
+  },
 ];
 
 async function main() {
-  const hashAdmin = await bcrypt.hash('admin123', 10);
-  const hashAdminLocal = await bcrypt.hash('admin1234', 10);
-
-  // Asegurar que existan los roles por defecto (por si se corre seed sin migración previa o se borraron)
   for (const r of ROLES_DEFAULT) {
     await prisma.role.upsert({
       where: { nombre: r.nombre },
@@ -23,88 +42,7 @@ async function main() {
       create: { nombre: r.nombre, descripcion: r.descripcion, permisos: r.permisos },
     });
   }
-
-  const roleAdmin = await prisma.role.findUnique({ where: { nombre: 'Administrador' } });
-  const roleComprador = await prisma.role.findUnique({ where: { nombre: 'Comprador' } });
-  const roleRecepcionista = await prisma.role.findUnique({ where: { nombre: 'Recepcionista' } });
-  const roleVisor = await prisma.role.findUnique({ where: { nombre: 'Visor' } });
-  const roleAdministrativo = await prisma.role.findUnique({ where: { nombre: 'Administrativo' } });
-  if (!roleAdmin || !roleComprador || !roleRecepcionista || !roleVisor || !roleAdministrativo) {
-    throw new Error('Roles por defecto no encontrados');
-  }
-
-  await prisma.user.upsert({
-    where: { email: 'admin@comprasverdu.com' },
-    update: { password: hashAdminLocal, nombre: 'Admin local (soporte)', roleId: roleAdmin.id, externUserId: null },
-    create: {
-      email: 'admin@comprasverdu.com',
-      password: hashAdminLocal,
-      nombre: 'Admin local (soporte)',
-      roleId: roleAdmin.id,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: 'comprador@comprasverdu.com' },
-    update: {},
-    create: {
-      email: 'comprador@comprasverdu.com',
-      password: hashAdmin,
-      nombre: 'Usuario Comprador',
-      roleId: roleComprador.id,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: 'visor@comprasverdu.com' },
-    update: {},
-    create: {
-      email: 'visor@comprasverdu.com',
-      password: hashAdmin,
-      nombre: 'Usuario Visor',
-      roleId: roleVisor.id,
-    },
-  });
-
-  await prisma.user.upsert({
-    where: { email: 'recepcionista@comprasverdu.com' },
-    update: {},
-    create: {
-      email: 'recepcionista@comprasverdu.com',
-      password: hashAdmin,
-      nombre: 'Usuario Recepcionista',
-      roleId: roleRecepcionista.id,
-    },
-  });
-
-  const proveedores = [
-    { codigoExterno: 'seed-1', nombre: 'Mercado central 1' },
-    { codigoExterno: 'seed-2', nombre: 'Mercado central 2' },
-  ];
-  for (const p of proveedores) {
-    await prisma.proveedor.upsert({
-      where: { codigoExterno: p.codigoExterno },
-      update: { nombre: p.nombre },
-      create: p,
-    });
-  }
-
-  const productos = [
-    { codigo: '3004', descripcion: 'BANANA ECUADOR XKG', stockSucursales: 10, stockCD: 5, ventasN1: 8, ventasN2: 7, ventas7dias: 50, costo: 2500, precioVenta: 2800, margenPorc: 12 },
-    { codigo: '2069', descripcion: 'TOMATE XKG', stockSucursales: 15, stockCD: 8, ventasN1: 12, ventasN2: 10, ventas7dias: 75, costo: 1200, precioVenta: 1500, margenPorc: 25 },
-    { codigo: '2050', descripcion: 'MORRON ROJO XKG', stockSucursales: 6, stockCD: 4, ventasN1: 5, ventasN2: 4, ventas7dias: 30, costo: 1800, precioVenta: 2200, margenPorc: 22 },
-    { codigo: '3065', descripcion: 'MANZANA GAUCHO XKG', stockSucursales: 20, stockCD: 10, ventasN1: 15, ventasN2: 14, ventas7dias: 90, costo: 900, precioVenta: 1200, margenPorc: 33 },
-    { codigo: '996', descripcion: 'MELON X KG', stockSucursales: 8, stockCD: 6, ventasN1: 6, ventasN2: 5, ventas7dias: 40, costo: 600, precioVenta: 850, margenPorc: 42 },
-  ];
-  for (const prod of productos) {
-    await prisma.producto.upsert({
-      where: { codigoExterno: prod.codigo },
-      update: { descripcion: prod.descripcion },
-      create: { ...prod, codigoExterno: prod.codigo },
-    });
-  }
-
-  console.log('Seed ejecutado correctamente.');
+  console.log('Seed de roles ejecutado correctamente (sin usuarios demo).');
 }
 
 main()

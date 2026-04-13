@@ -43,7 +43,8 @@ npm start
 | `npm run db:generate` | Regenerar cliente Prisma (tras cambiar el schema) |
 | `npm run db:push`    | Aplicar schema a la base             |
 | `npm run db:migrate` | Crear/aplicar migraciones            |
-| `npm run db:seed`    | Ejecutar seed                        |
+| `npm run db:seed`    | Seed de **roles** en Postgres (sin usuarios) |
+| `npm run check:elab` | Verifica `DATABASE_URL` (Postgres) y conexión a **ELABASTECEDOR** + tabla `Usuarios` (solo lectura) |
 
 ## Stock desde ELABASTECEDOR (SQL Server)
 

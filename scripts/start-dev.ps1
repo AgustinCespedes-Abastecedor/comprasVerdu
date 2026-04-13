@@ -12,19 +12,38 @@ Set-Location $projectRoot
 Write-Host "=== Compras Verdu - Inicio de desarrollo ===" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Verificar Docker y PostgreSQL
-if (Test-Path "docker-compose.yml") {
-    Write-Host "[1/6] Verificando PostgreSQL (Docker)..." -ForegroundColor Yellow
+# 0. backend/.env local (no versionado): copiar plantilla si no existe
+$backendEnv = Join-Path $projectRoot "backend\.env"
+$backendEnvExample = Join-Path $projectRoot "backend\.env.example"
+if (-not (Test-Path $backendEnv)) {
+    if (Test-Path $backendEnvExample) {
+        Copy-Item $backendEnvExample $backendEnv
+        Write-Host "[0/6] Creado backend\.env desde .env.example (revisá DATABASE_URL si usás otro puerto)." -ForegroundColor Green
+    } else {
+        Write-Host "  ERROR: Falta backend\.env.example" -ForegroundColor Red
+        exit 1
+    }
+}
+
+# 1. PostgreSQL en Docker: usar docker-compose.db.yml (expone 5433 al host). El docker-compose.yml de producción no mapea puertos de db.
+$dbCompose = Join-Path $projectRoot "docker-compose.db.yml"
+if (Test-Path $dbCompose) {
+    Write-Host "[1/6] Verificando PostgreSQL (Docker, puerto 5433)..." -ForegroundColor Yellow
     docker info 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "  ERROR: Docker no está corriendo. Iniciá Docker Desktop y volvé a ejecutar." -ForegroundColor Red
         exit 1
     }
-    cmd /c "docker-compose up -d db 2>nul"
+    Push-Location $projectRoot
+    try {
+        docker compose -f docker-compose.db.yml up -d 2>&1 | Out-Null
+    } finally {
+        Pop-Location
+    }
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "  ADVERTENCIA: No se pudo levantar Docker. Si PostgreSQL ya corre en 5433, continuamos." -ForegroundColor Yellow
+        Write-Host "  ADVERTENCIA: No se pudo levantar el contenedor. Si PostgreSQL ya corre en 5433, continuamos." -ForegroundColor Yellow
     } else {
-        Write-Host "  PostgreSQL iniciado (puerto 5433)" -ForegroundColor Green
+        Write-Host "  PostgreSQL iniciado (docker-compose.db.yml → localhost:5433)" -ForegroundColor Green
     }
     # Esperar a que PostgreSQL acepte conexiones
     $maxAttempts = 15
@@ -46,7 +65,7 @@ if (Test-Path "docker-compose.yml") {
     }
     Write-Host "  PostgreSQL listo." -ForegroundColor Green
 } else {
-    Write-Host "[1/6] Sin docker-compose. Asumimos PostgreSQL ya corre en 5433." -ForegroundColor Yellow
+    Write-Host "[1/6] Sin docker-compose.db.yml. Asumimos PostgreSQL ya corre en 5433." -ForegroundColor Yellow
 }
 
 # 2. Prisma generate
@@ -81,7 +100,7 @@ npm run db:seed 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  ADVERTENCIA: Seed falló. Podés crear usuario manualmente desde /registro" -ForegroundColor Yellow
 } else {
-    Write-Host "  Usuarios: comprador@comprasverdu.com / admin123, a.cespedes@elabastecedor.com.ar / admin1234" -ForegroundColor Gray
+    Write-Host "  Usuarios: solo ELABASTECEDOR (EXTERNAL_AUTH_LOGIN en backend/.env). Seed = roles en Postgres." -ForegroundColor Gray
 }
 Pop-Location
 

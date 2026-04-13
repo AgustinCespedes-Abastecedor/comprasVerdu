@@ -8,6 +8,7 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
     "dev:db": "docker compose -f docker-compose.db.yml up -d",
+    "setup:dev": "node scripts/ensure-backend-env.mjs && npm run dev:db && npm run db:setup --prefix backend",
     "start": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1",
     "start:all": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1",
     "build": "npm run build --prefix frontend",
@@ -17,7 +18,8 @@
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend",
     "lint": "npm run lint --prefix backend && npm run lint --prefix frontend",
     "test": "npm run test --prefix backend && npm run test --prefix frontend",
-    "ci": "npm run lint --prefix backend && npm run test --prefix backend && npm run lint --prefix frontend && npm run build --prefix frontend && npm run test --prefix frontend"
+    "ci": "npm run lint --prefix backend && npm run test --prefix backend && npm run lint --prefix frontend && npm run build --prefix frontend && npm run test --prefix frontend",
+    "check:elab": "npm run check:elab --prefix backend"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

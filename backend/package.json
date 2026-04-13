@@ -11,11 +11,13 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:setup": "npm run db:generate && npm run db:push && npm run db:seed",
     "db:seed": "node prisma/seed.js",
     "lint": "eslint . --ext .js",
-    "test": "node --test src/lib/errors.test.js src/lib/resolveExternoLoginEmail.test.js src/lib/usuariosSqlServer.test.js",
+    "test": "node --test src/lib/errors.test.js src/lib/resolveExternoLoginEmail.test.js src/lib/usuariosSqlServer.test.js src/lib/nivelRol.test.js",
     "test:sql-usuarios": "RUN_SQL_USUARIOS_INTEG=1 node --test src/lib/usuariosSqlServer.integration.test.js",
-    "analyze:clave-2558": "node scripts/analyze-usuario-2558-clave.js"
+    "analyze:clave-2558": "node scripts/analyze-usuario-2558-clave.js",
+    "check:elab": "node scripts/check-elab.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

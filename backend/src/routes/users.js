@@ -6,12 +6,23 @@ import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
 import { validateEmail, validatePassword, validateNombre } from '../lib/validation.js';
 import { isExternalAuthLoginEnabled } from '../lib/configAuthExterno.js';
+import { getMergedUsersForGestion } from '../lib/usuariosListMerged.js';
 
 const router = Router();
 
 router.get('/', soloGestionUsuarios, async (req, res) => {
   try {
     const { q, roleId, activo } = req.query;
+
+    if (isExternalAuthLoginEnabled()) {
+      try {
+        const list = await getMergedUsersForGestion({ q, roleId, activo });
+        return res.json(list);
+      } catch (e) {
+        return sendError(res, 503, MSG.USERS_SQL_LISTAR, 'USERS_024', e);
+      }
+    }
+
     const where = {};
     if (q && typeof q === 'string' && q.trim()) {
       where.OR = [

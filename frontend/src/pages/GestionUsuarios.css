@@ -1178,3 +1178,109 @@ html.is-native .gestion-usuarios-modal-edit-actions .gestion-usuarios-modal-edit
   padding: 0.5rem 0.9rem;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Login El Abastecedor: aviso y columnas extra */
+.gestion-usuarios-external-banner {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--accent-soft, rgba(99, 102, 241, 0.12));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+[data-theme="light"] .gestion-usuarios-external-banner {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.gestion-usuarios-origin {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.gestion-usuarios-origin--elab {
+  color: var(--accent-fg, #fff);
+  background: var(--accent);
+}
+
+.gestion-usuarios-origin--local {
+  color: var(--text);
+  background: var(--border);
+}
+
+.gestion-usuarios-sin-nivel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--warning, #b45309);
+}
+
+.gestion-usuarios-erp-si {
+  color: var(--success, #2e7d32);
+  font-weight: 600;
+}
+
+.gestion-usuarios-erp-no {
+  color: var(--text-muted);
+}
+
+.gestion-usuarios-estado-pendiente {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.gestion-usuarios-th-cod,
+.gestion-usuarios-td-cod {
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.gestion-usuarios-cell-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.gestion-usuarios-modal-readonly p {
+  margin: 0 0 0.5rem;
+}
+
+.gestion-usuarios-modal-readonly-meta {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.gestion-usuarios-modal-readonly-hint {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin-top: 0.75rem !important;
+}
+
+.gestion-usuarios-modal-edit-field--readonly {
+  margin-bottom: 0.75rem;
+}
+
+.gestion-usuarios-modal-edit-field--readonly label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.gestion-usuarios-readonly-value {
+  display: block;
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 720px) {
+  .gestion-usuarios-th-cod,
+  .gestion-usuarios-td-cod,
+  .gestion-usuarios-th-erp {
+    display: none;
+  }
+}

@@ -25,7 +25,7 @@ docker compose up -d
 
 Esto crea la base **compras_verdu** en PostgreSQL 16 (puerto **5433** en el host para no chocar con un PostgreSQL local en 5432). El `backend/.env` ya está configurado para conectarse a ese contenedor.
 
-Crear tablas y datos iniciales:
+Crear tablas y **roles** iniciales en Postgres (los usuarios vienen de **ELABASTECEDOR** si `EXTERNAL_AUTH_LOGIN=true`):
 
 ```bash
 cd backend
@@ -97,6 +97,12 @@ Si no tenés PostgreSQL local con la misma `DATABASE_URL` que en `backend/.env`,
 
 ```bash
 npm run dev:db
+```
+
+La primera vez (o si la base está vacía), podés preparar todo de una vez:
+
+```bash
+npm run setup:dev
 ```
 
 Luego:

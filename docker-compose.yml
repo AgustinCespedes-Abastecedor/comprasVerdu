@@ -1,8 +1,9 @@
 # =============================================================================
 # Docker Compose - Compras Verdu (producción)
 # =============================================================================
-# Variables ${...}: Compose las lee del archivo pasado con --env-file (ver scripts/docker-compose-env.sh).
-# En este repo el archivo versionado suele llamarse `env` (no confundir con backend/.env).
+# El servicio backend carga variables desde ./backend/.env (JWT, SQL Server, FRONTEND_URL, etc.).
+# Compose fuerza DATABASE_URL=@db:5432 dentro del contenedor (no usar 127.0.0.1 ahí).
+# Variables ${...} en otros servicios: archivo opcional con --env-file (ver scripts/docker-compose-env.sh).
 # Uso: desde la raíz del proyecto:  docker compose up -d --build
 # Frontend accesible en http://localhost:8081 (no usa puerto 80 para convivir con Ticketador).
 # =============================================================================
@@ -31,38 +32,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: compras_verdu_backend
+    # Misma configuración que en desarrollo; JWT, SQL Server, FRONTEND_URL, etc. vienen de backend/.env
+    env_file:
+      - ./backend/.env
     environment:
+      # Obligatorio en Docker: la app dentro del contenedor debe usar el hostname del servicio Postgres, no 127.0.0.1
       NODE_ENV: production
       PORT: 4000
       DATABASE_URL: postgresql://${POSTGRES_USER:-compras_verdu}:${POSTGRES_PASSWORD:-compras_verdu_secret}@db:5432/${POSTGRES_DB:-compras_verdu}?schema=public
-      JWT_SECRET: ${JWT_SECRET:-cambiar-clave-secreta-en-produccion}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8081}
-      EXTERNAL_DB_SERVER: ${EXTERNAL_DB_SERVER:-}
-      EXTERNAL_DB_PORT: ${EXTERNAL_DB_PORT:-1433}
-      EXTERNAL_DB_DATABASE: ${EXTERNAL_DB_DATABASE:-ELABASTECEDOR}
-      EXTERNAL_DB_USER: ${EXTERNAL_DB_USER:-}
-      EXTERNAL_DB_PASSWORD: ${EXTERNAL_DB_PASSWORD:-}
-      EXTERNAL_ARTICULOS_DEPARTAMENTO_ID: ${EXTERNAL_ARTICULOS_DEPARTAMENTO_ID:-6}
-      # Login SQL Server (deben coincidir con .env raíz; antes no se inyectaban y el contenedor no veía EXTERNAL_AUTH_LOGIN)
-      EXTERNAL_AUTH_LOGIN: ${EXTERNAL_AUTH_LOGIN:-}
-      EXTERNAL_USUARIOS_TABLE: ${EXTERNAL_USUARIOS_TABLE:-}
-      EXTERNAL_USUARIOS_COL_ID: ${EXTERNAL_USUARIOS_COL_ID:-}
-      EXTERNAL_USUARIOS_COL_EMAIL: ${EXTERNAL_USUARIOS_COL_EMAIL:-}
-      EXTERNAL_USUARIOS_COL_USUARIO: ${EXTERNAL_USUARIOS_COL_USUARIO:-}
-      EXTERNAL_USUARIOS_COL_PASSWORD: ${EXTERNAL_USUARIOS_COL_PASSWORD:-}
-      EXTERNAL_USUARIOS_COL_NIVEL: ${EXTERNAL_USUARIOS_COL_NIVEL:-}
-      EXTERNAL_USUARIOS_COL_NOMBRE: ${EXTERNAL_USUARIOS_COL_NOMBRE:-}
-      EXTERNAL_USUARIOS_COL_ACTIVO: ${EXTERNAL_USUARIOS_COL_ACTIVO:-}
-      EXTERNAL_USUARIOS_MATCH_USUARIO: ${EXTERNAL_USUARIOS_MATCH_USUARIO:-}
-      EXTERNAL_USUARIOS_IGNORE_ACTIVO: ${EXTERNAL_USUARIOS_IGNORE_ACTIVO:-}
-      EXTERNAL_USUARIOS_PASSWORD_MODE: ${EXTERNAL_USUARIOS_PASSWORD_MODE:-}
-      EXTERNAL_NIVEL_RECEP_MIN: ${EXTERNAL_NIVEL_RECEP_MIN:-}
-      EXTERNAL_NIVEL_RECEP_MAX: ${EXTERNAL_NIVEL_RECEP_MAX:-}
-      EXTERNAL_NIVEL_COMP_MIN: ${EXTERNAL_NIVEL_COMP_MIN:-}
-      EXTERNAL_NIVEL_COMP_MAX: ${EXTERNAL_NIVEL_COMP_MAX:-}
-      EXTERNAL_NIVEL_ADMIN_MIN: ${EXTERNAL_NIVEL_ADMIN_MIN:-}
-      EXTERNAL_NIVEL_ADMIN_MAX: ${EXTERNAL_NIVEL_ADMIN_MAX:-}
-      EXTERNAL_NIVEL_ADMIN_SISTEMA: ${EXTERNAL_NIVEL_ADMIN_SISTEMA:-}
     depends_on:
       db:
         condition: service_healthy

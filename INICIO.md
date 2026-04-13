@@ -21,7 +21,15 @@ Desde la raíz del proyecto:
 npm run start
 ```
 
-Este comando:
+Solo para preparar la base la primera vez (o tras borrar el volumen Docker), sin abrir el IDE completo:
+
+```powershell
+npm run setup:dev
+```
+
+Eso crea `backend/.env` si no existe, levanta Postgres (`docker-compose.db.yml`), ejecuta Prisma generate, `db push` y `db:seed`.
+
+`npm run start` hace lo siguiente:
 
 1. Levanta PostgreSQL (Docker)
 2. Espera a que la base esté lista
@@ -33,10 +41,7 @@ Este comando:
 **Web:** http://localhost:5173  
 **API:** http://localhost:4000
 
-Usuarios de prueba (tras el seed):
-
-- `comprador@comprasverdu.com` / `admin123`
-- `a.cespedes@elabastecedor.com.ar` / `admin1234`
+El **seed** solo crea **roles** en Postgres. Los usuarios y contraseñas son los de **ELABASTECEDOR** (`EXTERNAL_AUTH_LOGIN=true` y `EXTERNAL_DB_*` en `backend/.env`). El **Nivel** en `dbo.Usuarios` define el rol en la app (ver `backend/src/lib/nivelRol.js`).
 
 ---
 
@@ -45,8 +50,8 @@ Usuarios de prueba (tras el seed):
 ### Terminal 1 – Backend
 
 ```powershell
-# Opcional: levantar PostgreSQL si usás Docker
-docker-compose up -d db
+# Opcional: levantar PostgreSQL si usás Docker (expone 5433 en el host)
+docker compose -f docker-compose.db.yml up -d
 
 cd backend
 npm install
@@ -106,7 +111,7 @@ Para emulador Android: se usa `10.0.2.2` en lugar de la IP de la PC.
 Causas habituales:
 
 1. **PostgreSQL no está corriendo**
-   - Con Docker: `docker-compose up -d db`
+   - Con Docker: `docker compose -f docker-compose.db.yml up -d` (o `npm run dev:db` desde la raíz)
    - Comprobar: `netstat -an | findstr 5433`
 
 2. **Base de datos sin tablas ni usuarios**

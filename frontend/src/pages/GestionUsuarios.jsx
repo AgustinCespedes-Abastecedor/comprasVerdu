@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { users, roles as rolesApi } from '../api/client';
+import { users, roles as rolesApi, auth as authApi } from '../api/client';
 import { rolEtiqueta, puedeGestionarRoles } from '../lib/roles';
 import { PANTALLAS } from '../lib/permisos';
 import { useAuth } from '../context/AuthContext';
@@ -29,8 +29,23 @@ export default function GestionUsuarios() {
   const [error, setError] = useState('');
   const [errorCode, setErrorCode] = useState('');
   const [copyFeedback, setCopyFeedback] = useState(false);
+  /** Tras GET /auth/config: si es true, la lista mezcla ELABASTECEDOR + Postgres. */
+  const [externalAuthLogin, setExternalAuthLogin] = useState(false);
+  const [authConfigReady, setAuthConfigReady] = useState(false);
 
   const puedeRoles = puedeGestionarRoles(user);
+
+  useEffect(() => {
+    authApi.getPublicConfig()
+      .then((c) => {
+        setExternalAuthLogin(Boolean(c?.externalAuthLogin));
+        setAuthConfigReady(true);
+      })
+      .catch(() => {
+        setExternalAuthLogin(false);
+        setAuthConfigReady(true);
+      });
+  }, []);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -108,22 +123,27 @@ export default function GestionUsuarios() {
     }
   };
 
-  const handleUpdateUser = async (e, id) => {
+  const handleUpdateUser = async (e, id, options = {}) => {
     e.preventDefault();
+    const { soloActivoExterno } = options;
     const form = e.target;
-    const nombre = form.nombre.value.trim();
-    const email = form.email?.value?.trim().toLowerCase();
-    const roleId = form.roleId.value;
-    const password = form.password.value;
     const activo = form.estado.value === 'true';
     setSaving(true);
     setError('');
     setErrorCode('');
     try {
-      const body = { nombre, roleId, activo };
-      if (email !== undefined) body.email = email;
-      if (password.length > 0) body.password = password;
-      await users.update(id, body);
+      if (soloActivoExterno) {
+        await users.update(id, { activo });
+      } else {
+        const nombre = form.nombre.value.trim();
+        const email = form.email?.value?.trim().toLowerCase();
+        const roleId = form.roleId.value;
+        const password = form.password.value;
+        const body = { nombre, roleId, activo };
+        if (email !== undefined) body.email = email;
+        if (password.length > 0) body.password = password;
+        await users.update(id, body);
+      }
       setModal(null);
       loadUsers();
     } catch (err) {
@@ -135,6 +155,11 @@ export default function GestionUsuarios() {
   };
 
   const handleToggleActivo = async (u) => {
+    if (!u.id) {
+      setError('Este usuario aún no ingresó a la aplicación. El estado en la app se puede cambiar después del primer acceso.');
+      setErrorCode('');
+      return;
+    }
     setError('');
     setErrorCode('');
     try {
@@ -249,11 +274,20 @@ export default function GestionUsuarios() {
 
         {tab === 'usuarios' && (
           <>
+            {authConfigReady && externalAuthLogin && (
+              <div className="gestion-usuarios-external-banner" role="region" aria-label="Información sobre usuarios">
+                <p>
+                  Los usuarios se definen en la base <strong>ELABASTECEDOR</strong> (tabla de usuarios del sistema).
+                  Aquí ves el listado combinado con la app: podés <strong>suspender o reactivar</strong> el acceso a Compras Verdu.
+                  No se pueden crear usuarios ni cambiar nombre, correo, rol ni contraseña desde esta pantalla.
+                </p>
+              </div>
+            )}
             <div className="gestion-usuarios-toolbar">
               <div className="gestion-usuarios-filters">
                 <input
                   type="search"
-                  placeholder="Buscar por nombre o email..."
+                  placeholder={authConfigReady && externalAuthLogin ? 'Buscar en El Abastecedor (nombre, email, código)…' : 'Buscar por nombre o email...'}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="gestion-usuarios-search"
@@ -281,9 +315,11 @@ export default function GestionUsuarios() {
                   <option value="false">Inactivos</option>
                 </select>
               </div>
-              <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('create'); setError(''); setErrorCode(''); }}>
-                Nuevo usuario
-              </button>
+              {authConfigReady && !externalAuthLogin && (
+                <button type="button" className="gestion-usuarios-btn-new" onClick={() => { setModal('create'); setError(''); setErrorCode(''); }}>
+                  Nuevo usuario
+                </button>
+              )}
             </div>
 
             {error && (
@@ -314,60 +350,99 @@ export default function GestionUsuarios() {
                 {list.length === 0 ? (
                   <div className="gestion-usuarios-empty">
                     <p>No hay usuarios que coincidan con los filtros.</p>
-                    <p className="gestion-usuarios-empty-hint">Probá cambiando la búsqueda o agregá un nuevo usuario.</p>
+                    <p className="gestion-usuarios-empty-hint">
+                      {authConfigReady && externalAuthLogin
+                        ? 'Probá otra búsqueda. Los usuarios nuevos se crean en El Abastecedor.'
+                        : 'Probá cambiando la búsqueda o agregá un nuevo usuario.'}
+                    </p>
                   </div>
                 ) : (
                   <table className="gestion-usuarios-table gestion-usuarios-table--users">
                     <thead>
                       <tr>
                         <th>Nombre</th>
-                        <th>Email</th>
+                        <th>Email / login</th>
+                        {authConfigReady && externalAuthLogin && <th className="gestion-usuarios-th-cod">Código</th>}
+                        {authConfigReady && externalAuthLogin && <th>Origen</th>}
                         <th>Rol</th>
-                        <th>Estado</th>
+                        {authConfigReady && externalAuthLogin && <th className="gestion-usuarios-th-erp">ERP</th>}
+                        <th>En la app</th>
                         <th>Fecha de alta</th>
                         <th>Compras</th>
                         <th className="gestion-usuarios-th-actions">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {list.map((u) => (
-                        <tr key={u.id} className={u.activo === false ? 'gestion-usuarios-row-inactivo' : ''}>
-                          <td>{u.nombre}</td>
-                          <td>{u.email}</td>
-                          <td>
-                            <span className="gestion-usuarios-rol-badge">
-                              {u.rol || rolEtiqueta(u)}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`gestion-usuarios-estado-badge ${u.activo !== false ? 'gestion-usuarios-estado-activo' : 'gestion-usuarios-estado-inactivo'}`}>
-                              {u.activo !== false ? 'Activo' : 'Inactivo'}
-                            </span>
-                          </td>
-                          <td>{formatDateShort(u.createdAt)}</td>
-                          <td>{u._count?.compras ?? 0}</td>
-                          <td>
-                            <div className="gestion-usuarios-cell-actions">
-                              <button
-                                type="button"
-                                className="gestion-usuarios-btn-edit"
-                                onClick={() => { setModal({ type: 'edit', user: u }); setError(''); setErrorCode(''); }}
-                                title="Editar usuario"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                type="button"
-                                className={u.activo !== false ? 'gestion-usuarios-btn-suspender' : 'gestion-usuarios-btn-activar'}
-                                onClick={() => handleToggleActivo(u)}
-                                title={u.activo !== false ? 'Suspender usuario' : 'Activar usuario'}
-                              >
-                                {u.activo !== false ? 'Suspender' : 'Activar'}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {list.map((u) => {
+                        const rowKey = u.id ?? `ext-${u.externUserId ?? u.email}`;
+                        const esCuentaLocal = !u.externUserId;
+                        const puedeAcciones = Boolean(u.id);
+                        return (
+                          <tr key={rowKey} className={u.activo === false ? 'gestion-usuarios-row-inactivo' : ''}>
+                            <td>{u.nombre}</td>
+                            <td>{u.email || '—'}</td>
+                            {authConfigReady && externalAuthLogin && (
+                              <td className="gestion-usuarios-td-cod">{u.externUserId ?? '—'}</td>
+                            )}
+                            {authConfigReady && externalAuthLogin && (
+                              <td>
+                                <span className="gestion-usuarios-origin gestion-usuarios-origin--elab">El Abastecedor</span>
+                              </td>
+                            )}
+                            <td>
+                              <span className="gestion-usuarios-rol-badge">
+                                {u.rol || rolEtiqueta(u)}
+                              </span>
+                              {u.sinAccesoApp ? (
+                                <span className="gestion-usuarios-sin-nivel" title="El Nivel del usuario no está dentro de los rangos configurados para esta aplicación">
+                                  {' '}Sin acceso app
+                                </span>
+                              ) : null}
+                            </td>
+                            {authConfigReady && externalAuthLogin && (
+                              <td>
+                                {u.habilitadoEnErp === null ? '—' : (
+                                  <span className={u.habilitadoEnErp ? 'gestion-usuarios-erp-si' : 'gestion-usuarios-erp-no'}>
+                                    {u.habilitadoEnErp ? 'Sí' : 'No'}
+                                  </span>
+                                )}
+                              </td>
+                            )}
+                            <td>
+                              {!puedeAcciones ? (
+                                <span className="gestion-usuarios-estado-pendiente" title="Sin ingreso aún">Pendiente</span>
+                              ) : (
+                                <span className={`gestion-usuarios-estado-badge ${u.activo !== false ? 'gestion-usuarios-estado-activo' : 'gestion-usuarios-estado-inactivo'}`}>
+                                  {u.activo !== false ? 'Activo' : 'Suspendido'}
+                                </span>
+                              )}
+                            </td>
+                            <td>{u.createdAt ? formatDateShort(u.createdAt) : '—'}</td>
+                            <td>{u._count?.compras ?? 0}</td>
+                            <td>
+                              <div className="gestion-usuarios-cell-actions">
+                                <button
+                                  type="button"
+                                  className="gestion-usuarios-btn-edit"
+                                  onClick={() => { setModal({ type: 'edit', user: u }); setError(''); setErrorCode(''); }}
+                                  title={esCuentaLocal ? 'Editar usuario' : (puedeAcciones ? 'Estado en la app' : 'Ver detalle')}
+                                >
+                                  {esCuentaLocal ? 'Editar' : (puedeAcciones ? 'Estado' : 'Detalle')}
+                                </button>
+                                <button
+                                  type="button"
+                                  className={u.activo !== false ? 'gestion-usuarios-btn-suspender' : 'gestion-usuarios-btn-activar'}
+                                  onClick={() => handleToggleActivo(u)}
+                                  disabled={!puedeAcciones}
+                                  title={!puedeAcciones ? 'Disponible tras el primer ingreso' : (u.activo !== false ? 'Suspender acceso a la app' : 'Reactivar acceso')}
+                                >
+                                  {u.activo !== false ? 'Suspender' : 'Activar'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 )}
@@ -487,43 +562,105 @@ export default function GestionUsuarios() {
         </Modal>
 
         {/* Modal Editar usuario */}
-        <Modal open={modal?.type === 'edit' && !!modal?.user} onClose={() => !saving && setModal(null)} title="Editar usuario" preventClose={saving} boxClassName="gestion-usuarios-modal gestion-usuarios-modal--edit">
-          {modal?.type === 'edit' && modal?.user && (
-              <form className="gestion-usuarios-modal-edit-form" onSubmit={(e) => handleUpdateUser(e, modal.user.id)}>
-                <div className="gestion-usuarios-modal-edit-field">
-                  <label htmlFor="edit-nombre">Nombre</label>
-                  <input id="edit-nombre" name="nombre" type="text" required defaultValue={modal.user.nombre} placeholder="Nombre completo" />
-                </div>
-                <div className="gestion-usuarios-modal-edit-field">
-                  <label htmlFor="edit-email">Email</label>
-                  <input id="edit-email" name="email" type="email" required defaultValue={modal.user.email} placeholder="usuario@ejemplo.com" autoComplete="email" />
-                </div>
-                <div className="gestion-usuarios-modal-edit-field">
-                  <label htmlFor="edit-estado">Estado</label>
-                  <select id="edit-estado" name="estado" defaultValue={modal.user.activo !== false ? 'true' : 'false'}>
-                    <option value="true">Activo</option>
-                    <option value="false">Inactivo</option>
-                  </select>
-                </div>
-                <div className="gestion-usuarios-modal-edit-field">
-                  <label htmlFor="edit-roleId">Rol</label>
-                  <select id="edit-roleId" name="roleId" defaultValue={modal.user.roleId} required>
-                    {rolesList.map((r) => (
-                      <option key={r.id} value={r.id}>{r.nombre}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="gestion-usuarios-modal-edit-field">
-                  <label htmlFor="edit-password">Nueva contraseña <span className="gestion-usuarios-modal-edit-optional">opcional</span></label>
-                  <PasswordInput id="edit-password" name="password" placeholder="Dejar en blanco para no cambiar" autoComplete="new-password" minLength={6} />
-                </div>
-                <div className="gestion-usuarios-modal-edit-actions">
-                  <button type="button" className="gestion-usuarios-modal-edit-btn-cancel" onClick={() => !saving && setModal(null)} disabled={saving}>Cancelar</button>
-                  <button type="submit" className="gestion-usuarios-modal-edit-btn-save" disabled={saving}>
-                    {saving ? 'Guardando…' : 'Guardar'}
-                  </button>
-                </div>
-              </form>
+        <Modal
+          open={modal?.type === 'edit' && !!modal?.user}
+          onClose={() => !saving && setModal(null)}
+          title={
+            !modal?.user
+              ? ''
+              : (!authConfigReady || !externalAuthLogin || !modal.user.externUserId)
+                ? 'Editar usuario'
+                : modal.user.id
+                  ? 'Acceso a Compras Verdu'
+                  : 'Usuario en El Abastecedor'
+          }
+          preventClose={saving}
+          boxClassName="gestion-usuarios-modal gestion-usuarios-modal--edit"
+        >
+          {modal?.type === 'edit' && modal?.user && authConfigReady && externalAuthLogin && modal.user.externUserId && !modal.user.id && (
+            <div className="gestion-usuarios-modal-readonly">
+              <p><strong>{modal.user.nombre}</strong></p>
+              <p className="gestion-usuarios-modal-readonly-meta">Código: {modal.user.externUserId}</p>
+              <p className="gestion-usuarios-modal-readonly-hint">
+                Este usuario aún no inició sesión en Compras Verdu. Cuando ingrese por primera vez se creará la cuenta en la app
+                y podrás suspender o reactivar el acceso desde esta pantalla.
+              </p>
+              <div className="gestion-usuarios-modal-edit-actions">
+                <button type="button" className="gestion-usuarios-modal-edit-btn-cancel" onClick={() => setModal(null)}>Cerrar</button>
+              </div>
+            </div>
+          )}
+          {modal?.type === 'edit' && modal?.user && authConfigReady && externalAuthLogin && modal.user.externUserId && modal.user.id && (
+            <form
+              className="gestion-usuarios-modal-edit-form"
+              onSubmit={(e) => handleUpdateUser(e, modal.user.id, { soloActivoExterno: true })}
+            >
+              <p className="gestion-usuarios-modal-readonly-hint">
+                Los datos personales y el rol vienen de <strong>El Abastecedor</strong>. Solo podés cambiar si la cuenta puede usar esta aplicación.
+              </p>
+              <div className="gestion-usuarios-modal-edit-field gestion-usuarios-modal-edit-field--readonly">
+                <label>Nombre</label>
+                <span className="gestion-usuarios-readonly-value">{modal.user.nombre}</span>
+              </div>
+              <div className="gestion-usuarios-modal-edit-field gestion-usuarios-modal-edit-field--readonly">
+                <label>Email / login</label>
+                <span className="gestion-usuarios-readonly-value">{modal.user.email || '—'}</span>
+              </div>
+              <div className="gestion-usuarios-modal-edit-field gestion-usuarios-modal-edit-field--readonly">
+                <label>Rol en la app</label>
+                <span className="gestion-usuarios-readonly-value">{modal.user.rol || '—'}</span>
+              </div>
+              <div className="gestion-usuarios-modal-edit-field">
+                <label htmlFor="edit-estado-ext">Acceso a Compras Verdu</label>
+                <select id="edit-estado-ext" name="estado" defaultValue={modal.user.activo !== false ? 'true' : 'false'}>
+                  <option value="true">Permitido (activo)</option>
+                  <option value="false">Suspendido</option>
+                </select>
+              </div>
+              <div className="gestion-usuarios-modal-edit-actions">
+                <button type="button" className="gestion-usuarios-modal-edit-btn-cancel" onClick={() => !saving && setModal(null)} disabled={saving}>Cancelar</button>
+                <button type="submit" className="gestion-usuarios-modal-edit-btn-save" disabled={saving}>
+                  {saving ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </form>
+          )}
+          {modal?.type === 'edit' && modal?.user && (!modal.user.externUserId || (authConfigReady && !externalAuthLogin)) && (
+            <form className="gestion-usuarios-modal-edit-form" onSubmit={(e) => handleUpdateUser(e, modal.user.id)}>
+              <div className="gestion-usuarios-modal-edit-field">
+                <label htmlFor="edit-nombre">Nombre</label>
+                <input id="edit-nombre" name="nombre" type="text" required defaultValue={modal.user.nombre} placeholder="Nombre completo" />
+              </div>
+              <div className="gestion-usuarios-modal-edit-field">
+                <label htmlFor="edit-email">Email</label>
+                <input id="edit-email" name="email" type="email" required defaultValue={modal.user.email} placeholder="usuario@ejemplo.com" autoComplete="email" />
+              </div>
+              <div className="gestion-usuarios-modal-edit-field">
+                <label htmlFor="edit-estado">Estado</label>
+                <select id="edit-estado" name="estado" defaultValue={modal.user.activo !== false ? 'true' : 'false'}>
+                  <option value="true">Activo</option>
+                  <option value="false">Inactivo</option>
+                </select>
+              </div>
+              <div className="gestion-usuarios-modal-edit-field">
+                <label htmlFor="edit-roleId">Rol</label>
+                <select id="edit-roleId" name="roleId" defaultValue={modal.user.roleId} required>
+                  {rolesList.map((r) => (
+                    <option key={r.id} value={r.id}>{r.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="gestion-usuarios-modal-edit-field">
+                <label htmlFor="edit-password">Nueva contraseña <span className="gestion-usuarios-modal-edit-optional">opcional</span></label>
+                <PasswordInput id="edit-password" name="password" placeholder="Dejar en blanco para no cambiar" autoComplete="new-password" minLength={6} />
+              </div>
+              <div className="gestion-usuarios-modal-edit-actions">
+                <button type="button" className="gestion-usuarios-modal-edit-btn-cancel" onClick={() => !saving && setModal(null)} disabled={saving}>Cancelar</button>
+                <button type="submit" className="gestion-usuarios-modal-edit-btn-save" disabled={saving}>
+                  {saving ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </form>
           )}
         </Modal>
 

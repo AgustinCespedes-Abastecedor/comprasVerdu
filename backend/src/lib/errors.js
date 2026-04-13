@@ -51,6 +51,8 @@ export const MSG = {
   AUTH_SQL_NO_DISPONIBLE: 'No se pudo validar el usuario contra el servidor de datos. Intentá más tarde.',
   AUTH_EMAIL_CONFLICTO_IDENTIDAD: 'Existe un conflicto de cuenta con ese correo. Contactá al administrador.',
   AUTH_CUENTA_SOLO_EXTERNA: 'Este usuario se valida en El Abastecedor. Activá EXTERNAL_AUTH_LOGIN en el servidor o usá una cuenta local de prueba.',
+  AUTH_DB_NO_DISPONIBLE:
+    'No se pudo conectar a la base de datos. En desarrollo local: ejecutá «npm run dev:db» en la raíz del proyecto (PostgreSQL en el puerto 5433 por defecto) y revisá que DATABASE_URL en backend/.env use el mismo usuario, contraseña y puerto que ese contenedor.',
 
   // Usuarios
   USERS_LISTAR: 'No se pudo cargar la lista de usuarios.',
@@ -70,6 +72,7 @@ export const MSG = {
   USERS_NOMBRE_LARGO: 'El nombre no puede superar 200 caracteres.',
   USERS_EXTERNO_NO_CREAR: 'Los usuarios se administran en El Abastecedor. No se pueden crear cuentas desde esta pantalla.',
   USERS_EXTERNO_NO_EDITAR: 'Este usuario se sincroniza desde El Abastecedor: solo podés suspender o reactivar la cuenta aquí.',
+  USERS_SQL_LISTAR: 'No se pudo obtener el listado de usuarios desde El Abastecedor. Revisá la conexión a SQL Server o intentá más tarde.',
 
   // Roles
   ROLES_LISTAR: 'No se pudo cargar la lista de roles.',
