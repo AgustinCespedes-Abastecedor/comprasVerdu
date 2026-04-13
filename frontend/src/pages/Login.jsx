@@ -11,9 +11,6 @@ import './Login.css';
 
 const LOGIN_EMAIL_KEY = 'compras_verdu_login_email';
 
-/** Solo para login local (sin SQL): validar formato antes de llamar al API. */
-const EMAIL_LOGIN_LOCAL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 async function fetchExternalAuthFlagWithRetry(maxAttempts = 4) {
   let lastErr;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -101,11 +98,8 @@ export default function Login() {
     try {
       if (modo === 'login') {
         const loginId = form.email.trim();
-        if (externalAuthLogin === false && !EMAIL_LOGIN_LOCAL.test(loginId.toLowerCase())) {
-          setError('Ingresá un correo electrónico válido (con @) para iniciar sesión.');
-          setLoading(false);
-          return;
-        }
+        // El modo real lo define el backend (/auth/config solo ajusta UI). No bloquear acá con @:
+        // si /config devolvió false por caché/env viejo, el usuario igual podría usar código SQL.
         const { user: u, token } = await auth.login(loginId, form.password);
         login(u, token);
         try {

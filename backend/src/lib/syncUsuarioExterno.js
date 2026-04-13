@@ -26,10 +26,24 @@ export async function ensurePrismaUserFromExterno(p) {
   const byExt = await prisma.user.findUnique({ where: { externUserId } });
   const byEmail = await prisma.user.findUnique({ where: { email } });
 
+  /**
+   * Cuenta local previa (mismo email, sin externUserId): típico cuando se activó EXTERNAL_AUTH
+   * después de un registro en la app. Se vincula al Codigo de SQL y se deja password en marcador
+   * para que el login siga solo por El Abastecedor (no dos contraseñas distintas).
+   */
   if (byEmail && !byEmail.externUserId) {
-    const err = new Error('SYNC_USER_EMAIL_USO_LOCAL');
-    err.code = 'SYNC_USER_EMAIL_USO_LOCAL';
-    throw err;
+    const nombreFinal = String(nombre || '').trim() || email;
+    return prisma.user.update({
+      where: { id: byEmail.id },
+      data: {
+        externUserId,
+        nombre: nombreFinal,
+        roleId,
+        activo: true,
+        password: getPlaceholderPasswordHash(),
+      },
+      include: { role: { select: { id: true, nombre: true, permisos: true } } },
+    });
   }
 
   if (byEmail && byEmail.externUserId && byEmail.externUserId !== externUserId) {
