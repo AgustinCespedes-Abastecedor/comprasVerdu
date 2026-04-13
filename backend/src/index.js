@@ -67,6 +67,8 @@ const allowedOrigins = [
   /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/,  // LAN típica
   /^https?:\/\/10\.\d+\.\d+\.\d+(:\d+)?$/,   // Red interna 10.x.x.x
   /^https?:\/\/10\.0\.2\.\d+(:\d+)?$/,       // Emulador Android
+  /** Producción típica Compras Verdu detrás de subdominio elabastecedor.com.ar */
+  /^https:\/\/[a-z0-9-]+\.elabastecedor\.com\.ar$/i,
 ];
 app.use(cors({
   origin: (origin, cb) => {

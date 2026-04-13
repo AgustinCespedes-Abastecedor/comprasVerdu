@@ -11,6 +11,25 @@ import './Login.css';
 
 const LOGIN_EMAIL_KEY = 'compras_verdu_login_email';
 
+/** Solo para login local (sin SQL): validar formato antes de llamar al API. */
+const EMAIL_LOGIN_LOCAL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function fetchExternalAuthFlagWithRetry(maxAttempts = 4) {
+  let lastErr;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const cfg = await auth.getPublicConfig();
+      return Boolean(cfg?.externalAuthLogin);
+    } catch (e) {
+      lastErr = e;
+      if (attempt < maxAttempts) {
+        await new Promise((r) => { setTimeout(r, 400 * attempt); });
+      }
+    }
+  }
+  throw lastErr;
+}
+
 export default function Login() {
   const { user, login, backendError, clearBackendError } = useAuth();
   const navigate = useNavigate();
@@ -26,17 +45,29 @@ export default function Login() {
     rol: 'COMPRADOR',
   });
   const [rememberEmail, setRememberEmail] = useState(false);
-  /** null = aún no cargó; true = login solo contra ELABASTECEDOR (sin registro en la app). */
+  /**
+   * null = aún no cargó o falló la red (no asumir “solo email”: evita type=email y el bloqueo del @).
+   * true = login contra ELABASTECEDOR (sin registro público).
+   * false = login solo cuentas locales (email real).
+   */
   const [externalAuthLogin, setExternalAuthLogin] = useState(null);
+  const [configStatus, setConfigStatus] = useState('loading');
 
   useEffect(() => {
     let cancelled = false;
-    auth.getPublicConfig()
-      .then((cfg) => {
-        if (!cancelled) setExternalAuthLogin(Boolean(cfg?.externalAuthLogin));
+    setConfigStatus('loading');
+    fetchExternalAuthFlagWithRetry()
+      .then((flag) => {
+        if (!cancelled) {
+          setExternalAuthLogin(flag);
+          setConfigStatus('ok');
+        }
       })
       .catch(() => {
-        if (!cancelled) setExternalAuthLogin(false);
+        if (!cancelled) {
+          setExternalAuthLogin(null);
+          setConfigStatus('error');
+        }
       });
     return () => { cancelled = true; };
   }, []);
@@ -69,11 +100,17 @@ export default function Login() {
     setLoading(true);
     try {
       if (modo === 'login') {
-        const { user: u, token } = await auth.login(form.email, form.password);
+        const loginId = form.email.trim();
+        if (externalAuthLogin === false && !EMAIL_LOGIN_LOCAL.test(loginId.toLowerCase())) {
+          setError('Ingresá un correo electrónico válido (con @) para iniciar sesión.');
+          setLoading(false);
+          return;
+        }
+        const { user: u, token } = await auth.login(loginId, form.password);
         login(u, token);
         try {
           if (rememberEmail) {
-            localStorage.setItem(LOGIN_EMAIL_KEY, form.email.trim());
+            localStorage.setItem(LOGIN_EMAIL_KEY, loginId);
           } else {
             localStorage.removeItem(LOGIN_EMAIL_KEY);
           }
@@ -125,12 +162,17 @@ export default function Login() {
         <p className="login-subtitle">
           {modo === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
         </p>
-        {externalAuthLogin && modo === 'login' && (
+        {externalAuthLogin === true && modo === 'login' && (
           <p className="login-hint-external" role="note">
             Usá el mismo usuario y contraseña que en El Abastecedor (SQL Server).
           </p>
         )}
-        <form onSubmit={handleSubmit}>
+        {configStatus === 'error' && modo === 'login' && (
+          <p className="login-hint-external" role="status">
+            No se pudo confirmar el modo de login con el servidor. Podés usar correo, usuario o código igualmente; si falla, recargá la página.
+          </p>
+        )}
+        <form onSubmit={handleSubmit} noValidate>
           {error && (
             <div className="login-error" role="alert">
               <p className="login-error-message">{error}</p>
@@ -171,11 +213,12 @@ export default function Login() {
               </select>
             </>
           )}
-          <label>
+          <label htmlFor="login-email-input">
             {externalAuthLogin === false ? 'Email' : 'Correo, usuario o código'}
           </label>
           <input
-            type={externalAuthLogin === false ? 'email' : 'text'}
+            id="login-email-input"
+            type={modo === 'registro' ? 'email' : 'text'}
             name="email"
             value={form.email}
             onChange={handleChange}
@@ -185,7 +228,7 @@ export default function Login() {
                 ? 'correo@ejemplo.com'
                 : 'Ej: 2558 o correo@elabastecedor.com.ar'
             }
-            autoComplete={externalAuthLogin === false ? 'email' : 'username'}
+            autoComplete={modo === 'registro' ? 'email' : 'username'}
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
@@ -214,7 +257,7 @@ export default function Login() {
             {loading ? 'Espera...' : modo === 'login' ? 'Entrar' : 'Registrarme'}
           </button>
         </form>
-        {!externalAuthLogin && (
+        {externalAuthLogin === false && (
           <button
             type="button"
             className="btn-link"
