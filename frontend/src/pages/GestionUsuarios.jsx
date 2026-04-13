@@ -364,7 +364,7 @@ export default function GestionUsuarios() {
             {authConfigReady && externalAuthLogin && (
               <section className="gestion-usuarios-info-strip" aria-label="Información sobre usuarios">
                 <p className="gestion-usuarios-info-strip__lead">
-                  Usuarios desde <strong>El Abastecedor</strong>: el ingreso lo define la base SQL (<strong>Habilitado</strong>); el <strong>rol</strong> mostrado sale del <strong>Nivel</strong>.
+                  Listado de Usuarios del Abastecedor
                 </p>
               </section>
             )}
@@ -521,7 +521,7 @@ export default function GestionUsuarios() {
             {authConfigReady && externalAuthLogin && (
               <section className="gestion-usuarios-info-strip" aria-label="Roles y nivel en El Abastecedor">
                 <p className="gestion-usuarios-info-strip__lead">
-                  Con El Abastecedor, el <strong>rol</strong> lo define el <strong>Nivel</strong> en SQL (p. ej. <strong>100</strong> = Administrador). Cada tarjeta indica qué Nivel corresponde y qué hace ese rol en la app.
+                  Cada tarjeta indica qué Nivel corresponde y qué hace ese rol en la app.
                 </p>
               </section>
             )}

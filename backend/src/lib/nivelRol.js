@@ -30,6 +30,18 @@ export const ROL_ADMINISTRATIVO = 'Administrativo';
 export const ROL_ADMINISTRADOR = 'Administrador';
 
 /**
+ * Roles cuyo criterio en esta app es el campo Nivel en ELABASTECEDOR.
+ * No se suman al contador del badge las cuentas solo-Postgres (`externUserId` null) con ese `roleId`,
+ * para que coincida con un SELECT por Nivel en `Usuarios` sin inflar por registros locales.
+ */
+export const ROLES_ASIGNADOS_SOLO_POR_NIVEL = new Set([
+  ROL_RECEPCIONISTA,
+  ROL_COMPRADOR,
+  ROL_ADMINISTRATIVO,
+  ROL_ADMINISTRADOR,
+]);
+
+/**
  * @param {unknown} nivelRaw — valor desde SQL (int, decimal, varchar)
  * @returns {string|null} nombre de rol en Prisma o null si el nivel no habilita acceso
  */

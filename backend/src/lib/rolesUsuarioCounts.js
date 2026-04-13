@@ -9,7 +9,7 @@
  */
 import { prisma } from './prisma.js';
 import { listUsuariosExternos } from './usuariosSqlServer.js';
-import { mapNivelToRoleNombre } from './nivelRol.js';
+import { mapNivelToRoleNombre, ROLES_ASIGNADOS_SOLO_POR_NIVEL } from './nivelRol.js';
 import { isExternalAuthLoginEnabled } from './configAuthExterno.js';
 
 /**
@@ -106,6 +106,7 @@ export async function getUsuarioCountsByRoleEffective() {
 
   const roles = await prisma.role.findMany({ select: { id: true, nombre: true } });
   const roleIdByNombre = new Map(roles.map((r) => [r.nombre, r.id]));
+  const nombreByRoleId = new Map(roles.map((r) => [r.id, r.nombre]));
   /** @type {Map<string, number>} */
   const counts = new Map(roles.map((r) => [r.id, 0]));
 
@@ -136,6 +137,10 @@ export async function getUsuarioCountsByRoleEffective() {
   });
   for (const u of locals) {
     if (!u.roleId) continue;
+    const nombreRol = nombreByRoleId.get(u.roleId);
+    if (nombreRol && ROLES_ASIGNADOS_SOLO_POR_NIVEL.has(nombreRol)) {
+      continue;
+    }
     counts.set(u.roleId, (counts.get(u.roleId) ?? 0) + 1);
   }
 

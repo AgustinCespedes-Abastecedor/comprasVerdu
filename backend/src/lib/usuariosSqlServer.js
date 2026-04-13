@@ -469,7 +469,7 @@ export async function listUsuariosExternos(opts = {}) {
 
   const result = await request.query(query);
   const rows = result.recordset || [];
-  return rows
+  const mapped = rows
     .map((row) => {
       const externUserId = String(row.externUserId ?? '').trim();
       const loginMail = String(row.loginMail ?? '').trim();
@@ -490,4 +490,21 @@ export async function listUsuariosExternos(opts = {}) {
       };
     })
     .filter((r) => r.externUserId.length > 0);
+  return dedupeUsuariosExternosPorCodigo(mapped);
+}
+
+/**
+ * Una fila por código de usuario (evita duplicados si la tabla devolviera el mismo Codigo más de una vez).
+ * @template {{ externUserId: string }} T
+ * @param {T[]} rows
+ * @returns {T[]}
+ */
+export function dedupeUsuariosExternosPorCodigo(rows) {
+  const seen = new Map();
+  for (const r of rows) {
+    const id = String(r.externUserId ?? '').trim();
+    if (!id) continue;
+    if (!seen.has(id)) seen.set(id, r);
+  }
+  return [...seen.values()];
 }
