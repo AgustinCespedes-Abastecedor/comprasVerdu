@@ -15,6 +15,9 @@ backend/generated/
 # Imágenes de artículos (solo en disco local o en el servidor de build; no versionar)
 img/
 
+# Snapshot de roles (generado con npm run db:export-roles; no versionar)
+backend/roles-export.json
+
 # Logs y OS
 *.log
 .DS_Store
