@@ -112,7 +112,15 @@ export async function verifyUsuarioPassword(plain, stored, mode) {
 }
 
 /**
- * @typedef {{ externUserId: string, login: string, nombre: string, nivel: unknown, passwordStored: string }} UsuarioExternoRow
+ * @typedef {{
+ *   externUserId: string,
+ *   loginMail: string,
+ *   loginUsuario: string,
+ *   login: string,
+ *   nombre: string,
+ *   nivel: unknown,
+ *   passwordStored: string
+ * }} UsuarioExternoRow
  */
 
 /**
@@ -130,15 +138,17 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
 
   const emailExpr = `LOWER(LTRIM(RTRIM(CAST(u.[${COL_EMAIL}] AS NVARCHAR(255)))))`;
   const usuarioExpr = `LOWER(LTRIM(RTRIM(CAST(u.[${COL_USUARIO}] AS NVARCHAR(255)))))`;
+  const codigoExpr = `LTRIM(RTRIM(CAST(u.[${COL_ID}] AS NVARCHAR(40))))`;
 
   const matchUsuario = process.env.EXTERNAL_USUARIOS_MATCH_USUARIO !== 'false'
     && process.env.EXTERNAL_USUARIOS_MATCH_USUARIO !== '0';
   const loginWhere = matchUsuario
-    ? `(${emailExpr} = @login OR ${usuarioExpr} = @login)`
+    ? `(${emailExpr} = @login OR ${usuarioExpr} = @login OR ${codigoExpr} = @login)`
     : `${emailExpr} = @login`;
 
+  /** Habilitado suele ser bit: no comparar con 'S' (rompe CAST a bit en SQL Server). */
   const activoSql = !IGNORE_ACTIVO && COL_ACTIVO && String(COL_ACTIVO).trim() !== ''
-    ? ` AND (u.[${COL_ACTIVO}] = 1 OR u.[${COL_ACTIVO}] = 'S' OR u.[${COL_ACTIVO}] = 's' OR LOWER(CAST(u.[${COL_ACTIVO}] AS NVARCHAR(10))) = 'true')`
+    ? ` AND (u.[${COL_ACTIVO}] = 1 OR TRY_CAST(u.[${COL_ACTIVO}] AS INT) = 1)`
     : '';
 
   const q = [
@@ -164,6 +174,8 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
 
   return {
     externUserId: String(row.externUserId).trim(),
+    loginMail: mail,
+    loginUsuario: usr,
     login: loginDisplay,
     nombre: String(row.nombre ?? '').trim() || loginDisplay,
     nivel: row.nivel,

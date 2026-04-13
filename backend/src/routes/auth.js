@@ -13,6 +13,7 @@ import {
 } from '../lib/usuariosSqlServer.js';
 import { mapNivelToRoleNombre } from '../lib/nivelRol.js';
 import { ensurePrismaUserFromExterno } from '../lib/syncUsuarioExterno.js';
+import { resolvePrismaEmailForExternoUser } from '../lib/resolveExternoLoginEmail.js';
 
 const router = Router();
 const TOKEN_EXPIRY = '7d';
@@ -118,6 +119,9 @@ router.post('/login', async (req, res) => {
     const emailVal = validateEmail(email);
     if (!emailVal.ok) {
       if (emailVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_EMAIL_LARGO, 'AUTH_028');
+      if (!isExternalAuthLoginEnabled() && emailVal.error === 'invalid') {
+        return sendError(res, 400, MSG.AUTH_FALTAN_DATOS, 'AUTH_001');
+      }
     }
     const pwdVal = validatePassword(password);
     if (!pwdVal.ok) {
@@ -150,9 +154,10 @@ router.post('/login', async (req, res) => {
       }
       let user;
       try {
+        const prismaEmail = resolvePrismaEmailForExternoUser(email, row.loginMail);
         user = await ensurePrismaUserFromExterno({
           externUserId: row.externUserId,
-          emailNorm: email,
+          emailNorm: prismaEmail,
           nombre: row.nombre,
           roleId: role.id,
         });

@@ -1,7 +1,8 @@
 -- EJEMPLO (solo si sistemas lo aprueba): guardar contraseña en texto plano en Usuarios.Clave
--- para un usuario concreto, cuando el valor legacy en NVARCHAR no coincide con ningún
--- algoritmo estándar y necesitás desbloquear Compras Verdu antes de migrar hashes.
+-- cuando el valor legacy no coincide con MD5/bcrypt/PWDCOMPARE (ver scripts/analyze-cespedes-password.js).
 --
--- La app en modo EXTERNAL_USUARIOS_PASSWORD_MODE=auto o plain validará contra esta columna.
+-- La API en modo `auto` prueba primero texto plano; así Compras Verdu puede validar sin el cifrado del ERP.
 --
 -- UPDATE dbo.Usuarios SET Clave = N'TuContraseñaSegura' WHERE Codigo = 2546;
+--
+-- O desde Node: node scripts/set-cespedes-clave-plano.js

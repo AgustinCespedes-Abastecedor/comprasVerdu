@@ -171,15 +171,16 @@ export default function Login() {
               </select>
             </>
           )}
-          <label>Email</label>
+          <label>{externalAuthLogin ? 'Correo o usuario' : 'Email'}</label>
           <input
-            type="email"
+            type={externalAuthLogin ? 'text' : 'email'}
             name="email"
             value={form.email}
             onChange={handleChange}
             required
-            placeholder="correo@ejemplo.com"
-            autoComplete="email"
+            placeholder={externalAuthLogin ? 'Ej: 2558 o correo@elabastecedor.com.ar' : 'correo@ejemplo.com'}
+            autoComplete={externalAuthLogin ? 'username' : 'email'}
+            inputMode={externalAuthLogin ? 'email' : undefined}
           />
           {modo === 'login' && (
             <label className="login-remember-email">
