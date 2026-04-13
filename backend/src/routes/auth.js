@@ -12,7 +12,7 @@ import {
   verifyUsuarioPassword,
   getExternalUsuariosPasswordMode,
 } from '../lib/usuariosSqlServer.js';
-import { mapNivelToRoleNombre } from '../lib/nivelRol.js';
+import { isNivelPermitidoLoginExterno, mapNivelToRoleNombre } from '../lib/nivelRol.js';
 import { ensurePrismaUserFromExterno } from '../lib/syncUsuarioExterno.js';
 import { resolvePrismaEmailForExternoUser } from '../lib/resolveExternoLoginEmail.js';
 
@@ -149,6 +149,9 @@ router.post('/login', async (req, res) => {
       if (!matchExt) {
         return sendError(res, 401, MSG.AUTH_CREDENCIALES, 'AUTH_009');
       }
+      if (!isNivelPermitidoLoginExterno(row.nivel)) {
+        return sendError(res, 403, MSG.AUTH_NIVEL_SIN_ACCESO, 'AUTH_041');
+      }
       const roleNombre = mapNivelToRoleNombre(row.nivel);
       if (!roleNombre) {
         return sendError(res, 403, MSG.AUTH_NIVEL_SIN_ACCESO, 'AUTH_041');
@@ -172,7 +175,7 @@ router.post('/login', async (req, res) => {
         }
         return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_044', e);
       }
-      /* Acceso externo: lo define ELABASTECEDOR (filtro Habilitado en login SQL), no Postgres.activo */
+      /* Acceso externo: Nivel ≥ EXTERNAL_NIVEL_LOGIN_MIN + Habilitado en SQL + mapa de rol; no Postgres.activo */
       const token = jwt.sign(
         { userId: user.id, email: user.email },
         getJwtSecret(),

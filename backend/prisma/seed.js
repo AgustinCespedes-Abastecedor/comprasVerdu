@@ -20,7 +20,7 @@ const ROLES_DEFAULT = [
   },
   {
     nombre: 'Recepcionista',
-    descripcion: 'Nivel ELAB: 0–20. Recepción y consultas; no crea compras ni administra usuarios.',
+    descripcion: 'Nivel ELAB: 10–20. Recepción y consultas; no crea compras ni administra usuarios.',
     permisos: ['home', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'],
   },
   {

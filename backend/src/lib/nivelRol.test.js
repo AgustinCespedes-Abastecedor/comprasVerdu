@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import {
   mapNivelToRoleNombre,
+  isNivelPermitidoLoginExterno,
   ROL_ADMINISTRADOR,
   ROL_COMPRADOR,
   ROL_RECEPCIONISTA,
@@ -14,6 +15,7 @@ describe('mapNivelToRoleNombre (Nivel ELABASTECEDOR → rol en app)', () => {
   beforeEach(() => {
     delete process.env.EXTERNAL_NIVEL_RECEP_MIN;
     delete process.env.EXTERNAL_NIVEL_RECEP_MAX;
+    delete process.env.EXTERNAL_NIVEL_LOGIN_MIN;
     delete process.env.EXTERNAL_NIVEL_COMP_MIN;
     delete process.env.EXTERNAL_NIVEL_COMP_MAX;
     delete process.env.EXTERNAL_NIVEL_ADMIN_MIN;
@@ -30,9 +32,22 @@ describe('mapNivelToRoleNombre (Nivel ELABASTECEDOR → rol en app)', () => {
     assert.equal(mapNivelToRoleNombre('100'), ROL_ADMINISTRADOR);
   });
 
-  it('Nivel 0–20 (default) → Recepcionista', () => {
-    assert.equal(mapNivelToRoleNombre(0), ROL_RECEPCIONISTA);
+  it('Nivel 10–20 (default) → Recepcionista', () => {
+    assert.equal(mapNivelToRoleNombre(9), null);
+    assert.equal(mapNivelToRoleNombre(10), ROL_RECEPCIONISTA);
     assert.equal(mapNivelToRoleNombre(20), ROL_RECEPCIONISTA);
+  });
+
+  it('login externo (default): Nivel ≥ 10', () => {
+    assert.equal(isNivelPermitidoLoginExterno(9), false);
+    assert.equal(isNivelPermitidoLoginExterno(10), true);
+    assert.equal(isNivelPermitidoLoginExterno(100), true);
+  });
+
+  it('respeta EXTERNAL_NIVEL_LOGIN_MIN', () => {
+    process.env.EXTERNAL_NIVEL_LOGIN_MIN = '15';
+    assert.equal(isNivelPermitidoLoginExterno(14), false);
+    assert.equal(isNivelPermitidoLoginExterno(15), true);
   });
 
   it('Nivel 25–30 (default) → Comprador', () => {
