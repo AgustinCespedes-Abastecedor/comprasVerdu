@@ -14,6 +14,7 @@ import {
   normalizeSqlPasswordColumnValue,
   verifyUsuarioPassword,
 } from '../src/lib/usuariosSqlServer.js';
+import { encodeElabLegacyClave, verifyElabLegacyClave } from '../src/lib/elabLegacyPassword.js';
 
 const CODIGO = String(process.env.CODIGO_USUARIO || '2558').trim();
 const PLAIN = String(process.env.PASSWORD_PLAIN || 'Sinergia2025');
@@ -136,11 +137,19 @@ async function main() {
   const okAuto = await verifyUsuarioPassword(PLAIN, normalized, 'auto');
   console.log('verifyUsuarioPassword(PLAIN, normalized, auto):', okAuto);
 
+  const encLegacy = encodeElabLegacyClave(PLAIN);
+  console.log('\n=== Cifrado legado ELAB (+15/-17 por bloques letras; dígitos +15) ===');
+  console.log('encodeElabLegacyClave(PLAIN):', JSON.stringify(encLegacy));
+  console.log('coincide con CAST Clave AS NVARCHAR:', encLegacy === asNvarchar.trim());
+  console.log('verifyElabLegacyClave:', verifyElabLegacyClave(PLAIN, claveRaw));
+
   console.log('\n=== Resumen ===');
   if (pwdChecks.recordset?.[0]?.eq_plain === 1 || pwdChecks.recordset?.[0]?.eq_lower_trim === 1) {
     console.log('La Clave coincide como texto (con o sin mayúsculas / trim). El login debería usar modo plain o sql_plain_equal.');
   } else if (pwdChecks.recordset?.[0]?.pwdCompare_nvarchar_to_bin === 1 || pc.recordset?.[0]?.pwdCompare_nodeLatin1Bytes === 1) {
     console.log('Coincide vía PWDCOMPARE (hash motor SQL).');
+  } else if (verifyElabLegacyClave(PLAIN, claveRaw)) {
+    console.log('Coincide con cifrado legado ELAB (columna Clave NVARCHAR). El modo auto ya incluye elab_legacy.');
   } else {
     console.log('No hubo coincidencia clara con', PLAIN, '— revisá el valor real en la BD o probá otro usuario.');
   }

@@ -3,12 +3,13 @@
  * La columna Clave puede ser NVARCHAR, VARCHAR o VARBINARY: el driver puede devolver `string` o `Buffer`.
  * Texto plano ASCII/UTF-8 en VARBINARY se normaliza con {@link bufferClaveToComparableString}.
  * Hashes legacy (PWDENCRYPT, etc.) suelen leerse como NVARCHAR con bytes 0–255 por carácter; el modo
- * `auto` prueba: plain (Node + SQL), MD5 hex, bcrypt y PWDCOMPARE (Node latin1 + CONVERT en T-SQL).
+ * `auto` prueba: texto en SQL, cifrado legado ELAB (+15/-17 por bloques), plain, MD5, bcrypt y PWDCOMPARE.
  */
 import crypto from 'crypto';
 import sql from 'mssql';
 import bcrypt from 'bcryptjs';
 import { getSqlServerPool } from './sqlserver.js';
+import { verifyElabLegacyClave } from './elabLegacyPassword.js';
 
 /**
  * Convierte VARBINARY/IMAGE (Buffer) a string para comparar con la contraseña tecleada.
@@ -172,8 +173,9 @@ export async function fetchUsuarioExternoDetallePorCodigo(externUserId) {
 
 /**
  * Modos:
- * - auto (recomendado): prueba plain, md5_hex, md5_hex_upper, bcrypt y PWDCOMPARE en SQL Server.
- * - plain | bcrypt | md5_hex | md5_hex_upper | sql_pwdccompare — un solo método.
+ * - auto (recomendado): sql_plain_equal, elab_legacy, plain, md5, bcrypt, PWDCOMPARE…
+ * - elab_legacy — cifrado por desplazamiento ASCII (+15/-17) usado en columnas Clave NVARCHAR legadas.
+ * - plain | bcrypt | md5_hex | … — un solo método.
  */
 export function getExternalUsuariosPasswordMode() {
   const m = (process.env.EXTERNAL_USUARIOS_PASSWORD_MODE || 'auto').trim().toLowerCase();
@@ -186,6 +188,7 @@ export function getExternalUsuariosPasswordMode() {
     'sql_pwdccompare',
     'sql_pwdccompare_convert',
     'sql_plain_equal',
+    'elab_legacy',
   ];
   if (allowed.includes(m)) return m;
   return 'auto';
@@ -208,6 +211,23 @@ export function nvarcharClaveToLatin1Bytes(stored) {
   if (stored == null) return Buffer.alloc(0);
   const s = typeof stored === 'string' ? stored : String(stored);
   return Buffer.from([...s].map((ch) => ch.charCodeAt(0) & 0xff));
+}
+
+/**
+ * PWDCOMPARE cuando el hash llega como Buffer (columna VARBINARY / IMAGE sin perder bytes).
+ */
+async function verifyPwdccompareWithVarbinaryBuffer(plainPassword, buf) {
+  if (!buf || buf.length === 0) return false;
+  try {
+    const pool = await getSqlServerPool();
+    const r = await pool.request()
+      .input('pwd', sql.NVarChar(4000), String(plainPassword))
+      .input('h', sql.VarBinary, buf)
+      .query('SELECT CAST(PWDCOMPARE(@pwd, @h) AS INT) AS ok');
+    return Number(r.recordset?.[0]?.ok) === 1;
+  } catch {
+    return false;
+  }
 }
 
 async function verifyPwdccompareInSql(plainPassword, storedNvarchar) {
@@ -287,6 +307,9 @@ function plainMatchesInNode(plain, storedTrimmed) {
     if (pv.length === s.length && timingSafeEqualUtf8(pv.toLowerCase(), s.toLowerCase())) return true;
   }
   if (p.trim().toLowerCase() === s.toLowerCase()) return true;
+  const pn = p.trim().normalize('NFC');
+  const sn = s.trim().normalize('NFC');
+  if (pn === sn || pn.toLowerCase() === sn.toLowerCase()) return true;
   return false;
 }
 
@@ -320,21 +343,35 @@ async function verifyUsuarioPasswordSingle(plain, stored, mode) {
   if (mode === 'sql_plain_equal') {
     return verifyPlainEqualsInSql(plain, raw);
   }
+  if (mode === 'elab_legacy') {
+    return verifyElabLegacyClave(plain, raw);
+  }
   return plainMatchesInNode(plain, s);
 }
 
 /**
  * @param {string} plain
- * @param {unknown} stored
+ * @param {unknown} stored — string normalizado o Buffer/Uint8Array tal cual el driver (VARBINARY)
  * @param {string} mode
  */
 export async function verifyUsuarioPassword(plain, stored, mode) {
+  const buf = Buffer.isBuffer(stored) || stored instanceof Uint8Array
+    ? Buffer.from(stored)
+    : null;
+
+  if (mode === 'auto' && buf && buf.length > 0) {
+    if (await verifyPwdccompareWithVarbinaryBuffer(plain, buf)) return true;
+  }
+
+  const storedNorm = buf ? normalizeSqlPasswordColumnValue(buf) : normalizeSqlPasswordColumnValue(stored);
+
   if (mode !== 'auto') {
-    return verifyUsuarioPasswordSingle(plain, stored, mode);
+    return verifyUsuarioPasswordSingle(plain, storedNorm, mode);
   }
   const chain = [
-    'plain',
     'sql_plain_equal',
+    'elab_legacy',
+    'plain',
     'md5_hex',
     'md5_hex_upper',
     'bcrypt',
@@ -342,7 +379,7 @@ export async function verifyUsuarioPassword(plain, stored, mode) {
     'sql_pwdccompare_convert',
   ];
   for (const m of chain) {
-    if (await verifyUsuarioPasswordSingle(plain, stored, m)) return true;
+    if (await verifyUsuarioPasswordSingle(plain, storedNorm, m)) return true;
   }
   return false;
 }
@@ -355,7 +392,7 @@ export async function verifyUsuarioPassword(plain, stored, mode) {
  *   login: string,
  *   nombre: string,
  *   nivel: unknown,
- *   passwordStored: string
+ *   passwordStored: string|Buffer
  * }} UsuarioExternoRow
  */
 
@@ -414,6 +451,11 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
   const usr = String(row.loginUsuario ?? '').trim();
   const loginDisplay = mail || usr;
 
+  const rawClave = row.passwordStored;
+  const passwordStored = Buffer.isBuffer(rawClave) || rawClave instanceof Uint8Array
+    ? Buffer.from(rawClave)
+    : normalizeSqlPasswordColumnValue(rawClave);
+
   return {
     externUserId: String(row.externUserId).trim(),
     loginMail: mail,
@@ -421,7 +463,7 @@ export async function fetchUsuarioExternoPorLogin(loginNorm) {
     login: loginDisplay,
     nombre: String(row.nombre ?? '').trim() || loginDisplay,
     nivel: row.nivel,
-    passwordStored: normalizeSqlPasswordColumnValue(row.passwordStored),
+    passwordStored,
   };
 }
 

@@ -35,4 +35,9 @@ describe('verifyUsuarioPassword modo plain', () => {
   it('rechaza contraseña incorrecta', async () => {
     assert.equal(await verifyUsuarioPassword('mal', 'bien', 'plain'), false);
   });
+
+  it('modo plain: acepta Buffer UTF-8 (mismo flujo que VARBINARY texto en login)', async () => {
+    const buf = Buffer.from('Sinergia2025', 'utf8');
+    assert.equal(await verifyUsuarioPassword('Sinergia2025', buf, 'plain'), true);
+  });
 });
