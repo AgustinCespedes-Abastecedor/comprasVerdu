@@ -4,15 +4,16 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 const ROLES_DEFAULT = [
-  { nombre: 'Administrador', descripcion: 'Acceso total', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos', 'gestion-usuarios', 'gestion-roles'] },
+  { nombre: 'Administrador', descripcion: 'Acceso total (cuenta local de soporte; no viene de Nivel en SQL)', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos', 'gestion-usuarios', 'gestion-roles'] },
   { nombre: 'Comprador', descripcion: 'Cargar compras y ver historial', permisos: ['home', 'comprar', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'] },
   { nombre: 'Recepcionista', descripcion: 'Recepción de compras y consultas. No puede crear compras.', permisos: ['home', 'ver-compras', 'recepcion', 'ver-recepciones', 'info-final-articulos'] },
+  { nombre: 'Administrativo', descripcion: 'Nivel 35–40 en El Abastecedor: consulta compras/recepciones e info final de artículos', permisos: ['home', 'ver-compras', 'ver-recepciones', 'info-final-articulos'] },
   { nombre: 'Visor', descripcion: 'Solo lectura', permisos: ['home', 'ver-compras', 'ver-recepciones', 'info-final-articulos'] },
 ];
 
 async function main() {
   const hashAdmin = await bcrypt.hash('admin123', 10);
-  const hashDevAdmin = await bcrypt.hash('admin1234', 10);
+  const hashAdminLocal = await bcrypt.hash('admin1234', 10);
 
   // Asegurar que existan los roles por defecto (por si se corre seed sin migración previa o se borraron)
   for (const r of ROLES_DEFAULT) {
@@ -27,15 +28,18 @@ async function main() {
   const roleComprador = await prisma.role.findUnique({ where: { nombre: 'Comprador' } });
   const roleRecepcionista = await prisma.role.findUnique({ where: { nombre: 'Recepcionista' } });
   const roleVisor = await prisma.role.findUnique({ where: { nombre: 'Visor' } });
-  if (!roleAdmin || !roleComprador || !roleRecepcionista || !roleVisor) throw new Error('Roles por defecto no encontrados');
+  const roleAdministrativo = await prisma.role.findUnique({ where: { nombre: 'Administrativo' } });
+  if (!roleAdmin || !roleComprador || !roleRecepcionista || !roleVisor || !roleAdministrativo) {
+    throw new Error('Roles por defecto no encontrados');
+  }
 
   await prisma.user.upsert({
-    where: { email: 'a.cespedes@elabastecedor.com.ar' },
-    update: { password: hashDevAdmin, nombre: 'Dev El Abastecedor', roleId: roleAdmin.id },
+    where: { email: 'admin@comprasverdu.com' },
+    update: { password: hashAdminLocal, nombre: 'Admin local (soporte)', roleId: roleAdmin.id, externUserId: null },
     create: {
-      email: 'a.cespedes@elabastecedor.com.ar',
-      password: hashDevAdmin,
-      nombre: 'Dev El Abastecedor',
+      email: 'admin@comprasverdu.com',
+      password: hashAdminLocal,
+      nombre: 'Admin local (soporte)',
       roleId: roleAdmin.id,
     },
   });

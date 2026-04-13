@@ -5,14 +5,30 @@ import { prisma } from '../lib/prisma.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { getJwtSecret } from '../lib/config.js';
 import { validateEmail, validatePassword, validateNombre } from '../lib/validation.js';
+import { isExternalAuthLoginEnabled } from '../lib/configAuthExterno.js';
+import {
+  fetchUsuarioExternoPorLogin,
+  verifyUsuarioPassword,
+  getExternalUsuariosPasswordMode,
+} from '../lib/usuariosSqlServer.js';
+import { mapNivelToRoleNombre } from '../lib/nivelRol.js';
+import { ensurePrismaUserFromExterno } from '../lib/syncUsuarioExterno.js';
 
 const router = Router();
 const TOKEN_EXPIRY = '7d';
 
 export const authRouter = router;
 
+/** Público: el front oculta registro si el login es solo por ELABASTECEDOR. */
+router.get('/config', (_req, res) => {
+  res.json({ externalAuthLogin: isExternalAuthLoginEnabled() });
+});
+
 router.post('/registro', async (req, res) => {
   try {
+    if (isExternalAuthLoginEnabled()) {
+      return sendError(res, 403, MSG.AUTH_REGISTRO_DESHABILITADO, 'AUTH_030');
+    }
     const { email, password, nombre, roleId } = req.body;
     if (!email || !password || !nombre) {
       return sendError(res, 400, MSG.AUTH_FALTAN_DATOS, 'AUTH_001');
@@ -81,6 +97,7 @@ router.post('/registro', async (req, res) => {
         id: user.id,
         email: user.email,
         nombre: user.nombre,
+        externUserId: null,
         role: { id: user.role.id, nombre: user.role.nombre, permisos },
       },
       token,
@@ -107,6 +124,66 @@ router.post('/login', async (req, res) => {
       if (pwdVal.error === 'too_short') return sendError(res, 400, MSG.AUTH_EMAIL_PASSWORD_REQUERIDOS, 'AUTH_005');
       if (pwdVal.error === 'too_long') return sendError(res, 400, MSG.AUTH_PASSWORD_LARGA, 'AUTH_029');
     }
+
+    if (isExternalAuthLoginEnabled()) {
+      let row;
+      try {
+        row = await fetchUsuarioExternoPorLogin(email);
+      } catch (e) {
+        return sendError(res, 503, MSG.AUTH_SQL_NO_DISPONIBLE, 'AUTH_040', e);
+      }
+      if (!row) {
+        return sendError(res, 401, MSG.AUTH_CREDENCIALES, 'AUTH_006');
+      }
+      const mode = getExternalUsuariosPasswordMode();
+      const matchExt = await verifyUsuarioPassword(password, row.passwordStored, mode);
+      if (!matchExt) {
+        return sendError(res, 401, MSG.AUTH_CREDENCIALES, 'AUTH_009');
+      }
+      const roleNombre = mapNivelToRoleNombre(row.nivel);
+      if (!roleNombre) {
+        return sendError(res, 403, MSG.AUTH_NIVEL_SIN_ACCESO, 'AUTH_041');
+      }
+      const role = await prisma.role.findUnique({ where: { nombre: roleNombre } });
+      if (!role) {
+        return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_042', { roleNombre });
+      }
+      let user;
+      try {
+        user = await ensurePrismaUserFromExterno({
+          externUserId: row.externUserId,
+          emailNorm: email,
+          nombre: row.nombre,
+          roleId: role.id,
+        });
+      } catch (e) {
+        if (e.code === 'SYNC_USER_EMAIL_USO_LOCAL') {
+          return sendError(res, 409, MSG.AUTH_EMAIL_CONFLICTO_IDENTIDAD, 'AUTH_043', e);
+        }
+        return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_044', e);
+      }
+      if (user.activo === false) {
+        return sendError(res, 403, MSG.AUTH_CUENTA_SUSPENDIDA, 'AUTH_007');
+      }
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        getJwtSecret(),
+        { expiresIn: TOKEN_EXPIRY }
+      );
+      const permisos = Array.isArray(user.role?.permisos) ? user.role.permisos : [];
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          nombre: user.nombre,
+          externUserId: user.externUserId ?? null,
+          role: { id: user.role.id, nombre: user.role.nombre, permisos },
+        },
+        token,
+      });
+      return;
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
       include: { role: { select: { id: true, nombre: true, permisos: true } } },
@@ -116,6 +193,9 @@ router.post('/login', async (req, res) => {
     }
     if (user.activo === false) {
       return sendError(res, 403, MSG.AUTH_CUENTA_SUSPENDIDA, 'AUTH_007');
+    }
+    if (user.externUserId) {
+      return sendError(res, 403, MSG.AUTH_CUENTA_SOLO_EXTERNA, 'AUTH_046');
     }
     const passwordHash = user.password;
     if (!passwordHash || typeof passwordHash !== 'string') {
@@ -136,6 +216,7 @@ router.post('/login', async (req, res) => {
         id: user.id,
         email: user.email,
         nombre: user.nombre,
+        externUserId: user.externUserId ?? null,
         role: { id: user.role.id, nombre: user.role.nombre, permisos },
       },
       token,
@@ -158,6 +239,7 @@ router.get('/me', async (req, res) => {
         id: true,
         email: true,
         nombre: true,
+        externUserId: true,
         role: { select: { id: true, nombre: true, permisos: true } },
       },
     });
@@ -167,6 +249,7 @@ router.get('/me', async (req, res) => {
       id: user.id,
       email: user.email,
       nombre: user.nombre,
+      externUserId: user.externUserId ?? null,
       role: user.role ? { id: user.role.id, nombre: user.role.nombre, permisos } : null,
     });
   } catch (e) {

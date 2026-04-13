@@ -44,6 +44,7 @@ export function rolEtiqueta(roleOrUser) {
     if (role === 'RECEPCIONISTA') return 'Recepcionista';
     if (role === 'VISOR') return 'Visor';
     if (role === 'ADMIN') return 'Administrador';
+    if (role === 'ADMINISTRATIVO') return 'Administrativo';
     return role;
   }
   return role?.nombre ?? '';

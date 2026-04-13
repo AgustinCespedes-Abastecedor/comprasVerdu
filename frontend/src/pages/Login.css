@@ -133,6 +133,14 @@
   text-align: center;
 }
 
+.login-hint-external {
+  margin: -0.75rem 0 1.25rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .login-card form {
   display: flex;
   flex-direction: column;

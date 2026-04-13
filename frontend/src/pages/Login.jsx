@@ -26,6 +26,20 @@ export default function Login() {
     rol: 'COMPRADOR',
   });
   const [rememberEmail, setRememberEmail] = useState(false);
+  /** null = aún no cargó; true = login solo contra ELABASTECEDOR (sin registro en la app). */
+  const [externalAuthLogin, setExternalAuthLogin] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    auth.getPublicConfig()
+      .then((cfg) => {
+        if (!cancelled) setExternalAuthLogin(Boolean(cfg?.externalAuthLogin));
+      })
+      .catch(() => {
+        if (!cancelled) setExternalAuthLogin(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     try {
@@ -37,6 +51,10 @@ export default function Login() {
       // Sin acceso a localStorage (modo privado/políticas del navegador).
     }
   }, []);
+
+  useEffect(() => {
+    if (externalAuthLogin) setModo('login');
+  }, [externalAuthLogin]);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -107,6 +125,11 @@ export default function Login() {
         <p className="login-subtitle">
           {modo === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
         </p>
+        {externalAuthLogin && modo === 'login' && (
+          <p className="login-hint-external" role="note">
+            Usá el mismo usuario y contraseña que en El Abastecedor (SQL Server).
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           {error && (
             <div className="login-error" role="alert">
@@ -182,17 +205,19 @@ export default function Login() {
             {loading ? 'Espera...' : modo === 'login' ? 'Entrar' : 'Registrarme'}
           </button>
         </form>
-        <button
-          type="button"
-          className="btn-link"
-          onClick={() => {
-            setModo((m) => (m === 'login' ? 'registro' : 'login'));
-            setError('');
-            setErrorCode('');
-          }}
-        >
-          {modo === 'login' ? '¿No tenés cuenta? Registrarse' : 'Ya tengo cuenta. Iniciar sesión'}
-        </button>
+        {!externalAuthLogin && (
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => {
+              setModo((m) => (m === 'login' ? 'registro' : 'login'));
+              setError('');
+              setErrorCode('');
+            }}
+          >
+            {modo === 'login' ? '¿No tenés cuenta? Registrarse' : 'Ya tengo cuenta. Iniciar sesión'}
+          </button>
+        )}
       </div>
       </div>
     </div>

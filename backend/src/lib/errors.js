@@ -46,6 +46,11 @@ export const MSG = {
   AUTH_PASSWORD_LARGA: 'La contraseña no puede superar 128 caracteres.',
   AUTH_EMAIL_LARGO: 'El email no puede superar 255 caracteres.',
   AUTH_NOMBRE_LARGO: 'El nombre no puede superar 200 caracteres.',
+  AUTH_REGISTRO_DESHABILITADO: 'El registro público está deshabilitado. Usá el usuario de El Abastecedor.',
+  AUTH_NIVEL_SIN_ACCESO: 'Tu usuario no tiene un nivel habilitado para esta aplicación. Contactá a sistemas.',
+  AUTH_SQL_NO_DISPONIBLE: 'No se pudo validar el usuario contra el servidor de datos. Intentá más tarde.',
+  AUTH_EMAIL_CONFLICTO_IDENTIDAD: 'Existe un conflicto de cuenta con ese correo. Contactá al administrador.',
+  AUTH_CUENTA_SOLO_EXTERNA: 'Este usuario se valida en El Abastecedor. Activá EXTERNAL_AUTH_LOGIN en el servidor o usá una cuenta local de prueba.',
 
   // Usuarios
   USERS_LISTAR: 'No se pudo cargar la lista de usuarios.',
@@ -63,6 +68,8 @@ export const MSG = {
   USERS_PASSWORD_LARGA: 'La contraseña no puede superar 128 caracteres.',
   USERS_EMAIL_LARGO: 'El email no puede superar 255 caracteres.',
   USERS_NOMBRE_LARGO: 'El nombre no puede superar 200 caracteres.',
+  USERS_EXTERNO_NO_CREAR: 'Los usuarios se administran en El Abastecedor. No se pueden crear cuentas desde esta pantalla.',
+  USERS_EXTERNO_NO_EDITAR: 'Este usuario se sincroniza desde El Abastecedor: solo podés suspender o reactivar la cuenta aquí.',
 
   // Roles
   ROLES_LISTAR: 'No se pudo cargar la lista de roles.',

@@ -68,6 +68,8 @@ export async function api(path, options = {}) {
 }
 
 export const auth = {
+  /** Sin token: indica si el login es solo vía El Abastecedor (SQL Server). */
+  getPublicConfig: () => api('/auth/config'),
   login: (email, password) => api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   registro: (body) => api('/auth/registro', { method: 'POST', body: JSON.stringify(body) }),
   me: () => api('/auth/me'),

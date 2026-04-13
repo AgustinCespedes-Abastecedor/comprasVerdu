@@ -74,6 +74,7 @@ npx prisma generate
 
 Usuarios de prueba creados por el seed:
 
+- **Administrador (soporte local):** `admin@comprasverdu.com` / `admin1234` (solo si `EXTERNAL_AUTH_LOGIN` no fuerza solo SQL Server)
 - **Comprador:** `comprador@comprasverdu.com` / `admin123`
 - **Recepcionista:** `recepcionista@comprasverdu.com` / `admin123`
 - **Visor:** `visor@comprasverdu.com` / `admin123`

@@ -5,6 +5,7 @@ import { soloGestionUsuarios } from '../middleware/auth.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
 import { validateEmail, validatePassword, validateNombre } from '../lib/validation.js';
+import { isExternalAuthLoginEnabled } from '../lib/configAuthExterno.js';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
         id: true,
         email: true,
         nombre: true,
+        externUserId: true,
         roleId: true,
         role: { select: { id: true, nombre: true } },
         createdAt: true,
@@ -51,6 +53,7 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
       id: u.id,
       email: u.email,
       nombre: u.nombre,
+      externUserId: u.externUserId ?? null,
       roleId: u.roleId,
       rol: u.role?.nombre ?? '',
       activo: u.activo !== false,
@@ -65,6 +68,9 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
 
 router.post('/', soloGestionUsuarios, async (req, res) => {
   try {
+    if (isExternalAuthLoginEnabled()) {
+      return sendError(res, 403, MSG.USERS_EXTERNO_NO_CREAR, 'USERS_021');
+    }
     const { email, password, nombre, roleId } = req.body;
     if (!email || !password || !nombre) {
       return sendError(res, 400, MSG.USERS_NOMBRE_EMAIL_PASSWORD, 'USERS_002');
@@ -140,6 +146,17 @@ router.patch('/:id', soloGestionUsuarios, async (req, res) => {
       include: { role: { select: { id: true, nombre: true } } },
     });
     if (!user) return sendError(res, 404, MSG.USERS_NO_ENCONTRADO, 'USERS_008');
+    if (user.externUserId) {
+      const pwdStr = password !== undefined ? String(password) : '';
+      const triesEditIdentity =
+        nombre !== undefined
+        || email !== undefined
+        || roleId !== undefined
+        || pwdStr.length > 0;
+      if (triesEditIdentity) {
+        return sendError(res, 403, MSG.USERS_EXTERNO_NO_EDITAR, 'USERS_022');
+      }
+    }
     const data = {};
     if (nombre !== undefined) data.nombre = String(nombre).trim();
     if (nombre !== undefined) {

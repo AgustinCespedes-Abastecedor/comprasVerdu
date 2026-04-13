@@ -23,6 +23,8 @@ model User {
   email        String       @unique
   password     String
   nombre       String
+  /// Id del usuario en SQL Server (tabla Usuarios). Si está definido, credenciales y nivel vienen de ELABASTECEDOR.
+  externUserId String? @unique
   roleId       String
   role         Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
   activo       Boolean      @default(true)  // false = suspendido (soft delete), no puede iniciar sesión
