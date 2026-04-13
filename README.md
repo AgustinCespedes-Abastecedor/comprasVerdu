@@ -134,6 +134,8 @@ El frontend corre en `http://localhost:5173` y usa el proxy a `http://localhost:
 
 ## Documentación adicional
 
+- **[Clave de usuarios ELAB (SQL Server)](docs/CLAVE_USUARIOS_ELAB.md):** cómo se almacena la contraseña en la columna `Clave` del ERP (cifrado legado por desplazamiento ASCII) y cómo la valida la app frente a otros formatos (texto plano, hash, `PWDCOMPARE`).
+- **[Sincronizar roles en Postgres](docs/SYNC_ROLES.md):** seed e import/export de roles entre entornos cuando el código no actualiza solo la base.
 - **[Manual de usuario](docs/MANUAL_USUARIO.md):** guía para el usuario final: login, panel, nueva compra, recepción, ver compras/recepciones, Info Final de Artículos, gestión de usuarios y historial de actividad.
 - **[Recepción e inventario](docs/RECEPCION_Y_STOCK.md):** aclara que registrar una recepción en ComprasVerdu **no actualiza inventario** y que la conciliación con stock se hace por otro canal.
 - **[Precios y ventas](docs/PRECIOS_Y_VENTAS.md):** deja explícito que ComprasVerdu es solo **registro interno** y que la carga de precios al sistema de ventas es **100 % manual u otro sistema**.
