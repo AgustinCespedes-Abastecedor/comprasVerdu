@@ -1,9 +1,10 @@
 # Dependencias
 node_modules/
 
-# Entorno y secretos
+# Entorno y secretos (nunca commitear; usá *.env.example como plantilla)
 .env
 env
+backend/.env
 .env.local
 .env.*.local
 

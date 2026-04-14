@@ -14,7 +14,7 @@
     "start:all": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1",
     "build": "npm run build --prefix frontend",
     "sync:android": "npm run cap:sync:android --prefix frontend",
-    "cap:open:android": "npm run cap:open:android --prefix frontend",
+    "cap:open:android": "npm run sync:android && npm run cap:open:android --prefix frontend",
     "apk": "npm run apk --prefix frontend",
     "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend",
     "lint": "npm run lint --prefix backend && npm run lint --prefix frontend",

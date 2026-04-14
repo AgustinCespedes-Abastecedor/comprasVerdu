@@ -44,6 +44,7 @@ jobs:
       - name: Frontend – lint
         run: npm run lint --prefix frontend
 
+      # `npm run build` en frontend borra `dist/` antes de Vite (evita bundles viejos en APK / Capacitor).
       - name: Frontend – build
         run: npm run build --prefix frontend
 

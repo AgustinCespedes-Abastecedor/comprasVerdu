@@ -1,12 +1,18 @@
 # =============================================================================
 # Docker Compose - Compras Verdu (producción)
 # =============================================================================
-# El servicio backend carga variables desde ./backend/.env (JWT, SQL Server, FRONTEND_URL, etc.).
-# Compose fuerza DATABASE_URL=@db:5432 dentro del contenedor (no usar 127.0.0.1 ahí).
-# Seed / Prisma desde el host: `npm run db:seed` en la raíz (ejecuta el seed en el contenedor backend).
-# Variables ${...} en otros servicios: archivo opcional con --env-file (ver scripts/docker-compose-env.sh).
-# Uso: desde la raíz del proyecto:  docker compose up -d --build
-# Frontend accesible en http://localhost:8081 (no usa puerto 80 para convivir con Ticketador).
+# Backend: env_file ./backend/.env (JWT, FRONTEND_URL, SQL Server, EXTERNAL_*).
+# En el contenedor se fuerzan NODE_ENV=production, PORT=4000 y DATABASE_URL=@db:5432
+# (no usar 127.0.0.1 dentro del contenedor).
+#
+# Sustitución ${POSTGRES_USER} / ${POSTGRES_PASSWORD} / ${POSTGRES_DB} en ESTE archivo:
+#   Docker Compose las toma del shell o de `env` / `.env` en la RAÍZ del repo (no de backend/.env).
+#   Usá ./scripts/docker-compose-env.sh up -d --build para que se aplique `env` o `.env` en la raíz.
+#   Esos valores deben coincidir con las credenciales del volumen Postgres (no cambiar sin plan).
+#
+# Seed desde el host: npm run db:seed (en la raíz).
+# Uso: docker compose up -d --build   o   ./scripts/docker-compose-env.sh up -d --build
+# Frontend: http://localhost:8081 (no usa 80 para convivir con Ticketador).
 # =============================================================================
 
 services:

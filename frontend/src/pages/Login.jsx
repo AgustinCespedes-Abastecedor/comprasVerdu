@@ -212,7 +212,8 @@ export default function Login() {
           </label>
           <input
             id="login-email-input"
-            type={modo === 'registro' ? 'email' : 'text'}
+            type={modo === 'login' ? 'text' : 'email'}
+            inputMode={modo === 'login' ? 'text' : 'email'}
             name="email"
             value={form.email}
             onChange={handleChange}
@@ -226,6 +227,7 @@ export default function Login() {
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
+            enterKeyHint={modo === 'login' ? 'next' : 'send'}
           />
           {modo === 'login' && (
             <label className="login-remember-email">
