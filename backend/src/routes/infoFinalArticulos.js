@@ -4,12 +4,41 @@ import { fetchInfoTecnolarPorCodigos, fetchIvaPorcentajePorCodigos, normalizarCo
 import { soloInfoFinalArticulos } from '../middleware/auth.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
+import { getCalendarDayBoundsUtc, utcInstantToCalendarDayString } from '../lib/appCalendarDay.js';
 
 const router = Router();
 
+const DIAS_VENTANA_FECHAS = 450;
+
+/**
+ * GET /info-final-articulos/fechas-con-datos
+ * Días (YYYY-MM-DD) con al menos una recepción con detalle, según día de recepción (createdAt).
+ */
+router.get('/fechas-con-datos', soloInfoFinalArticulos, async (req, res) => {
+  try {
+    const desdeMs = Date.now() - DIAS_VENTANA_FECHAS * 24 * 60 * 60 * 1000;
+    const recepciones = await prisma.recepcion.findMany({
+      where: {
+        createdAt: { gte: new Date(desdeMs) },
+        detalles: { some: {} },
+      },
+      select: { createdAt: true },
+    });
+    const dias = new Set();
+    for (const r of recepciones) {
+      dias.add(utcInstantToCalendarDayString(new Date(r.createdAt)));
+    }
+    const fechas = [...dias].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
+    res.json({ fechas });
+  } catch (e) {
+    sendError(res, 500, MSG.INFO_OBTENER, 'INFO_003', e);
+  }
+});
+
 /**
  * GET /info-final-articulos?fecha=YYYY-MM-DD
- * Por día: un ítem por artículo (codigo) con la info de la ÚLTIMA recepción de ese artículo ese día.
+ * Por día civil de recepción: un ítem por artículo (codigo) con la info de la ÚLTIMA recepción
+ * de ese artículo en ese día (según recepcion.createdAt, no compra.fecha).
  * Requiere permiso info-final-articulos.
  */
 router.get('/', soloInfoFinalArticulos, async (req, res) => {
@@ -18,17 +47,15 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
     if (!fechaStr) {
       return sendError(res, 400, MSG.INFO_FECHA_REQUERIDA, 'INFO_001');
     }
-    const inicio = new Date(fechaStr + 'T00:00:00.000Z');
-    const fin = new Date(fechaStr + 'T23:59:59.999Z');
-    if (Number.isNaN(inicio.getTime())) {
+    const bounds = getCalendarDayBoundsUtc(fechaStr);
+    if (!bounds) {
       return sendError(res, 400, MSG.INFO_FECHA_INVALIDA, 'INFO_002');
     }
 
     const recepciones = await prisma.recepcion.findMany({
       where: {
-        compra: {
-          fecha: { gte: inicio, lte: fin },
-        },
+        createdAt: { gte: bounds.gte, lt: bounds.lt },
+        detalles: { some: {} },
       },
       include: {
         compra: { select: { numeroCompra: true, fecha: true } },
@@ -168,15 +195,15 @@ const handlerUxb = async (req, res) => {
     if (!fechaStr || !codigoStr) {
       return sendError(res, 400, MSG.INFO_FALTAN_FECHA_CODIGO, 'INFO_005');
     }
-    const inicio = new Date(fechaStr + 'T00:00:00.000Z');
-    const fin = new Date(fechaStr + 'T23:59:59.999Z');
-    if (Number.isNaN(inicio.getTime())) {
+    const bounds = getCalendarDayBoundsUtc(fechaStr);
+    if (!bounds) {
       return sendError(res, 400, MSG.INFO_FECHA_INVALIDA, 'INFO_002');
     }
 
     const recepciones = await prisma.recepcion.findMany({
       where: {
-        compra: { fecha: { gte: inicio, lte: fin } },
+        createdAt: { gte: bounds.gte, lt: bounds.lt },
+        detalles: { some: {} },
       },
       include: {
         detalles: {

@@ -128,6 +128,8 @@ export const recepciones = {
 export const infoFinalArticulos = {
   /** Lista artículos recepcionados en la fecha (YYYY-MM-DD), con info Tecnolar y costo ponderado */
   list: (fecha) => api(`/info-final-articulos?fecha=${encodeURIComponent(fecha || '')}`),
+  /** Días con al menos una recepción con detalle (últimos ~450 días), según día de recepción */
+  fechasConDatos: () => api('/info-final-articulos/fechas-con-datos'),
   /** Guardar UXB para un artículo en una fecha (registra en historial) */
   saveUxb: (body) => api('/info-final-articulos/uxb', { method: 'PATCH', body: JSON.stringify(body) }),
 };

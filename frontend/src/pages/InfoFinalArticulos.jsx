@@ -5,6 +5,7 @@ import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
+import InfoFinalMonthGrid from '../components/InfoFinalMonthGrid';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatMoneda, formatPct, formatEntero, todayStr } from '../lib/format';
 import { formatForReport } from '../lib/errorReport';
@@ -43,6 +44,17 @@ export default function InfoFinalArticulos() {
   const [errorGuardarKey, setErrorGuardarKey] = useState(null);
   const [errorGuardarMsg, setErrorGuardarMsg] = useState(null);
   const [errorGuardarCode, setErrorGuardarCode] = useState('');
+  const [diasConDatos, setDiasConDatos] = useState(() => new Set());
+
+  const loadMarcasCalendario = useCallback(() => {
+    return infoFinalArticulos
+      .fechasConDatos()
+      .then((data) => {
+        const arr = Array.isArray(data?.fechas) ? data.fechas : [];
+        setDiasConDatos(new Set(arr));
+      })
+      .catch(() => setDiasConDatos(new Set()));
+  }, []);
 
   const loadList = useCallback(() => {
     if (!fecha) return Promise.resolve();
@@ -66,11 +78,16 @@ export default function InfoFinalArticulos() {
     return () => { cancelled = true; };
   }, [fecha]);
 
+  useEffect(() => {
+    loadMarcasCalendario();
+  }, [loadMarcasCalendario]);
+
   const { registerRefresh } = usePullToRefresh();
   useEffect(() => {
-    registerRefresh(loadList);
+    const run = () => Promise.all([loadMarcasCalendario(), loadList()]);
+    registerRefresh(run);
     return () => registerRefresh(null);
-  }, [loadList, registerRefresh]);
+  }, [loadList, loadMarcasCalendario, registerRefresh]);
 
   const itemKey = (item) => `${item.codigo}|${item.uxb}`;
 
@@ -139,24 +156,31 @@ export default function InfoFinalArticulos() {
         }
         rightContent={<ThemeToggle />}
       />
-      <div className="vercompras-filtros">
+      <div className="vercompras-filtros vercompras-filtros--info-final">
         <div className="vercompras-field">
-          <label htmlFor="info-final-fecha">Fecha de la compra</label>
+          <label htmlFor="info-final-fecha">Día de recepción</label>
           <input
             id="info-final-fecha"
             type="date"
             value={fecha}
             max={todayStr()}
             onChange={(e) => setFecha(e.target.value)}
-            aria-label="Fecha"
+            aria-label="Día de recepción"
           />
         </div>
       </div>
+      <InfoFinalMonthGrid
+        value={fecha}
+        max={todayStr()}
+        diasConDatos={diasConDatos}
+        onChange={setFecha}
+      />
       {loading ? (
         <AppLoader message="Cargando artículos..." />
       ) : list.length === 0 ? (
         <div className="vercompras-empty">
-          No hay artículos recepcionados en esta fecha, o no hubo recepciones ese día.
+          No hay artículos en recepciones registradas este día (según fecha y hora de la recepción). Probá otra
+          fecha en el calendario; los días con marca naranja tuvieron al menos una recepción con detalle.
         </div>
       ) : (
         <div className="vercompras-list info-final-list">
