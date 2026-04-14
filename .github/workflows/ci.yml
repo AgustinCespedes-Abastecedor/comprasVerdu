@@ -23,7 +23,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+          # Capacitor 8 / frontend requieren Node >= 22 (ver frontend/.nvmrc)
           # Sin cache: monorepo con package-lock en backend/ y frontend/, no en raíz
 
       - name: Backend – instalar dependencias
@@ -50,3 +51,6 @@ jobs:
 
       - name: Frontend – tests unitarios
         run: npm run test --prefix frontend
+
+      - name: Frontend – Capacitor sync Android (smoke)
+        run: npm run cap:sync:android:only --prefix frontend

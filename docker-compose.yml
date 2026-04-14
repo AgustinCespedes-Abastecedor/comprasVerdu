@@ -13,12 +13,18 @@
 # Seed desde el host: npm run db:seed (en la raíz).
 # Uso: docker compose up -d --build   o   ./scripts/docker-compose-env.sh up -d --build
 # Frontend: http://localhost:8081 (no usa 80 para convivir con Ticketador).
+#
+# Nombre de proyecto fijo (`name: comprasverdu`): evita prefijos tipo c688f86428ca_* y
+# colisiones al clonar el repo en rutas distintas. Red con nombre fijo abajo.
+# Si ves "container name is already in use": ./scripts/cleanup-legacy-compose-containers.sh
+# Logs / exec: docker compose logs backend   |   docker compose exec backend sh
 # =============================================================================
+
+name: comprasverdu
 
 services:
   db:
     image: postgres:16-alpine
-    container_name: compras_verdu_db
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-compras_verdu}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-compras_verdu_secret}
@@ -38,7 +44,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: compras_verdu_backend
     # Misma configuración que en desarrollo; JWT, SQL Server, FRONTEND_URL, etc. vienen de backend/.env
     env_file:
       - ./backend/.env
@@ -61,7 +66,6 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         VITE_API_URL: /api
-    container_name: compras_verdu_frontend
     expose:
       - "80"
     ports:
@@ -78,4 +82,5 @@ volumes:
 
 networks:
   compras-network:
+    name: compras_verdu_network
     driver: bridge

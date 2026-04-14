@@ -1,0 +1,8 @@
+# Copiar a local.properties (ese archivo está en .gitignore).
+# sdk.dir debe apuntar al Android SDK instalado (Android Studio o cmdline-tools).
+#
+# Linux / macOS:
+#sdk.dir=/home/TU_USUARIO/Android/Sdk
+#
+# Windows (escapá backslashes o usá forward slashes):
+#sdk.dir=C\:\\Users\\TU_USUARIO\\AppData\\Local\\Android\\Sdk

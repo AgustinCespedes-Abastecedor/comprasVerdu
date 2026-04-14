@@ -1,12 +1,13 @@
 node_modules
 dist
-.env
-.env.*
-!.env.example
-*.log
-.git
-.gitignore
-android
-.cache
+.vite
 coverage
-*.local
+# Miniaturas locales (pueden pesar >1 GB); en Docker el build sigue sin ellas (igual que CI sin img/).
+public/img
+android/.gradle
+android/**/build
+android/local.properties
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml

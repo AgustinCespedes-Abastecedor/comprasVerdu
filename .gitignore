@@ -11,6 +11,7 @@ backend/.env
 # Build y cache
 frontend/dist/
 frontend/.vite/
+frontend/app-debug.apk
 backend/generated/
 
 # Imágenes de artículos (solo en disco local o en el servidor de build; no versionar)

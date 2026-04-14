@@ -1,0 +1,35 @@
+# Compila la APK debug en Docker (JDK 21 + Android SDK + Node 22 reproducibles).
+# Acción: GitHub → Actions → "APK debug (Docker)" → Run workflow.
+# Artefacto: app-debug.apk
+name: APK debug (Docker)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apk-debug:
+    name: APK debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build imagen (incluye assembleDebug)
+        working-directory: frontend
+        run: docker build -f docker/apk/Dockerfile -t comprasverdu-apk:debug .
+
+      - name: Extraer APK del contenedor
+        run: |
+          cid=$(docker create comprasverdu-apk:debug)
+          docker cp "$cid":/app/android/app/build/outputs/apk/debug/app-debug.apk "${{ github.workspace }}/app-debug.apk"
+          docker rm "$cid"
+
+      - name: Subir artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app-debug.apk
