@@ -8,6 +8,7 @@
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run dev --prefix backend",
     "dev:db": "docker compose -f docker-compose.db.yml up -d",
+    "db:seed": "node scripts/db-seed.mjs",
     "setup:dev": "node scripts/ensure-backend-env.mjs && npm run dev:db && npm run db:setup --prefix backend",
     "start": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1",
     "start:all": "powershell -ExecutionPolicy Bypass -File scripts/start-dev.ps1",

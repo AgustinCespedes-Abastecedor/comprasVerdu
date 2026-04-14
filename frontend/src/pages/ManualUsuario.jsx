@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -79,6 +79,60 @@ function buildToc(md) {
   return toc;
 }
 
+function scrollToManualSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function getManualHeadingText(children) {
+  if (typeof children === 'string') return children;
+  if (Array.isArray(children)) return children.map(getManualHeadingText).join('');
+  if (children?.props?.children) return getManualHeadingText(children.props.children);
+  return '';
+}
+
+function createManualHeading(level) {
+  const Tag = `h${level}`;
+  function ManualHeading({ children, ...props }) {
+    const text = getManualHeadingText(children) || '';
+    const id = slugify(text);
+    return (
+      <Tag id={id} className="manual-heading" {...props}>
+        {children}
+      </Tag>
+    );
+  }
+  ManualHeading.displayName = `ManualHeading${level}`;
+  return ManualHeading;
+}
+
+const MANUAL_MARKDOWN_COMPONENTS = {
+  h1: createManualHeading(1),
+  h2: createManualHeading(2),
+  h3: createManualHeading(3),
+  a: ({ href, children, ...props }) => {
+    if (href?.startsWith('#')) {
+      return (
+        <a
+          href={href}
+          onClick={(e) => {
+            e.preventDefault();
+            scrollToManualSection(href.slice(1));
+          }}
+          {...props}
+        >
+          {children}
+        </a>
+      );
+    }
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+        {children}
+      </a>
+    );
+  },
+};
+
 export default function ManualUsuario() {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
@@ -106,52 +160,6 @@ export default function ManualUsuario() {
   }, []);
 
   const toc = useMemo(() => buildToc(content), [content]);
-
-  const scrollToSection = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const getHeadingText = (children) => {
-    if (typeof children === 'string') return children;
-    if (Array.isArray(children)) return children.map(getHeadingText).join('');
-    if (children?.props?.children) return getHeadingText(children.props.children);
-    return '';
-  };
-
-  const headingComponent = (level) => {
-    const Tag = `h${level}`;
-    function ManualHeading({ children, ...props }) {
-      const text = getHeadingText(children) || '';
-      const id = slugify(text);
-      return (
-        <Tag id={id} className="manual-heading" {...props}>
-          {children}
-        </Tag>
-      );
-    }
-    ManualHeading.displayName = `ManualHeading${level}`;
-    return ManualHeading;
-  };
-
-  const components = useMemo(
-    () => ({
-      h1: headingComponent(1),
-      h2: headingComponent(2),
-      h3: headingComponent(3),
-      a: ({ href, children, ...props }) => {
-        if (href?.startsWith('#')) {
-          return (
-            <a href={href} onClick={(e) => { e.preventDefault(); scrollToSection(href.slice(1)); }} {...props}>
-              {children}
-            </a>
-          );
-        }
-        return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
-      },
-    }),
-    []
-  );
 
   return (
     <div className="manual-page">
@@ -185,7 +193,7 @@ export default function ManualUsuario() {
                       <button
                         type="button"
                         className="manual-toc-link"
-                        onClick={() => scrollToSection(item.id)}
+                        onClick={() => scrollToManualSection(item.id)}
                       >
                         {item.title}
                       </button>
@@ -196,7 +204,7 @@ export default function ManualUsuario() {
             )}
             <article className="manual-article">
               <div className="manual-markdown">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MANUAL_MARKDOWN_COMPONENTS}>
                   {content}
                 </ReactMarkdown>
               </div>

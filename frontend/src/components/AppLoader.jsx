@@ -1,4 +1,3 @@
-import React from 'react';
 import './AppLoader.css';
 
 const ORBIT_ITEMS = [

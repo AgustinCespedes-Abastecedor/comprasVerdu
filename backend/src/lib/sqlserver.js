@@ -54,8 +54,6 @@ const COL_VTA_FECHA = process.env.EXTERNAL_VTA_FECHA || 'FECHA';
 const COL_VTA_SUCURSAL = process.env.EXTERNAL_VTA_SUCURSAL || 'SUCURSAL';
 const COL_VTA_CODIGO = process.env.EXTERNAL_VTA_CODIGO || 'CODIGO';
 const COL_VTA_CANTIDAD = process.env.EXTERNAL_VTA_CANTIDAD || 'CANTIDAD';
-const COL_VTA_IMPORTE = process.env.EXTERNAL_VTA_IMPORTE || 'IMPORTE';
-const COL_VTA_COSTO = process.env.EXTERNAL_VTA_COSTO || 'COSTO';
 /** Sucursales para sumar ventas = mismas que stock (excl. CD): 1, 28, 32, 34, 35, 36, 37, 38, 39, 41, 43 */
 const SUCURSALES_VENTAS = SUCURSALES_LISTA;
 

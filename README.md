@@ -23,15 +23,22 @@ Con Docker iniciado, en la raíz del proyecto:
 docker compose up -d
 ```
 
-Esto crea la base **compras_verdu** en PostgreSQL 16 (puerto **5433** en el host para no chocar con un PostgreSQL local en 5432). El `backend/.env` ya está configurado para conectarse a ese contenedor.
+Esto crea la base **compras_verdu** en PostgreSQL 16. El servicio `db` solo escucha en la red interna de Compose (no se publica en el host).
 
 Crear tablas y **roles** iniciales en Postgres (los usuarios vienen de **ELABASTECEDOR** si `EXTERNAL_AUTH_LOGIN=true`):
 
 ```bash
 cd backend
 npx prisma db push
-node prisma/seed.js
 ```
+
+Seed de roles (desde la **raíz del repo**, con el stack levantado; ejecuta el seed dentro del contenedor `backend`):
+
+```bash
+npm run db:seed
+```
+
+Para Postgres solo en el host (puerto **5433**, por defecto sin chocar con otro Postgres en 5432), usá `docker compose -f docker-compose.db.yml up -d` y `DATABASE_URL` como en `backend/.env.example`.
 
 Para bajar el contenedor: `docker compose down`. Los datos se conservan en el volumen `compras_verdu_pgdata`.
 

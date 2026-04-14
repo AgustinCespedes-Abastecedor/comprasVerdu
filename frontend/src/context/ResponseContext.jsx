@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { formatForReport } from '../lib/errorReport';
 import { hapticImpact, hapticNotification } from '../lib/haptics';
 import './ResponseContext.css';

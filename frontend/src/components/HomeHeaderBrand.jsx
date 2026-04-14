@@ -1,4 +1,3 @@
-import React from 'react';
 import { Apple, Carrot, Cherry, Grape } from 'lucide-react';
 
 const glyph = {

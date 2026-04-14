@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { productos, recepciones } from '../api/client';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
@@ -53,9 +53,12 @@ export default function VerRecepciones() {
     setExpandidoKey((prev) => (prev === id ? null : id));
   };
 
-  const params = {};
-  if (filtroDesde) params.desde = filtroDesde;
-  if (filtroHasta) params.hasta = filtroHasta;
+  const params = useMemo(() => {
+    const p = {};
+    if (filtroDesde) p.desde = filtroDesde;
+    if (filtroHasta) p.hasta = filtroHasta;
+    return p;
+  }, [filtroDesde, filtroHasta]);
 
   const loadList = useCallback(() => {
     setLoading(true);
@@ -63,7 +66,7 @@ export default function VerRecepciones() {
       .then((data) => setList(Array.isArray(data) ? data : []))
       .catch(() => setList([]))
       .finally(() => setLoading(false));
-  }, [filtroDesde, filtroHasta]);
+  }, [params]);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,7 +76,7 @@ export default function VerRecepciones() {
       .catch(() => { if (!cancelled) setList([]); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [filtroDesde, filtroHasta]);
+  }, [params]);
 
   const { registerRefresh } = usePullToRefresh();
   useEffect(() => {

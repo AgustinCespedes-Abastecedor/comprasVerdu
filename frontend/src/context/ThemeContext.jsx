@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 const THEME_KEY = 'compras_verdu_theme';

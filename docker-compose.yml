@@ -3,6 +3,7 @@
 # =============================================================================
 # El servicio backend carga variables desde ./backend/.env (JWT, SQL Server, FRONTEND_URL, etc.).
 # Compose fuerza DATABASE_URL=@db:5432 dentro del contenedor (no usar 127.0.0.1 ahí).
+# Seed / Prisma desde el host: `npm run db:seed` en la raíz (ejecuta el seed en el contenedor backend).
 # Variables ${...} en otros servicios: archivo opcional con --env-file (ver scripts/docker-compose-env.sh).
 # Uso: desde la raíz del proyecto:  docker compose up -d --build
 # Frontend accesible en http://localhost:8081 (no usa puerto 80 para convivir con Ticketador).

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { proveedores, productos, compras } from '../api/client';
@@ -7,7 +7,6 @@ import { useResponse } from '../context/ResponseContext';
 import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
-import AppLoader from '../components/AppLoader';
 import Modal from '../components/Modal';
 import { ChevronDown, Pencil, Search, X } from 'lucide-react';
 import './PlanillaCompra.css';
@@ -98,7 +97,7 @@ export default function PlanillaCompra() {
   const [proveedorId, setProveedorId] = useState('');
   const [proveedoresList, setProveedoresList] = useState([]);
   const [filas, setFilas] = useState([]);
-  const [totalesDia, setTotalesDia] = useState({ totalBultos: 0, totalMonto: 0 });
+  const [, setTotalesDia] = useState({ totalBultos: 0, totalMonto: 0 });
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [busquedaArticulo, setBusquedaArticulo] = useState('');

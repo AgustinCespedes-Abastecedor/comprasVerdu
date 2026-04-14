@@ -1,4 +1,4 @@
-import React, { useEffect, useId } from 'react';
+import { useEffect, useId } from 'react';
 import { X } from 'lucide-react';
 import './Modal.css';
 

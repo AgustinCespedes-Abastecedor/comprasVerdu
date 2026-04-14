@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
+import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { users, roles as rolesApi, auth as authApi } from '../api/client';
@@ -139,8 +139,8 @@ export default function GestionUsuarios() {
         setList([]);
         setError(e.message);
         setErrorCode(e?.code ?? '');
-      } finally {
-        if (cancelled || seq !== listFetchSeqRef.current) return;
+      }
+      if (!cancelled && seq === listFetchSeqRef.current) {
         initialUsersFetchDoneRef.current = true;
         setInitialLoading(false);
         setListRefreshing(false);

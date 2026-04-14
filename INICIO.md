@@ -115,11 +115,8 @@ Causas habituales:
    - Comprobar: `netstat -an | findstr 5433`
 
 2. **Base de datos sin tablas ni usuarios**
-   ```powershell
-   cd backend
-   npm run db:push
-   npm run db:seed
-   ```
+   - Con stack Docker (`docker compose up` en la raíz): desde el repo, `npm run db:seed` (no depende de publicar Postgres al host).
+   - Solo backend en la PC con `docker-compose.db.yml`: `cd backend`, `npm run db:push`, `npm run db:seed`.
 
 3. **Prisma no generado**
    ```powershell

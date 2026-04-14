@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { infoFinalArticulos } from '../api/client';
 import AppHeader from '../components/AppHeader';
@@ -6,7 +6,7 @@ import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
-import { formatNum, formatMoneda, formatPct, formatEntero, todayStr } from '../lib/format';
+import { formatMoneda, formatPct, formatEntero, todayStr } from '../lib/format';
 import { formatForReport } from '../lib/errorReport';
 import './VerCompras.css';
 

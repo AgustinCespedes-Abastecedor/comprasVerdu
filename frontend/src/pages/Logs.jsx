@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { logs as logsApi, users } from '../api/client';
 import { useAuth } from '../context/AuthContext';
