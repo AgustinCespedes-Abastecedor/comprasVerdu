@@ -37,6 +37,14 @@ npx cap sync android
 
 ## Flujo de trabajo
 
+### Miniaturas de artículos (`/img/articulos/…`)
+
+En el monorepo, la carpeta **`img/` en la raíz** suele estar **gitignored** (assets pesados). Para que la **APK** incluya esas imágenes al compilar:
+
+- Colocá (o sincronicé) los JPG en `img/articulos/` en la raíz del repo, como en el entorno de build Docker.
+- Los scripts **`npm run apk`**, **`npm run apk:build`** y **`npm run apk:release`** ejecutan antes del build un paso que **copia `img/` → `frontend/public/img/`** si esa carpeta existe. Si no existe, el build sigue (solo no habrá miniaturas locales empaquetadas).
+- También podés poner los JPG directamente en **`frontend/public/img/articulos/`** (quedan en el `dist` al compilar). La planilla usa la ruta `/img/articulos/{codigo}.jpg` en web y en APK.
+
 ### Abrir el proyecto correcto en Android Studio
 
 Abrí la carpeta del **módulo Android**, no la raíz del monorepo:

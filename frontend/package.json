@@ -12,9 +12,9 @@
     "cap:sync:android": "cap sync android",
     "cap:open:android": "cap open android",
     "cap:android": "cap sync android && cap open android",
-    "apk": "vite build && cap sync android",
-    "apk:build": "vite build && cap sync android && node scripts/run-gradle.mjs assembleDebug",
-    "apk:release": "vite build && cap sync android && node scripts/run-gradle.mjs assembleRelease",
+    "apk": "node scripts/ensure-public-img.mjs && vite build && cap sync android",
+    "apk:build": "node scripts/ensure-public-img.mjs && vite build && cap sync android && node scripts/run-gradle.mjs assembleDebug",
+    "apk:release": "node scripts/ensure-public-img.mjs && vite build && cap sync android && node scripts/run-gradle.mjs assembleRelease",
     "lint": "eslint . --ext .js,.jsx",
     "test": "vitest run"
   },

@@ -9,5 +9,5 @@ module.exports = {
     'react/prop-types': 'off',
     'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
   },
-  ignorePatterns: ['node_modules/', 'dist/', 'android/', '*.config.js'],
+  ignorePatterns: ['node_modules/', 'dist/', 'android/', '*.config.js', 'scripts/**/*.mjs'],
 };

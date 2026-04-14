@@ -48,12 +48,12 @@ function codigoParaNombreArchivoArticulo(codigo) {
 }
 
 /**
- * Miniatura del artículo desde /img/articulos/{codigo}.jpg (solo navegador; en APK no se renderiza).
+ * Miniatura del artículo desde /img/articulos/{codigo}.jpg (estáticos en `public/img/articulos/` al build).
  */
 function PlanillaArticuloRefImagenWeb({ codigo }) {
   const [ocultar, setOcultar] = useState(false);
   const safe = useMemo(() => codigoParaNombreArchivoArticulo(codigo), [codigo]);
-  if (isApp() || ocultar || !safe) return null;
+  if (ocultar || !safe) return null;
   const src = `/img/articulos/${encodeURIComponent(safe)}.jpg`;
   return (
     <div className="planilla-item-ref-thumb-wrap" aria-hidden="true">

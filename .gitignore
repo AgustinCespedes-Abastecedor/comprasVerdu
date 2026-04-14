@@ -15,6 +15,10 @@ backend/generated/
 # Imágenes de artículos (solo en disco local o en el servidor de build; no versionar)
 img/
 
+# Copia local para empaquetar en la APK (frontend/scripts/ensure-public-img.mjs)
+frontend/public/img/**
+!frontend/public/img/.gitkeep
+
 # Snapshot de roles (generado con npm run db:export-roles; no versionar)
 backend/roles-export.json
 

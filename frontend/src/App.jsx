@@ -21,13 +21,19 @@ import Logs from './pages/Logs';
 import ManualUsuario from './pages/ManualUsuario';
 import './button-ui.css';
 
-/** En APK: botón Atrás de Android navega en el historial de la app */
+/** En APK: botón Atrás de Android respeta historial; si no hay más atrás, cierra la app */
 function BackButtonHandler() {
   const navigate = useNavigate();
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     let listenerHandle;
-    CapApp.addListener('backButton', () => { navigate(-1); })
+    CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) {
+        navigate(-1);
+        return;
+      }
+      void CapApp.exitApp();
+    })
       .then((h) => { listenerHandle = h; });
     return () => { listenerHandle?.remove(); };
   }, [navigate]);
