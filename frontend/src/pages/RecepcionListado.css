@@ -63,6 +63,19 @@
   line-height: 1.5;
 }
 
+.recepcion-listado-intro p {
+  margin: 0 0 0.5rem;
+}
+
+.recepcion-listado-intro p:last-child {
+  margin-bottom: 0;
+}
+
+.recepcion-listado-intro-nota {
+  font-size: 0.8125rem;
+  opacity: 0.95;
+}
+
 .recepcion-listado-filtros {
   display: flex;
   flex-wrap: wrap;

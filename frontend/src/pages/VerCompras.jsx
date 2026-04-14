@@ -345,6 +345,9 @@ export default function VerCompras() {
             </select>
           )}
         </div>
+        <p className="vercompras-filtros-ayuda" role="note">
+          Filtro por <strong>fecha de compra</strong> cargada en la planilla (no por recepción).
+        </p>
       </div>
       {!loading && list.length > 0 && (
         <div className="vercompras-export">

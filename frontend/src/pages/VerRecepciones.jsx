@@ -7,6 +7,7 @@ import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import Modal from '../components/Modal';
+import TrazabilidadRecepcion from '../components/TrazabilidadRecepcion';
 import { useResponse } from '../context/ResponseContext';
 import { formatNum, formatDate, formatPct, todayStr } from '../lib/format';
 import './VerCompras.css';
@@ -194,6 +195,10 @@ export default function VerRecepciones() {
             aria-label="Fecha hasta"
           />
         </div>
+        <p className="vercompras-filtros-ayuda" role="note">
+          El rango aplica a la <strong>fecha de compra</strong> cargada en la planilla (no a la fecha en que se
+          creó o modificó la recepción). Las fechas de recepción se muestran al expandir cada ítem.
+        </p>
       </div>
       {loading ? (
         <AppLoader message="Cargando recepciones..." />
@@ -215,7 +220,12 @@ export default function VerRecepciones() {
                   aria-controls={`verrec-detalle-${r.id}`}
                 >
                   <span className="vercompras-card-numero" title="Número de recepción">Nº {getNumeroRecepcion(r)}</span>
-                  <span className="vercompras-card-fecha">{formatDate(r.compra?.fecha)}</span>
+                  <span
+                    className="vercompras-card-fecha"
+                    title="Fecha de la compra (planilla). Ver trazabilidad al expandir."
+                  >
+                    {formatDate(r.compra?.fecha)}
+                  </span>
                   <span className="verrecepciones-proveedor-cell">
                     <span className="vercompras-card-proveedor">{r.compra?.proveedor?.nombre}</span>
                     {(!r.detalles?.length || r.detalles.some((d) => d.precioVenta == null || d.precioVenta === '')) && (
@@ -236,6 +246,16 @@ export default function VerRecepciones() {
                   <div id={`verrec-detalle-${r.id}`} className="vercompras-card-body">
                     <div className="vercompras-card-totales">
                       <span>Compra Nº {getNumeroCompra(r.compra)}</span>
+                    </div>
+                    <div className="vercompras-trazabilidad-wrap">
+                      <h4 className="vercompras-trazabilidad-title">Trazabilidad</h4>
+                      <TrazabilidadRecepcion
+                        compraFecha={r.compra?.fecha}
+                        compraCreadaEn={r.compra?.createdAt}
+                        recepcionCreadaEn={r.createdAt}
+                        recepcionUltimaModificacion={r.updatedAt}
+                        recepcionCompleta={r.completa}
+                      />
                     </div>
                     {r.detalles?.length > 0 && (
                       <div className="vercompras-detalle-wrap">

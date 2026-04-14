@@ -123,6 +123,14 @@
   max-width: 14rem;
 }
 
+.planilla-fecha-ayuda {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--planilla-muted);
+  max-width: 36rem;
+}
+
 /* ----- Agregar artículo (búsqueda) ----- */
 .planilla-section-add {
   margin-top: 0.25rem;

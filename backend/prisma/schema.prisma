@@ -123,6 +123,7 @@ model Recepcion {
   @@index([compraId])
   @@index([userId])
   @@index([createdAt])
+  @@index([updatedAt])
 }
 
 model DetalleRecepcion {

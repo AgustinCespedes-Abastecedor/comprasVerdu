@@ -6,6 +6,7 @@ import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import InfoFinalMonthGrid from '../components/InfoFinalMonthGrid';
+import TrazabilidadRecepcion from '../components/TrazabilidadRecepcion';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatMoneda, formatPct, formatEntero, todayStr } from '../lib/format';
 import { formatForReport } from '../lib/errorReport';
@@ -158,14 +159,14 @@ export default function InfoFinalArticulos() {
       />
       <div className="vercompras-filtros vercompras-filtros--info-final">
         <div className="vercompras-field">
-          <label htmlFor="info-final-fecha">Día de recepción</label>
+          <label htmlFor="info-final-fecha">Día de la información (última modificación de recepción)</label>
           <input
             id="info-final-fecha"
             type="date"
             value={fecha}
             max={todayStr()}
             onChange={(e) => setFecha(e.target.value)}
-            aria-label="Día de recepción"
+            aria-label="Día de la información según última modificación de recepción"
           />
         </div>
       </div>
@@ -175,12 +176,25 @@ export default function InfoFinalArticulos() {
         diasConDatos={diasConDatos}
         onChange={setFecha}
       />
+      <section className="info-final-intro" aria-label="Cómo se agrupan las fechas">
+        <p>
+          <strong>Calendario y listado:</strong> se agrupan por el día de la{' '}
+          <strong>última modificación de la recepción</strong> (guardar líneas, precios de venta o UXB desde
+          esta pantalla). Eso puede ser distinto de la <strong>fecha de compra</strong> que cargaste en la
+          planilla.
+        </p>
+        <p>
+          En cada artículo, la sección <strong>Trazabilidad</strong> muestra la fecha de compra, cuándo se
+          registró la compra en el sistema, cuándo se creó la recepción y cuándo se tocó por última vez.
+        </p>
+      </section>
       {loading ? (
         <AppLoader message="Cargando artículos..." />
       ) : list.length === 0 ? (
         <div className="vercompras-empty">
-          No hay artículos en recepciones registradas este día (según fecha y hora de la recepción). Probá otra
-          fecha en el calendario; los días con marca naranja tuvieron al menos una recepción con detalle.
+          No hay artículos con recepción modificada ese día calendario (se usa la última modificación: precios,
+          líneas guardadas o UXB). Elegí el día en que guardaste los datos; los días con marca naranja tuvieron
+          actividad en recepciones.
         </div>
       ) : (
         <div className="vercompras-list info-final-list">
@@ -213,6 +227,16 @@ export default function InfoFinalArticulos() {
                 </button>
                 {expandido && (
                   <div id={`info-final-detalle-${key.replace(/\|/g, '-')}`} className="info-final-detalle">
+                    <div className="info-final-block info-final-block--trazabilidad">
+                      <h3 className="info-final-block-title">Trazabilidad</h3>
+                      <TrazabilidadRecepcion
+                        compraFecha={item.compraFecha}
+                        compraCreadaEn={item.compraCreadaEn}
+                        recepcionCreadaEn={item.recepcionCreadaEn}
+                        recepcionUltimaModificacion={item.recepcionUltimaModificacion}
+                        recepcionCompleta={item.recepcionCompleta}
+                      />
+                    </div>
                     <div className="info-final-block info-final-block--tecnolar">
                       <h3 className="info-final-block-title">Sistema Tecnolar</h3>
                       <div className="info-final-grid">

@@ -25,6 +25,7 @@ router.get('/', soloVerRecepciones, async (req, res) => {
             id: true,
             numeroCompra: true,
             fecha: true,
+            createdAt: true,
             proveedor: { select: { id: true, nombre: true } },
           },
         },
@@ -109,6 +110,11 @@ router.post('/', soloRecepcion, async (req, res) => {
           })),
         });
       }
+      // Actualizar recepción para que updatedAt refleje el último guardado (Info Final agrupa por updatedAt).
+      await tx.recepcion.update({
+        where: { id: rec.id },
+        data: { updatedAt: new Date() },
+      });
       return tx.recepcion.findUnique({
         where: { id: rec.id },
         include: {

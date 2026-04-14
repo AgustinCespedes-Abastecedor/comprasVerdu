@@ -146,9 +146,14 @@ export default function RecepcionListado() {
       />
 
       <main className="recepcion-listado-main">
-        <p className="recepcion-listado-intro">
-          Elegí una compra para cargar la cantidad recibida en depósito por artículo.
-        </p>
+        <div className="recepcion-listado-intro">
+          <p>Elegí una compra para cargar la cantidad recibida en depósito por artículo.</p>
+          <p className="recepcion-listado-intro-nota" role="note">
+            Las fechas del filtro son la <strong>fecha de compra</strong> de la planilla. Al guardar, se
+            actualiza la recepción y queda registrada la hora de <strong>última modificación</strong> de ese
+            registro (visible en Ver recepciones e Info final de artículos).
+          </p>
+        </div>
 
         <div className="recepcion-listado-filtros">
           <div className="recepcion-listado-field">

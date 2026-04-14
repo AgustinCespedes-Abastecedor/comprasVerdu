@@ -411,6 +411,10 @@ export default function PlanillaCompra() {
               className="planilla-input planilla-input-date"
               aria-label="Fecha de compra"
             />
+            <p className="planilla-fecha-ayuda" role="note">
+              Es la fecha operativa de la compra (factura/pedido). La recepción y los precios guardan su propia
+              fecha y hora al cargarlos.
+            </p>
           </div>
         </section>
 

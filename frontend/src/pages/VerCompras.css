@@ -58,6 +58,36 @@
   align-items: flex-end;
 }
 
+.vercompras-filtros-ayuda {
+  flex-basis: 100%;
+  margin: 0;
+  padding-top: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.vercompras-trazabilidad-wrap {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="light"] .vercompras-trazabilidad-wrap {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.vercompras-trazabilidad-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
 .vercompras-field {
   display: flex;
   flex-direction: column;
@@ -1622,4 +1652,63 @@ html.is-native .verrecepciones-btn-precio {
   border-radius: 2px;
   background: #f97316;
   flex-shrink: 0;
+}
+
+/* Info final: texto intro y trazabilidad por artículo */
+.info-final-intro {
+  margin: 0 max(1.5rem, var(--app-safe-left)) 1rem;
+  margin-right: max(1.5rem, var(--app-safe-right));
+  padding: 0.85rem 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.info-final-intro p {
+  margin: 0 0 0.5rem;
+}
+
+.info-final-intro p:last-child {
+  margin-bottom: 0;
+}
+
+.info-final-block--trazabilidad {
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+.trazabilidad-dl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.trazabilidad-dl-row {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) 1fr;
+  gap: 0.5rem 0.75rem;
+  align-items: baseline;
+  font-size: 0.8125rem;
+}
+
+.trazabilidad-dl dt {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.trazabilidad-dl dd {
+  margin: 0;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+  .trazabilidad-dl-row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
 }

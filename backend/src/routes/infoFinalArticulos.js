@@ -12,21 +12,21 @@ const DIAS_VENTANA_FECHAS = 450;
 
 /**
  * GET /info-final-articulos/fechas-con-datos
- * Días (YYYY-MM-DD) con al menos una recepción con detalle, según día de recepción (createdAt).
+ * Días (YYYY-MM-DD) con al menos una recepción con detalle, según última modificación (updatedAt).
  */
 router.get('/fechas-con-datos', soloInfoFinalArticulos, async (req, res) => {
   try {
     const desdeMs = Date.now() - DIAS_VENTANA_FECHAS * 24 * 60 * 60 * 1000;
     const recepciones = await prisma.recepcion.findMany({
       where: {
-        createdAt: { gte: new Date(desdeMs) },
+        updatedAt: { gte: new Date(desdeMs) },
         detalles: { some: {} },
       },
-      select: { createdAt: true },
+      select: { updatedAt: true },
     });
     const dias = new Set();
     for (const r of recepciones) {
-      dias.add(utcInstantToCalendarDayString(new Date(r.createdAt)));
+      dias.add(utcInstantToCalendarDayString(new Date(r.updatedAt)));
     }
     const fechas = [...dias].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
     res.json({ fechas });
@@ -37,8 +37,8 @@ router.get('/fechas-con-datos', soloInfoFinalArticulos, async (req, res) => {
 
 /**
  * GET /info-final-articulos?fecha=YYYY-MM-DD
- * Por día civil de recepción: un ítem por artículo (codigo) con la info de la ÚLTIMA recepción
- * de ese artículo en ese día (según recepcion.createdAt, no compra.fecha).
+ * Por día civil según última modificación de la recepción (recepcion.updatedAt): precios, UXB desde
+ * recepción, re-guardar líneas, etc. No usar createdAt (queda fijo al crear el registro).
  * Requiere permiso info-final-articulos.
  */
 router.get('/', soloInfoFinalArticulos, async (req, res) => {
@@ -54,11 +54,11 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
 
     const recepciones = await prisma.recepcion.findMany({
       where: {
-        createdAt: { gte: bounds.gte, lt: bounds.lt },
+        updatedAt: { gte: bounds.gte, lt: bounds.lt },
         detalles: { some: {} },
       },
       include: {
-        compra: { select: { numeroCompra: true, fecha: true } },
+        compra: { select: { numeroCompra: true, fecha: true, createdAt: true } },
         detalles: {
           include: {
             detalleCompra: {
@@ -111,9 +111,9 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
       const precioPorBulto = Number(dc?.precioPorBulto) || 0;
       const costoConIva = uxb > 0 && precioPorBulto > 0 ? Math.round((precioPorBulto / uxb) * 100) / 100 : null;
       const lastSaveAt = lastSaveByCodigo.get(codigo);
-      const recCreated = rec.createdAt ? new Date(rec.createdAt) : null;
-      // Habilitar si no hay UXB guardado o si la recepción es posterior al último guardado (nueva recepción para cargar)
-      const editable = uxb === 0 || (recCreated && lastSaveAt && recCreated > lastSaveAt);
+      const recLastTouch = rec.updatedAt ? new Date(rec.updatedAt) : rec.createdAt ? new Date(rec.createdAt) : null;
+      // Habilitar si no hay UXB guardado o si la recepción se tocó después del último guardado UXB en historial
+      const editable = uxb === 0 || (recLastTouch && lastSaveAt && recLastTouch > lastSaveAt);
       list.push({
         codigo: prod.codigo,
         descripcion: prod.descripcion || '',
@@ -126,6 +126,11 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
         numeroRecepcion: rec.numeroRecepcion ?? null,
         numeroCompra: rec.compra?.numeroCompra ?? null,
         editable,
+        compraFecha: rec.compra?.fecha ?? null,
+        compraCreadaEn: rec.compra?.createdAt ?? null,
+        recepcionCreadaEn: rec.createdAt ?? null,
+        recepcionUltimaModificacion: rec.updatedAt ?? null,
+        recepcionCompleta: Boolean(rec.completa),
       });
     }
 
@@ -202,7 +207,7 @@ const handlerUxb = async (req, res) => {
 
     const recepciones = await prisma.recepcion.findMany({
       where: {
-        createdAt: { gte: bounds.gte, lt: bounds.lt },
+        updatedAt: { gte: bounds.gte, lt: bounds.lt },
         detalles: { some: {} },
       },
       include: {
@@ -218,6 +223,7 @@ const handlerUxb = async (req, res) => {
 
     // Solo actualizar detalles que aún tienen UXB en 0 (nuevo cargamento). No sobrescribir receptiones ya guardadas.
     const detalleIdsToUpdate = [];
+    const recepcionIdsToTouch = new Set();
     let descripcionArticulo = '';
     for (const rec of recepciones) {
       for (const d of rec.detalles || []) {
@@ -226,6 +232,7 @@ const handlerUxb = async (req, res) => {
         const uxbActual = Number(d.uxb) || 0;
         if (uxbActual > 0) continue; // ya tiene UXB guardado (recepción anterior), no tocar
         detalleIdsToUpdate.push(d.id);
+        recepcionIdsToTouch.add(rec.id);
         if (!descripcionArticulo && prod.descripcion) descripcionArticulo = prod.descripcion;
       }
     }
@@ -239,6 +246,13 @@ const handlerUxb = async (req, res) => {
       where: { id: { in: detalleIdsToUpdate } },
       data: { uxb: uxbNum },
     });
+
+    const ahora = new Date();
+    await Promise.all(
+      [...recepcionIdsToTouch].map((rid) =>
+        prisma.recepcion.update({ where: { id: rid }, data: { updatedAt: ahora } }),
+      ),
+    );
 
     await createLog(prisma, {
       userId: req.userId,

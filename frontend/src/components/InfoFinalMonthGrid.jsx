@@ -44,7 +44,7 @@ const MONTH_NAMES = [
 ];
 
 /**
- * Calendario mensual para elegir día de recepción; marca en naranja los días con datos.
+ * Calendario mensual para elegir día (última modificación de recepción); marca en naranja los días con datos.
  * @param {{
  *   value: string,
  *   max: string,
@@ -99,7 +99,7 @@ export default function InfoFinalMonthGrid({ value, max, diasConDatos, onChange 
           </span>
         ))}
       </div>
-      <div className="info-final-cal-grid" role="grid" aria-label="Días del mes">
+      <div className="info-final-cal-grid" role="grid" aria-label="Días del mes (última modificación de recepción)">
         {cells.map((day, idx) => {
           if (day == null) {
             return <span key={`e-${idx}`} className="info-final-cal-cell info-final-cal-cell--empty" aria-hidden />;
@@ -139,7 +139,7 @@ export default function InfoFinalMonthGrid({ value, max, diasConDatos, onChange 
       </div>
       <p className="info-final-cal-leyenda">
         <span className="info-final-cal-leyenda-marca" aria-hidden />
-        Día con recepciones (posibles datos finales de artículos)
+        Día con recepciones modificadas (info final de artículos)
       </p>
     </section>
   );
