@@ -96,10 +96,8 @@ model Compra {
   @@index([proveedorId])
 }
 
-/**
- * Eventos normalizados de auditoría por compra (reconstruibles y deduplicables).
- * Fuente típica: ActivityLog (backfill) + escrituras online (append-only).
- */
+// CompraAuditoriaEvento: eventos normalizados de auditoría por compra (reconstruibles y deduplicables).
+// Fuente típica: ActivityLog (backfill) + escrituras online (append-only).
 model CompraAuditoriaEvento {
   id          String   @id @default(cuid())
   compraId    String

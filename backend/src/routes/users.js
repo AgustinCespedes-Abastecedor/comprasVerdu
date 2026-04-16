@@ -76,7 +76,7 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
       });
       const activoMap = Object.fromEntries(activoRows.map((r) => [r.id, r.activo]));
       withActivo = users.map((u) => ({ ...u, activo: activoMap[u.id] !== false }));
-    } catch (_) {
+    } catch {
       /* columna activo puede no existir aún */
     }
     if (activo === 'true' || activo === '1') withActivo = withActivo.filter((u) => u.activo !== false);

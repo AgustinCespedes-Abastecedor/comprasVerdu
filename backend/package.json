@@ -16,7 +16,7 @@
     "db:backfill-auditoria-compras": "node scripts/backfill-compra-auditoria.mjs",
     "db:export-roles": "node scripts/export-roles.mjs",
     "db:import-roles": "node scripts/import-roles.mjs",
-    "lint": "eslint . --ext .js",
+    "lint": "eslint .",
     "test": "node --test src/lib/errors.test.js src/lib/resolveExternoLoginEmail.test.js src/lib/usuariosSqlServer.test.js src/lib/elabLegacyPassword.test.js src/lib/validation.test.js src/lib/nivelRol.test.js src/lib/appCalendarDay.test.js src/lib/dateOnly.test.js",
     "test:sql-usuarios": "RUN_SQL_USUARIOS_INTEG=1 node --test src/lib/usuariosSqlServer.integration.test.js",
     "analyze:clave-2558": "node scripts/analyze-usuario-2558-clave.js",
@@ -34,7 +34,9 @@
     "mssql": "^11.0.1"
   },
   "devDependencies": {
-    "eslint": "^8.57.0",
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
     "prisma": "^5.22.0"
   },
   "prisma": {

@@ -233,9 +233,9 @@ router.get('/', soloComprarOVerCompras, async (req, res) => {
         const stockSucursales = st != null ? st.stockSucursales : 0;
         const stockCD = st != null ? st.stockCD : 0;
         const precios = preciosMap[codNorm];
-        const costo = precios != null ? precios.costo : (Number(p.costo) ?? 0);
-        const precioVenta = precios != null ? precios.precioVenta : (Number(p.precioVenta) ?? 0);
-        const margenPorc = precios != null ? precios.margenPorc : (Number(p.margenPorc) ?? 0);
+        const costo = precios != null ? precios.costo : (Number(p.costo) || 0);
+        const precioVenta = precios != null ? precios.precioVenta : (Number(p.precioVenta) || 0);
+        const margenPorc = precios != null ? precios.margenPorc : (Number(p.margenPorc) || 0);
         const uxb = precios != null && precios.uxb != null ? precios.uxb : null;
         const ventas = ventasMap[codNorm];
         const ventasN1 = ventas != null ? ventas.ventasN1 : (p.ventasN1 ?? 0);
@@ -300,9 +300,9 @@ router.get('/', soloComprarOVerCompras, async (req, res) => {
       const stockSucursales = st != null ? st.stockSucursales : 0;
       const stockCD = st != null ? st.stockCD : 0;
       const precios = preciosMap[codNorm];
-      const costo = precios != null ? precios.costo : (Number(p.costo) ?? 0);
-      const precioVenta = precios != null ? precios.precioVenta : (Number(p.precioVenta) ?? 0);
-      const margenPorc = precios != null ? precios.margenPorc : (Number(p.margenPorc) ?? 0);
+      const costo = precios != null ? precios.costo : (Number(p.costo) || 0);
+      const precioVenta = precios != null ? precios.precioVenta : (Number(p.precioVenta) || 0);
+      const margenPorc = precios != null ? precios.margenPorc : (Number(p.margenPorc) || 0);
       const uxb = precios != null && precios.uxb != null ? precios.uxb : null;
       const ventas = ventasMap[codNorm];
       const ventasN1 = ventas != null ? ventas.ventasN1 : (p.ventasN1 ?? 0);
