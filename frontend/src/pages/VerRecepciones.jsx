@@ -7,7 +7,7 @@ import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import Modal from '../components/Modal';
-import TrazabilidadRecepcion from '../components/TrazabilidadRecepcion';
+import ProveedorLabel from '../components/ProveedorLabel';
 import { useResponse } from '../context/ResponseContext';
 import { formatNum, formatDate, formatPct, todayStr } from '../lib/format';
 import './VerCompras.css';
@@ -222,12 +222,12 @@ export default function VerRecepciones() {
                   <span className="vercompras-card-numero" title="Número de recepción">Nº {getNumeroRecepcion(r)}</span>
                   <span
                     className="vercompras-card-fecha"
-                    title="Fecha de la compra (planilla). Ver trazabilidad al expandir."
+                    title="Fecha de la compra (planilla)."
                   >
                     {formatDate(r.compra?.fecha)}
                   </span>
                   <span className="verrecepciones-proveedor-cell">
-                    <span className="vercompras-card-proveedor">{r.compra?.proveedor?.nombre}</span>
+                    <ProveedorLabel proveedor={r.compra?.proveedor} className="vercompras-card-proveedor" />
                     {(!r.detalles?.length || r.detalles.some((d) => d.precioVenta == null || d.precioVenta === '')) && (
                       <button
                         type="button"
@@ -246,16 +246,6 @@ export default function VerRecepciones() {
                   <div id={`verrec-detalle-${r.id}`} className="vercompras-card-body">
                     <div className="vercompras-card-totales">
                       <span>Compra Nº {getNumeroCompra(r.compra)}</span>
-                    </div>
-                    <div className="vercompras-trazabilidad-wrap">
-                      <h4 className="vercompras-trazabilidad-title">Trazabilidad</h4>
-                      <TrazabilidadRecepcion
-                        compraFecha={r.compra?.fecha}
-                        compraCreadaEn={r.compra?.createdAt}
-                        recepcionCreadaEn={r.createdAt}
-                        recepcionUltimaModificacion={r.updatedAt}
-                        recepcionCompleta={r.completa}
-                      />
                     </div>
                     {r.detalles?.length > 0 && (
                       <div className="vercompras-detalle-wrap">
@@ -311,7 +301,11 @@ export default function VerRecepciones() {
         size="large"
         boxClassName="verrecepciones-modal-box"
         preventClose={guardandoPrecios}
-        subtitle={modalRecepcion ? `Recepción Nº ${getNumeroRecepcion(modalRecepcion)} · ${modalRecepcion.compra?.proveedor?.nombre}. Ingresá PrecVenta por artículo o usá el valor actual del sistema; el margen % se calcula sobre el costo.` : ''}
+        subtitle={modalRecepcion ? (
+          <span>
+            Recepción Nº {getNumeroRecepcion(modalRecepcion)} · <ProveedorLabel proveedor={modalRecepcion.compra?.proveedor} />. Ingresá PrecVenta por artículo o usá el valor actual del sistema; el margen % se calcula sobre el costo.
+          </span>
+        ) : ''}
       >
         {modalRecepcion && (
           <div className="verrecepciones-precio-modal-layout">

@@ -97,6 +97,7 @@ export const MSG = {
   COMPRAS_RECEPCION: 'No se pudo obtener la recepción.',
   COMPRAS_USUARIO_NO_IDENTIFICADO: 'No se pudo identificar al usuario. Iniciá sesión de nuevo.',
   COMPRAS_FALTAN_DATOS: 'Faltan fecha, proveedor o ítems de la compra.',
+  COMPRAS_FECHA_INVALIDA: 'La fecha de compra no es válida. Usá el formato YYYY-MM-DD.',
   COMPRAS_AL_MENOS_UN_ITEM: 'Debe haber al menos un ítem con bultos mayor a cero.',
   COMPRAS_NO_ENCONTRADA: 'Compra no encontrada.',
 
@@ -126,6 +127,9 @@ export const MSG = {
 
   // Logs
   LOGS_LISTAR: 'No se pudo cargar el historial de actividad.',
+
+  // Trazabilidad de compras
+  TRAZ_COMPRAS_LISTAR: 'No se pudo cargar la trazabilidad de compras.',
 
   // Genéricos
   SERVIDOR_NO_DISPONIBLE: 'El servidor no está disponible. Revisá la conexión o intentá más tarde.',

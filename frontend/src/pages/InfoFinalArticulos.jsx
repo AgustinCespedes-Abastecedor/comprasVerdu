@@ -6,7 +6,6 @@ import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import InfoFinalMonthGrid from '../components/InfoFinalMonthGrid';
-import TrazabilidadRecepcion from '../components/TrazabilidadRecepcion';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatMoneda, formatPct, formatEntero, todayStr } from '../lib/format';
 import { formatForReport } from '../lib/errorReport';
@@ -184,8 +183,8 @@ export default function InfoFinalArticulos() {
           planilla.
         </p>
         <p>
-          En cada artículo, la sección <strong>Trazabilidad</strong> muestra la fecha de compra, cuándo se
-          registró la compra en el sistema, cuándo se creó la recepción y cuándo se tocó por última vez.
+          Para ver <strong>quién</strong> hizo cada acción sobre una compra/recepción (auditoría), usá la pantalla{' '}
+          <strong>Trazabilidad de compras</strong> en el panel principal.
         </p>
       </section>
       {loading ? (
@@ -227,16 +226,6 @@ export default function InfoFinalArticulos() {
                 </button>
                 {expandido && (
                   <div id={`info-final-detalle-${key.replace(/\|/g, '-')}`} className="info-final-detalle">
-                    <div className="info-final-block info-final-block--trazabilidad">
-                      <h3 className="info-final-block-title">Trazabilidad</h3>
-                      <TrazabilidadRecepcion
-                        compraFecha={item.compraFecha}
-                        compraCreadaEn={item.compraCreadaEn}
-                        recepcionCreadaEn={item.recepcionCreadaEn}
-                        recepcionUltimaModificacion={item.recepcionUltimaModificacion}
-                        recepcionCompleta={item.recepcionCompleta}
-                      />
-                    </div>
                     <div className="info-final-block info-final-block--tecnolar">
                       <h3 className="info-final-block-title">Sistema Tecnolar</h3>
                       <div className="info-final-grid">

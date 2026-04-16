@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma.js';
 import { soloRecepcion, soloVerRecepciones } from '../middleware/auth.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
+import { appendCompraAuditoriaDesdeActivityLog } from '../lib/compraAuditoria.js';
+import { parseYmdToPrismaDateOnly, logWarnIfInvalidYmdQuery } from '../lib/dateOnly.js';
 
 const router = Router();
 
@@ -10,11 +12,19 @@ const router = Router();
 router.get('/', soloVerRecepciones, async (req, res) => {
   try {
     const { desde, hasta } = req.query;
+    logWarnIfInvalidYmdQuery('GET /recepciones', 'desde', desde);
+    logWarnIfInvalidYmdQuery('GET /recepciones', 'hasta', hasta);
     const where = {};
     if (desde || hasta) {
       where.compra = {};
-      if (desde) where.compra.fecha = { ...where.compra.fecha, gte: new Date(desde) };
-      if (hasta) where.compra.fecha = { ...where.compra.fecha, lte: new Date(hasta) };
+      if (desde) {
+        const d = parseYmdToPrismaDateOnly(desde);
+        if (d) where.compra.fecha = { ...where.compra.fecha, gte: d };
+      }
+      if (hasta) {
+        const d = parseYmdToPrismaDateOnly(hasta);
+        if (d) where.compra.fecha = { ...where.compra.fecha, lte: d };
+      }
     }
     const recepciones = await prisma.recepcion.findMany({
       where,
@@ -26,7 +36,7 @@ router.get('/', soloVerRecepciones, async (req, res) => {
             numeroCompra: true,
             fecha: true,
             createdAt: true,
-            proveedor: { select: { id: true, nombre: true } },
+            proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
           },
         },
         user: { select: { id: true, nombre: true } },
@@ -135,18 +145,38 @@ router.post('/', soloRecepcion, async (req, res) => {
           uxb: p.uxb,
         };
       });
-      await createLog(prisma, {
+      const logDetails = {
+        compraId: recepcion.compra?.id,
+        numeroCompra: recepcion.compra?.numeroCompra,
+        numeroRecepcion: recepcion.numeroRecepcion,
+        items: itemsRecepcion,
+      };
+      const activityLogId = await createLog(prisma, {
         userId: req.userId,
         action: wasNew ? 'crear' : 'actualizar',
         entity: 'recepcion',
         entityId: recepcion.id,
-        details: {
-          compraId: recepcion.compra?.id,
-          numeroCompra: recepcion.compra?.numeroCompra,
-          numeroRecepcion: recepcion.numeroRecepcion,
-          items: itemsRecepcion,
-        },
+        details: logDetails,
       });
+      if (activityLogId && recepcion.compra?.id) {
+        try {
+          await appendCompraAuditoriaDesdeActivityLog(prisma, {
+            activityLogId,
+            userId: req.userId,
+            occurredAt: new Date(),
+            entity: 'recepcion',
+            action: wasNew ? 'crear' : 'actualizar',
+            entityId: recepcion.id,
+            details: logDetails,
+            compraId: recepcion.compra.id,
+            recepcionId: recepcion.id,
+            fuente: 'online',
+            confianza: 'alta',
+          });
+        } catch (e) {
+          console.error('[RECEP] Auditoría canónica (no bloquea):', e?.message || e);
+        }
+      }
     }
     res.status(201).json(recepcion);
   } catch (e) {
@@ -241,7 +271,7 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
             id: true,
             numeroCompra: true,
             fecha: true,
-            proveedor: { select: { id: true, nombre: true } },
+            proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
           },
         },
         user: { select: { id: true, nombre: true } },
@@ -264,18 +294,39 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
           precioVenta: d.precioVenta != null ? Number(d.precioVenta) : null,
           margenPorc: d.margenPorc != null ? Number(d.margenPorc) : null,
         }));
-        await createLog(prisma, {
+        const logDetails = {
+          compraId: updated?.compra?.id,
+          numeroCompra: updated?.compra?.numeroCompra,
+          numeroRecepcion: updated?.numeroRecepcion,
+          preciosVenta: true,
+          items,
+        };
+        const activityLogId = await createLog(prisma, {
           userId: req.userId,
           action: 'actualizar',
           entity: 'recepcion',
           entityId: recepcionId,
-          details: {
-            numeroCompra: updated?.compra?.numeroCompra,
-            numeroRecepcion: updated?.numeroRecepcion,
-            preciosVenta: true,
-            items,
-          },
+          details: logDetails,
         });
+        if (activityLogId && updated?.compra?.id) {
+          try {
+            await appendCompraAuditoriaDesdeActivityLog(prisma, {
+              activityLogId,
+              userId: req.userId,
+              occurredAt: new Date(),
+              entity: 'recepcion',
+              action: 'actualizar',
+              entityId: recepcionId,
+              details: logDetails,
+              compraId: updated.compra.id,
+              recepcionId: recepcionId,
+              fuente: 'online',
+              confianza: 'alta',
+            });
+          } catch (audErr) {
+            console.error('[RECEP_008] Auditoría canónica (no bloquea):', audErr?.message ?? audErr);
+          }
+        }
       } catch (logErr) {
         console.error('[RECEP_008] Error al escribir log (no bloquea respuesta):', logErr?.message ?? logErr);
       }

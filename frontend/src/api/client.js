@@ -115,6 +115,13 @@ export const compras = {
   getRecepcion: (compraId) => api(`/compras/${compraId}/recepcion`),
 };
 
+export const trazabilidad = {
+  compras: (params) => {
+    const q = new URLSearchParams(params || {}).toString();
+    return api(`/trazabilidad/compras${q ? `?${q}` : ''}`);
+  },
+};
+
 export const recepciones = {
   list: (params) => {
     const q = new URLSearchParams(params || {}).toString();

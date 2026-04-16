@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { proveedores, productos, compras } from '../api/client';
-import { todayStr, formatEntero } from '../lib/format';
+import ProveedorLabel from '../components/ProveedorLabel';
+import { todayStr, formatEntero, formatProveedorText } from '../lib/format';
 import { useResponse } from '../context/ResponseContext';
 import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
@@ -92,7 +93,7 @@ function productToFila(p, filaId) {
 }
 
 export default function PlanillaCompra() {
-  const hoy = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const hoy = useMemo(() => todayStr(), []);
   const [fecha, setFecha] = useState(hoy);
   const [proveedorId, setProveedorId] = useState('');
   const [proveedoresList, setProveedoresList] = useState([]);
@@ -677,8 +678,8 @@ export default function PlanillaCompra() {
                 <div className="planilla-proveedor-manual-suggestion" role="status" aria-live="polite">
                   <span className="planilla-proveedor-manual-suggestion-text">
                     {providerManualSuggestion.type === 'exact'
-                      ? `Ya existe: ${providerManualSuggestion.provider.nombre}`
-                      : `Coincidencia encontrada: ${providerManualSuggestion.provider.nombre}`}
+                          ? `Ya existe: ${formatProveedorText(providerManualSuggestion.provider)}`
+                          : `Coincidencia encontrada: ${formatProveedorText(providerManualSuggestion.provider)}`}
                   </span>
                   <button
                     type="button"
@@ -705,7 +706,7 @@ export default function PlanillaCompra() {
               >
                 <span className="planilla-provider-picker-field-value">
                   {proveedorId
-                    ? (proveedoresList.find((p) => p.id === proveedorId)?.nombre ?? 'Proveedor')
+                    ? (formatProveedorText(proveedoresList.find((p) => p.id === proveedorId)) ?? 'Proveedor')
                     : 'Elegir proveedor'}
                 </span>
                 <ChevronDown className="planilla-provider-picker-chevron" aria-hidden strokeWidth={2} />
@@ -778,7 +779,7 @@ export default function PlanillaCompra() {
                                 setProviderSearch('');
                               }}
                             >
-                              <span className="planilla-provider-picker-item-name">{p.nombre}</span>
+                              <span className="planilla-provider-picker-item-name">{formatProveedorText(p)}</span>
                               {proveedorId === p.id && (
                                 <span className="planilla-provider-picker-item-check" aria-hidden>✓</span>
                               )}
@@ -826,7 +827,7 @@ export default function PlanillaCompra() {
                             setProviderSearch(proveedoresList.find((x) => x.id === p.id)?.nombre ?? '');
                           }}
                         >
-                          {p.nombre}
+                          {formatProveedorText(p)}
                         </li>
                       ))
                     )}
@@ -835,7 +836,7 @@ export default function PlanillaCompra() {
               )}
               {proveedorId && (
                 <p className="planilla-proveedor-selected" aria-live="polite">
-                  Proveedor asignado: <strong>{proveedoresList.find((p) => p.id === proveedorId)?.nombre}</strong>
+                  Proveedor asignado: <strong>{formatProveedorText(proveedoresList.find((p) => p.id === proveedorId))}</strong>
                 </p>
               )}
             </div>
@@ -866,15 +867,17 @@ export default function PlanillaCompra() {
         size="medium"
         preventClose={providerMergeBusy}
         subtitle={
-          providerReplaceCandidate
-            ? `Existe un proveedor en sistema "${providerReplaceCandidate.nombre}".`
-            : ''
+          providerReplaceCandidate ? (
+            <span className="planilla-provider-replace-modal-subtitle">
+              Existe un proveedor en sistema <ProveedorLabel proveedor={providerReplaceCandidate} />.
+            </span>
+          ) : ''
         }
       >
         <div className="planilla-provider-replace-modal-content">
           <p className="planilla-provider-replace-modal-text">
             {providerReplaceCandidate
-              ? `¿Desea utilizar "${providerReplaceCandidate.nombre}"? Si confirma, se reemplazará "${providerManualName.trim()}" por "${providerReplaceCandidate.nombre}" y se unificarán las compras del proveedor manual.`
+              ? `¿Desea utilizar "${formatProveedorText(providerReplaceCandidate)}"? Si confirma, se reemplazará "${providerManualName.trim()}" por "${formatProveedorText(providerReplaceCandidate)}" y se unificarán las compras del proveedor manual.`
               : '¿Desea continuar con la unificación del proveedor?'}
           </p>
           <div className="planilla-provider-replace-modal-actions">

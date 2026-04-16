@@ -19,6 +19,7 @@ import InfoFinalArticulos from './pages/InfoFinalArticulos';
 import GestionUsuarios from './pages/GestionUsuarios';
 import Logs from './pages/Logs';
 import ManualUsuario from './pages/ManualUsuario';
+import TrazabilidadCompras from './pages/TrazabilidadCompras';
 import './button-ui.css';
 
 /** En APK: botón Atrás de Android respeta historial; si no hay más atrás, cierra la app */
@@ -41,12 +42,16 @@ function BackButtonHandler() {
 }
 
 /** Ruta privada: exige login y, si se indica, el permiso para esa pantalla (sin permiso → redirect a /). Si permitirAdmin es true, los admins siempre pueden acceder. */
-function PrivateRoute({ children, permiso, permitirAdmin }) {
+function PrivateRoute({ children, permiso, permisos, permitirAdmin }) {
   const { user, loading } = useAuth();
   if (loading) return <AppLoader message="Cargando..." />;
   if (!user) return <Navigate to="/login" replace />;
-  if (permiso) {
-    const tienePermiso = puedeAcceder(user, permiso) || (permitirAdmin && puedeGestionarUsuarios(user));
+  const adminOk = permitirAdmin && puedeGestionarUsuarios(user);
+  if (Array.isArray(permisos) && permisos.length > 0) {
+    const tieneAlguno = permisos.some((p) => puedeAcceder(user, p)) || adminOk;
+    if (!tieneAlguno) return <Navigate to="/" replace />;
+  } else if (permiso) {
+    const tienePermiso = puedeAcceder(user, permiso) || adminOk;
     if (!tienePermiso) return <Navigate to="/" replace />;
   }
   return children;
@@ -94,6 +99,14 @@ function AppRoutes() {
         element={
           <PrivateRoute permiso="ver-compras">
             <VerCompras />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/trazabilidad-compras"
+        element={
+          <PrivateRoute permisos={['ver-compras', 'trazabilidad-compras']}>
+            <TrazabilidadCompras />
           </PrivateRoute>
         }
       />

@@ -25,7 +25,9 @@ export async function createLog(prisma, { userId, action, entity, entityId = nul
       entityIdVal,
       detailsJson
     );
+    return id;
   } catch (e) {
     console.error('[ActivityLog] Error al guardar log:', e?.message || e);
+    return null;
   }
 }

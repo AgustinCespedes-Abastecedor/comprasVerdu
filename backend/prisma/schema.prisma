@@ -31,6 +31,7 @@ model User {
   compras      Compra[]
   recepciones  Recepcion[]
   activityLogs ActivityLog[]
+  compraAuditoriaEventos CompraAuditoriaEvento[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -86,12 +87,42 @@ model Compra {
   proveedor    Proveedor      @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
   detalles     DetalleCompra[]
   recepcion    Recepcion?
+  auditoriaEventos CompraAuditoriaEvento[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
   @@index([fecha])
   @@index([userId])
   @@index([proveedorId])
+}
+
+/**
+ * Eventos normalizados de auditoría por compra (reconstruibles y deduplicables).
+ * Fuente típica: ActivityLog (backfill) + escrituras online (append-only).
+ */
+model CompraAuditoriaEvento {
+  id          String   @id @default(cuid())
+  compraId    String
+  recepcionId String?
+  userId      String?
+  occurredAt  DateTime
+  tipo        String   // ej: compra.creada | recepcion.guardada | recepcion.precios | info_final.uxb
+  accion      String   // ej: crear | actualizar
+  confianza   String   @default("alta") // alta | media | baja
+  fuente      String   @default("online") // online | backfill
+  dedupeKey   String   @unique
+  payload     Json?
+  activityLogId String? @unique
+
+  compra    Compra    @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  recepcion Recepcion? @relation(fields: [recepcionId], references: [id], onDelete: SetNull)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([compraId, occurredAt])
+  @@index([recepcionId])
+  @@index([userId])
 }
 
 model DetalleCompra {
@@ -117,6 +148,7 @@ model Recepcion {
   compra          Compra             @relation(fields: [compraId], references: [id], onDelete: Cascade)
   user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   detalles        DetalleRecepcion[]
+  auditoriaEventos CompraAuditoriaEvento[]
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 

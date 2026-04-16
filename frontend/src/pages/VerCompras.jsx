@@ -7,9 +7,10 @@ import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
+import ProveedorLabel from '../components/ProveedorLabel';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
-import { formatNum, formatDate, todayStr } from '../lib/format';
+import { formatNum, formatDate, todayStr, formatProveedorText, getProveedorNombre, getProveedorCodigo } from '../lib/format';
 import './VerCompras.css';
 
 const isApp = () => Capacitor.isNativePlatform();
@@ -24,6 +25,19 @@ function costoPorUnidad(precioPorBulto, uxb) {
   if (u <= 0) return null;
   const p = Number(precioPorBulto) || 0;
   return p / u;
+}
+
+/** Subtotal de compra por artículo = bultos * precioPorBulto (datos de compra). */
+function subtotalCompra(detalle) {
+  if (!detalle) return 0;
+  const total = detalle.total;
+  if (total != null && typeof total.toString === 'function') {
+    const parsed = parseFloat(String(total));
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  const b = Number(detalle.bultos) || 0;
+  const p = Number(detalle.precioPorBulto) || 0;
+  return b * p;
 }
 
 /** Para cada detalle de compra, devuelve el detalle de recepción si existe. */
@@ -60,8 +74,20 @@ function exportarPorProveedor(comprasList) {
   comprasList.forEach((c) => {
     const base = `Compra ${getNumeroCompra(c)}`;
     const nombreHoja = nombreHojaUnico(base, nombresUsados);
-    const nombreProveedor = c.proveedor?.nombre ?? '—';
-    const encabezados = ['Código', 'Descripción', 'Bultos Comp.', 'Bultos Recib.', 'Costo unidad', 'Costo total', 'UxB', 'Precio Venta', 'Margen %'];
+    const proveedorNombre = getProveedorNombre(c.proveedor) ?? '—';
+    const proveedorCodigo = getProveedorCodigo(c.proveedor) ?? '';
+    const encabezados = ['Código', 'Descripción', 'Bultos Comp.', '$/Bulto (compra)', 'Subtotal (compra)', 'Bultos Recib.', 'Costo unidad (rec.)', 'Costo total (rec.)', 'UxB', 'Precio Venta', 'Margen %'];
+    const colCount = encabezados.length;
+    const padRow = (row) => {
+      const next = [...row];
+      while (next.length < colCount) next.push('');
+      return next;
+    };
+    const totalMontoRaw = c.totalMonto;
+    const totalMontoNum = totalMontoRaw != null && typeof totalMontoRaw.toString === 'function'
+      ? parseFloat(String(totalMontoRaw))
+      : Number(totalMontoRaw);
+    const totalMontoExcel = Number.isFinite(totalMontoNum) ? totalMontoNum : '';
     const filas = (c.detalles || []).map((d) => {
       const dr = getDetalleRecepcion(d.id, c.recepcion);
       const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb) : null;
@@ -70,6 +96,8 @@ function exportarPorProveedor(comprasList) {
         d.producto?.codigo ?? '',
         d.producto?.descripcion ?? '',
         d.bultos ?? 0,
+        d.precioPorBulto != null ? Number(d.precioPorBulto) : '',
+        subtotalCompra(d),
         dr != null ? (dr.cantidad ?? '') : '',
         costoUnidad != null ? costoUnidad : '',
         costoTotal != null ? costoTotal : '',
@@ -78,8 +106,9 @@ function exportarPorProveedor(comprasList) {
         dr?.margenPorc != null ? dr.margenPorc : '',
       ];
     });
-    const filaProveedor = ['Proveedor', nombreProveedor];
-    const ws = XLSX.utils.aoa_to_sheet([filaProveedor, encabezados, ...filas]);
+    const filaProveedor = padRow(['Proveedor', proveedorNombre, 'Cód. proveedor', proveedorCodigo]);
+    const filaTotalCompra = padRow(['Total $ compra', totalMontoExcel]);
+    const ws = XLSX.utils.aoa_to_sheet([filaProveedor, filaTotalCompra, encabezados, ...filas]);
     XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
   });
   XLSX.writeFile(wb, 'compras-por-proveedor.xlsx');
@@ -87,9 +116,35 @@ function exportarPorProveedor(comprasList) {
 
 /** Exporta una sola hoja con todas las líneas de todas las compras (por artículo). Incluye columnas de recepción si existen. */
 function exportarPorArticulo(comprasList) {
-  const encabezados = ['Nº Compra', 'Fecha', 'Código', 'Descripción', 'Bultos Comp.', 'Bultos Recib.', 'Costo unidad', 'Costo total', 'UxB', 'Precio Venta', 'Margen %'];
+  const encabezados = [
+    'Nº Compra',
+    'Fecha',
+    'Proveedor',
+    'Cód. proveedor',
+    'Total $ compra',
+    'Total bultos compra',
+    'Cód. artículo',
+    'Descripción',
+    'Bultos Comp.',
+    '$/Bulto (compra)',
+    'Subtotal (compra)',
+    'Bultos Recib.',
+    'Costo unidad (rec.)',
+    'Costo total (rec.)',
+    'UxB',
+    'Precio Venta',
+    'Margen %',
+  ];
   const filas = [];
   comprasList.forEach((c) => {
+    const proveedorNombre = getProveedorNombre(c.proveedor) ?? '';
+    const proveedorCodigo = getProveedorCodigo(c.proveedor) ?? '';
+    const totalMontoRaw = c.totalMonto;
+    const totalMontoNum = totalMontoRaw != null && typeof totalMontoRaw.toString === 'function'
+      ? parseFloat(String(totalMontoRaw))
+      : Number(totalMontoRaw);
+    const totalMontoExcel = Number.isFinite(totalMontoNum) ? totalMontoNum : '';
+    const totalBultos = c.totalBultos ?? '';
     (c.detalles || []).forEach((d) => {
       const dr = getDetalleRecepcion(d.id, c.recepcion);
       const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb) : null;
@@ -97,9 +152,15 @@ function exportarPorArticulo(comprasList) {
       filas.push([
         getNumeroCompra(c),
         formatDate(c.fecha),
+        proveedorNombre,
+        proveedorCodigo,
+        totalMontoExcel,
+        totalBultos,
         d.producto?.codigo ?? '',
         d.producto?.descripcion ?? '',
         d.bultos ?? 0,
+        d.precioPorBulto != null ? Number(d.precioPorBulto) : '',
+        subtotalCompra(d),
         dr != null ? (dr.cantidad ?? '') : '',
         costoUnidad != null ? costoUnidad : '',
         costoTotal != null ? costoTotal : '',
@@ -230,7 +291,7 @@ export default function VerCompras() {
               >
                 <span className="vercompras-provider-picker-field-value">
                   {proveedorId
-                    ? (proveedoresList.find((p) => p.id === proveedorId)?.nombre ?? 'Proveedor')
+                    ? (formatProveedorText(proveedoresList.find((p) => p.id === proveedorId)) ?? 'Proveedor')
                     : 'Todos'}
                 </span>
                 <ChevronDown className="vercompras-provider-picker-chevron" aria-hidden strokeWidth={2} />
@@ -320,7 +381,7 @@ export default function VerCompras() {
                                 setProviderSearch('');
                               }}
                             >
-                              <span className="vercompras-provider-picker-item-name">{p.nombre}</span>
+                              <span className="vercompras-provider-picker-item-name">{formatProveedorText(p)}</span>
                               {proveedorId === p.id && (
                                 <span className="vercompras-provider-picker-item-check" aria-hidden>✓</span>
                               )}
@@ -340,7 +401,7 @@ export default function VerCompras() {
             >
               <option value="">Todos</option>
               {proveedoresList.map((p) => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
+                <option key={p.id} value={p.id}>{formatProveedorText(p)}</option>
               ))}
             </select>
           )}
@@ -378,15 +439,19 @@ export default function VerCompras() {
                 >
                   <span className="vercompras-card-numero" title="Número de compra">Nº {getNumeroCompra(c)}</span>
                   <span className="vercompras-card-fecha">{formatDate(c.fecha)}</span>
-                  <span className="vercompras-card-proveedor">{c.proveedor?.nombre}</span>
+                  <ProveedorLabel proveedor={c.proveedor} className="vercompras-card-proveedor" />
                   <span className="vercompras-card-user">{c.user?.nombre}</span>
                   <span className="vercompras-card-chevron" aria-hidden>{expandido ? '▼' : '▶'}</span>
                 </button>
                 {expandido && (
                   <div id={`vercomp-detalle-${c.id}`} className="vercompras-card-body">
                     <div className="vercompras-card-totales">
-                      <span>{formatNum(c.totalBultos)} bultos</span>
-                      <span>$ {formatNum(c.totalMonto)}</span>
+                      <span className="vercompras-total-chip" aria-label={`Total bultos: ${formatNum(c.totalBultos)} bultos`}>
+                        {formatNum(c.totalBultos)} bultos
+                      </span>
+                      <span className="vercompras-total-chip vercompras-total-chip--monto" aria-label={`Total compra: $ ${formatNum(c.totalMonto)}`}>
+                        $ {formatNum(c.totalMonto)}
+                      </span>
                     </div>
                     {c.detalles?.length > 0 && (
                       <div className="vercompras-detalle-wrap">
@@ -395,13 +460,15 @@ export default function VerCompras() {
                             <tr>
                               <th>Código</th>
                               <th>Descripción</th>
-                              <th>Bultos Comp.</th>
-                              <th>Bultos Recib.</th>
-                              <th>Costo unidad</th>
-                              <th>Costo total</th>
-                              <th>UxB</th>
-                              <th>Precio Venta</th>
-                              <th>Margen %</th>
+                              <th className="vercompras-col-num">Bultos Comp.</th>
+                              <th className="vercompras-col-num">$/Bulto</th>
+                              <th className="vercompras-col-num">Subtotal compra</th>
+                              <th className="vercompras-col-num">Bultos Recib.</th>
+                              <th className="vercompras-col-num">Costo unidad (rec.)</th>
+                              <th className="vercompras-col-num">Costo total (rec.)</th>
+                              <th className="vercompras-col-num">UxB</th>
+                              <th className="vercompras-col-num">Precio Venta</th>
+                              <th className="vercompras-col-num">Margen %</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -411,17 +478,20 @@ export default function VerCompras() {
                               const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0
                                 ? (Number(dr.cantidad) * costoUnidad)
                                 : null;
+                              const subtotal = subtotalCompra(d);
                               return (
                                 <tr key={d.id}>
                                   <td>{d.producto?.codigo}</td>
-                                  <td>{d.producto?.descripcion}</td>
-                                  <td>{formatNum(d.bultos)}</td>
-                                  <td>{dr != null ? formatNum(dr.cantidad) : '—'}</td>
-                                  <td>{costoUnidad != null ? formatNum(costoUnidad) : '—'}</td>
-                                  <td>{costoTotal != null ? formatNum(costoTotal) : '—'}</td>
-                                  <td>{dr != null ? formatNum(dr.uxb) : '—'}</td>
-                                  <td>{dr?.precioVenta != null ? formatNum(dr.precioVenta) : '—'}</td>
-                                  <td>{dr?.margenPorc != null ? `${formatNum(dr.margenPorc)} %` : '—'}</td>
+                                  <td className="vercompras-col-desc">{d.producto?.descripcion}</td>
+                                  <td className="vercompras-col-num">{formatNum(d.bultos)}</td>
+                                  <td className="vercompras-col-num">{d.precioPorBulto != null ? formatNum(d.precioPorBulto) : '—'}</td>
+                                  <td className="vercompras-col-num vercompras-col-subtotal">{formatNum(subtotal)}</td>
+                                  <td className="vercompras-col-num">{dr != null ? formatNum(dr.cantidad) : '—'}</td>
+                                  <td className="vercompras-col-num">{costoUnidad != null ? formatNum(costoUnidad) : '—'}</td>
+                                  <td className="vercompras-col-num">{costoTotal != null ? formatNum(costoTotal) : '—'}</td>
+                                  <td className="vercompras-col-num">{dr != null ? formatNum(dr.uxb) : '—'}</td>
+                                  <td className="vercompras-col-num">{dr?.precioVenta != null ? formatNum(dr.precioVenta) : '—'}</td>
+                                  <td className="vercompras-col-num">{dr?.margenPorc != null ? `${formatNum(dr.margenPorc)} %` : '—'}</td>
                                 </tr>
                               );
                             })}

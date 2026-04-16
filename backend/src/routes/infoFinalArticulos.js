@@ -1,9 +1,11 @@
 import { Router } from 'express';
+import { randomUUID } from 'crypto';
 import { prisma } from '../lib/prisma.js';
 import { fetchInfoTecnolarPorCodigos, fetchIvaPorcentajePorCodigos, normalizarCodigoStock } from '../lib/sqlserver.js';
 import { soloInfoFinalArticulos } from '../middleware/auth.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
+import { appendCompraAuditoriaEvento } from '../lib/compraAuditoria.js';
 import { getCalendarDayBoundsUtc, utcInstantToCalendarDayString } from '../lib/appCalendarDay.js';
 
 const router = Router();
@@ -242,6 +244,20 @@ const handlerUxb = async (req, res) => {
       return res.json({ ok: true, codigo: codigoStr, uxb: uxbNum, actualizados: 0 });
     }
 
+    const detallesMeta = await prisma.detalleRecepcion.findMany({
+      where: { id: { in: detalleIdsToUpdate } },
+      select: {
+        id: true,
+        recepcion: { select: { id: true, compraId: true } },
+      },
+    });
+    const recepcionIdsAfectados = Array.from(
+      new Set(detallesMeta.map((d) => d.recepcion?.id).filter(Boolean)),
+    );
+    const compraIdsAfectados = Array.from(
+      new Set(detallesMeta.map((d) => d.recepcion?.compraId).filter(Boolean)),
+    );
+
     await prisma.detalleRecepcion.updateMany({
       where: { id: { in: detalleIdsToUpdate } },
       data: { uxb: uxbNum },
@@ -254,19 +270,56 @@ const handlerUxb = async (req, res) => {
       ),
     );
 
-    await createLog(prisma, {
+    const logDetails = {
+      fecha: fechaStr,
+      codigo: codigoStr,
+      articulo: descripcionArticulo || codigoStr,
+      uxb: uxbNum,
+      recepcionesAfectadas: detalleIdsToUpdate.length,
+      recepcionIds: recepcionIdsAfectados,
+      compraIds: compraIdsAfectados,
+    };
+    const activityLogId = await createLog(prisma, {
       userId: req.userId,
       action: 'actualizar',
       entity: 'info-final-uxb',
       entityId: null,
-      details: {
-        fecha: fechaStr,
-        codigo: codigoStr,
-        articulo: descripcionArticulo || codigoStr,
-        uxb: uxbNum,
-        recepcionesAfectadas: detalleIdsToUpdate.length,
-      },
+      details: logDetails,
     });
+
+    // Auditoría canónica por compra (puede haber más de una compra afectada por el mismo log UXB)
+    try {
+      const recepcionesPorCompra = new Map();
+      for (const d of detallesMeta) {
+        const cid = d.recepcion?.compraId ? String(d.recepcion.compraId) : '';
+        const rid = d.recepcion?.id ? String(d.recepcion.id) : '';
+        if (!cid || !rid) continue;
+        if (!recepcionesPorCompra.has(cid)) recepcionesPorCompra.set(cid, new Set());
+        recepcionesPorCompra.get(cid).add(rid);
+      }
+
+      const usarActivityLogIdUnico = Boolean(activityLogId) && compraIdsAfectados.length === 1;
+      const dedupeSalt = activityLogId || randomUUID();
+      for (const compraId of compraIdsAfectados) {
+        const rset = recepcionesPorCompra.get(String(compraId));
+        const recepcionId = rset && rset.size === 1 ? [...rset][0] : null;
+        await appendCompraAuditoriaEvento(prisma, {
+          compraId: String(compraId),
+          recepcionId,
+          userId: req.userId,
+          occurredAt: ahora,
+          tipo: 'info_final.uxb',
+          accion: 'actualizar',
+          confianza: 'alta',
+          fuente: 'online',
+          dedupeKey: `info_final_uxb:${dedupeSalt}:compra:${compraId}`,
+          payload: { ...logDetails },
+          activityLogId: usarActivityLogIdUnico ? activityLogId : null,
+        });
+      }
+    } catch (e) {
+      console.error('[INFO_FINAL_UXB] Auditoría canónica (no bloquea):', e?.message || e);
+    }
 
     res.json({ ok: true, codigo: codigoStr, uxb: uxbNum, actualizados: detalleIdsToUpdate.length });
   } catch (e) {

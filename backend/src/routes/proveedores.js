@@ -80,7 +80,7 @@ router.get('/', soloComprarOVerCompras, async (_, res) => {
     const list = await prisma.proveedor.findMany({
       where: { codigoExterno: { in: todosCodigosPermitidos } },
       orderBy: { nombre: 'asc' },
-      select: { id: true, nombre: true },
+      select: { id: true, nombre: true, codigoExterno: true },
     });
     res.json(list);
   } catch (e) {
@@ -99,7 +99,7 @@ router.post('/merge-manual', soloComprarOVerCompras, async (req, res) => {
 
     const proveedorDestino = await prisma.proveedor.findUnique({
       where: { id: proveedorDestinoId },
-      select: { id: true, nombre: true },
+      select: { id: true, nombre: true, codigoExterno: true },
     });
     if (!proveedorDestino) {
       return sendError(res, 404, 'Proveedor destino no encontrado.', 'PROV_003');
@@ -112,7 +112,7 @@ router.post('/merge-manual', soloComprarOVerCompras, async (req, res) => {
         idExterno: null,
         nombre: { equals: manualNombre, mode: 'insensitive' },
       },
-      select: { id: true, nombre: true },
+      select: { id: true, nombre: true, codigoExterno: true },
     });
 
     if (proveedoresManuales.length === 0) {

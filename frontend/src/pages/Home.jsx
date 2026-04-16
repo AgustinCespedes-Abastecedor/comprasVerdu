@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   LayoutGrid,
+  GitBranch,
   LogOut,
   PackageCheck,
   PackageSearch,
@@ -26,6 +27,15 @@ const actions = [
   { to: '/comprar', permiso: 'comprar', title: 'Nueva compra', cta: 'Ir a comprar', icon: 'cart', variant: 'compras', tileLabel: 'Nueva compra' },
   { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', cta: 'Ir a recepción', icon: 'recepcion', variant: 'recepcion', tileLabel: 'Recepción' },
   { to: '/ver-compras', permiso: 'ver-compras', title: 'Ver compras', cta: 'Ver listado', icon: 'verCompras', variant: 'compras', tileLabel: 'Ver compras' },
+  {
+    to: '/trazabilidad-compras',
+    permiso: '__trazabilidad_compras__',
+    title: 'Trazabilidad de compras',
+    cta: 'Ver auditoría',
+    icon: 'trazabilidad',
+    variant: 'compras',
+    tileLabel: 'Trazabilidad',
+  },
   { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion', tileLabel: 'Recepciones' },
   { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', cta: 'Ver info', icon: 'infoArticulos', variant: 'info', tileLabel: 'Info artículos' },
 ];
@@ -35,6 +45,7 @@ const ni = { strokeWidth: 1.65, 'aria-hidden': true };
 const icons = {
   cart: <ShoppingCart {...ni} />,
   recepcion: <PackageCheck {...ni} />,
+  trazabilidad: <GitBranch {...ni} strokeWidth={1.65} />,
   listRecepciones: <PackageSearch {...ni} strokeWidth={1.55} />,
   verCompras: (
     <span className="home-cart-search-icon" aria-hidden>
@@ -74,7 +85,12 @@ export default function Home() {
     navigate('/login', { replace: true });
   };
 
-  const visibleActions = actions.filter((a) => puedeAcceder(user, a.permiso));
+  const visibleActions = actions.filter((a) => {
+    if (a.permiso === '__trazabilidad_compras__') {
+      return puedeAcceder(user, 'ver-compras') || puedeAcceder(user, 'trazabilidad-compras');
+    }
+    return puedeAcceder(user, a.permiso);
+  });
 
   const enlacesConfig = [];
   enlacesConfig.push({

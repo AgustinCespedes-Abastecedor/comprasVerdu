@@ -7,6 +7,7 @@ import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import { useResponse } from '../context/ResponseContext';
+import ProveedorLabel from '../components/ProveedorLabel';
 import { formatNum, formatDate, todayStr } from '../lib/format';
 import './RecepcionListado.css';
 
@@ -197,7 +198,7 @@ export default function RecepcionListado() {
                 >
                   <span className="recepcion-listado-card-numero">Nº {getNumeroCompra(c)}</span>
                   <span className="recepcion-listado-card-fecha">{formatDate(c.fecha)}</span>
-                  <span className="recepcion-listado-card-proveedor">{c.proveedor?.nombre}</span>
+                  <ProveedorLabel proveedor={c.proveedor} className="recepcion-listado-card-proveedor" />
                   <span className="recepcion-listado-card-chevron" aria-hidden>
                     {expandidoId === c.id ? '▼' : '▶'}
                   </span>

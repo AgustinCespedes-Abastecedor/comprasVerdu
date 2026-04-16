@@ -1,0 +1,584 @@
+.traz-page {
+  min-height: 100vh;
+  padding-bottom: max(2rem, var(--app-safe-bottom));
+  background: var(--bg);
+}
+
+.traz-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--text-muted);
+  text-decoration: none;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  transition: color 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.traz-back:hover {
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .traz-back:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.traz-back:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.traz-back-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.traz-header-title {
+  margin: 0;
+  font-family: "Segoe UI", "SF Pro Display", system-ui, -apple-system, sans-serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--danger);
+  min-width: 0;
+}
+
+.traz-intro {
+  margin: 0 max(1.5rem, var(--app-safe-left)) 1rem;
+  margin-right: max(1.5rem, var(--app-safe-right));
+  padding: 0.85rem 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.traz-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0 max(1.5rem, var(--app-safe-left));
+  padding-right: max(1.5rem, var(--app-safe-right));
+  align-items: flex-end;
+}
+
+.traz-filtros-ayuda {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.traz-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.traz-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.traz-field input,
+.traz-field select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--text);
+  min-width: 140px;
+}
+
+/* ----- Buscador de proveedores (solo APK) ----- */
+.traz-provider-picker-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 140px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.traz-provider-picker-field:hover {
+  border-color: var(--border-hover);
+}
+
+.traz-provider-picker-field:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.traz-provider-picker-field-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.traz-provider-picker-chevron {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-muted);
+}
+
+.traz-provider-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+
+.traz-provider-picker-sheet {
+  width: 100%;
+  max-width: 28rem;
+  max-height: 85vh;
+  max-height: min(85vh, calc(100dvh - var(--app-safe-top) - 3rem));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: var(--app-safe-bottom);
+}
+
+.traz-provider-picker-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.75rem;
+  padding-top: max(1rem, var(--app-safe-top));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.traz-provider-picker-sheet-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.traz-provider-picker-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.traz-provider-picker-search-wrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.traz-provider-picker-search-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+.traz-provider-picker-search {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.traz-provider-picker-search-clear {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.traz-provider-picker-list-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.traz-provider-picker-list {
+  margin: 0;
+  padding: 0.5rem 0;
+  list-style: none;
+}
+
+.traz-provider-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  color: var(--text);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+}
+
+.traz-provider-picker-item-selected {
+  background: var(--accent-soft, rgba(59, 130, 246, 0.15));
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.traz-provider-picker-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.traz-provider-picker-item-check {
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.traz-provider-picker-empty {
+  padding: 1.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+  list-style: none;
+}
+
+.traz-empty {
+  padding: 2rem max(1.5rem, var(--app-safe-left));
+  padding-right: max(1.5rem, var(--app-safe-right));
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.traz-list {
+  padding: 1rem max(1.5rem, var(--app-safe-left));
+  padding-right: max(1.5rem, var(--app-safe-right));
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.traz-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.traz-card--open {
+  border-color: var(--border-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.traz-card-head--btn {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.traz-card-head--btn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-soft);
+}
+
+.traz-card-numero {
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.traz-card-fecha {
+  font-weight: 600;
+}
+
+.traz-card-proveedor {
+  flex: 1;
+  min-width: 0;
+  color: var(--accent);
+}
+
+.traz-card-total {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.traz-card-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.traz-card--open .traz-card-chevron {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.traz-card-body {
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 0.75rem 1rem 1rem;
+}
+
+.traz-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.traz-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+  font-size: 0.85rem;
+}
+
+.traz-meta-label {
+  min-width: 10.5rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.traz-meta-value {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+}
+
+.traz-events-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.traz-events-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.traz-events-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.traz-event {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0.65rem 0.75rem;
+}
+
+.traz-event-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.traz-event-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.traz-event-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  min-width: 0;
+}
+
+.traz-event-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.traz-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--surface2);
+  line-height: 1.2;
+}
+
+.traz-chip--fuente-online {
+  border-color: rgba(34, 197, 94, 0.35);
+  color: rgba(34, 197, 94, 0.95);
+}
+
+.traz-chip--fuente-backfill {
+  border-color: rgba(59, 130, 246, 0.35);
+  color: rgba(59, 130, 246, 0.95);
+}
+
+.traz-chip--conf-alta {
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.traz-chip--conf-media {
+  border-color: rgba(245, 158, 11, 0.35);
+  color: rgba(245, 158, 11, 0.95);
+}
+
+.traz-chip--conf-baja {
+  border-color: rgba(239, 68, 68, 0.35);
+  color: rgba(239, 68, 68, 0.95);
+}
+
+.traz-event-time {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.traz-event-user {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: baseline;
+  font-size: 0.8125rem;
+}
+
+.traz-event-user-label {
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.7rem;
+}
+
+.traz-event-user-value {
+  color: var(--text);
+  font-weight: 600;
+  min-width: 0;
+}
+
+.traz-event-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+html.is-native .traz-list {
+  padding-left: max(1rem, var(--app-safe-left));
+  padding-right: max(1rem, var(--app-safe-right));
+  padding-bottom: max(1rem, var(--app-safe-bottom));
+}
+
+html.is-native .traz-card-head--btn {
+  min-height: 48px;
+}
+
+@media (max-width: 768px) {
+  .traz-field input,
+  .traz-field select {
+    min-width: 0;
+    width: 100%;
+  }
+}

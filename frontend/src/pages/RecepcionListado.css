@@ -161,7 +161,11 @@
 
 .recepcion-listado-card-proveedor {
   flex: 1;
+  min-width: 0;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recepcion-listado-card-chevron {

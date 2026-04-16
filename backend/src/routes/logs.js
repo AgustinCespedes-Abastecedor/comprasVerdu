@@ -2,23 +2,18 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { soloLogsOGestionUsuarios } from '../middleware/auth.js';
 import { sendError, MSG } from '../lib/errors.js';
+import { getCalendarDayBoundsUtc, utcInstantToCalendarDayString } from '../lib/appCalendarDay.js';
 
 const router = Router();
 
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
 
-/** Inicio y fin del día en UTC para una fecha YYYY-MM-DD */
-function dayBounds(dateStr) {
-  const start = new Date(dateStr + 'T00:00:00.000Z');
-  const end = new Date(dateStr + 'T23:59:59.999Z');
-  return { start, end };
-}
-
 /** GET /logs - Listar historial de actividad paginado (quien tiene permiso logs o gestion-usuarios).
  *  Query: userId?, entity?, desde?, hasta?, page?, pageSize?
- *  - Sin filtros de fecha ni usuario: por defecto solo registros del día actual (UTC).
+ *  - Sin filtros de fecha ni usuario: por defecto solo el día civil operativo actual (ver `appCalendarDay`).
  *  - Con userId: historial completo de ese usuario (sin acotar por fecha salvo que se envíe desde/hasta).
+ *  - Filtros desde/hasta (YYYY-MM-DD): acotan `createdAt` con el mismo criterio de día civil que Info Final.
  *  Respuesta: { items, total, page, pageSize }
  */
 router.get('/', soloLogsOGestionUsuarios, async (req, res) => {
@@ -28,23 +23,32 @@ router.get('/', soloLogsOGestionUsuarios, async (req, res) => {
     const hasUserFilter = userId && typeof userId === 'string' && userId.trim();
     const hasDateFilter = (desde && String(desde).trim()) || (hasta && String(hasta).trim());
 
-    let desdeDate = desde && String(desde).trim() ? new Date(desde) : null;
-    let hastaDate = hasta && String(hasta).trim() ? null : null;
-    if (hasta && String(hasta).trim()) {
-      hastaDate = new Date(hasta);
-      hastaDate.setUTCHours(23, 59, 59, 999);
+    let createdAtGte = null;
+    let createdAtLt = null;
+
+    const desdeTrim = desde && String(desde).trim();
+    const hastaTrim = hasta && String(hasta).trim();
+    if (desdeTrim) {
+      const b = getCalendarDayBoundsUtc(desdeTrim);
+      if (b) createdAtGte = b.gte;
+    }
+    if (hastaTrim) {
+      const b = getCalendarDayBoundsUtc(hastaTrim);
+      if (b) createdAtLt = b.lt;
     }
 
     // Por defecto: solo día actual si no hay filtro de usuario ni de fecha
     if (!hasUserFilter && !hasDateFilter) {
-      const today = new Date().toISOString().slice(0, 10);
-      const { start, end } = dayBounds(today);
-      desdeDate = start;
-      hastaDate = end;
+      const todayStr = utcInstantToCalendarDayString(new Date());
+      const b = getCalendarDayBoundsUtc(todayStr);
+      if (b) {
+        createdAtGte = b.gte;
+        createdAtLt = b.lt;
+      }
     } else if (!hasDateFilter && hasUserFilter) {
       // Filtro por usuario sin fechas: historial completo del usuario (desde/hasta no se aplican)
-      desdeDate = null;
-      hastaDate = null;
+      createdAtGte = null;
+      createdAtLt = null;
     }
 
     const page = Math.max(1, parseInt(pageParam, 10) || 1);
@@ -71,13 +75,13 @@ router.get('/', soloLogsOGestionUsuarios, async (req, res) => {
       conditions.push(`al."entity" = $${paramIndex}`);
       addParam(entity.trim());
     }
-    if (desdeDate) {
+    if (createdAtGte) {
       conditions.push(`al."createdAt" >= $${paramIndex}`);
-      addParam(desdeDate);
+      addParam(createdAtGte);
     }
-    if (hastaDate) {
-      conditions.push(`al."createdAt" <= $${paramIndex}`);
-      addParam(hastaDate);
+    if (createdAtLt) {
+      conditions.push(`al."createdAt" < $${paramIndex}`);
+      addParam(createdAtLt);
     }
 
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';

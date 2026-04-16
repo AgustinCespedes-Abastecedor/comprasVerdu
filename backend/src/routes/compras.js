@@ -3,6 +3,9 @@ import { prisma } from '../lib/prisma.js';
 import { soloComprador, soloVerCompras } from '../middleware/auth.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
+import { appendCompraAuditoriaDesdeActivityLog } from '../lib/compraAuditoria.js';
+import { parseYmdToPrismaDateOnly, logWarnIfInvalidYmdQuery } from '../lib/dateOnly.js';
+import { utcInstantToCalendarDayString } from '../lib/appCalendarDay.js';
 
 const router = Router();
 
@@ -12,9 +15,17 @@ export const comprasRouter = router;
 router.get('/', soloVerCompras, async (req, res) => {
   try {
     const { desde, hasta, proveedorId, sinRecepcion } = req.query;
+    logWarnIfInvalidYmdQuery('GET /compras', 'desde', desde);
+    logWarnIfInvalidYmdQuery('GET /compras', 'hasta', hasta);
     const where = {};
-    if (desde) where.fecha = { ...where.fecha, gte: new Date(desde) };
-    if (hasta) where.fecha = { ...where.fecha, lte: new Date(hasta) };
+    if (desde) {
+      const d = parseYmdToPrismaDateOnly(desde);
+      if (d) where.fecha = { ...where.fecha, gte: d };
+    }
+    if (hasta) {
+      const d = parseYmdToPrismaDateOnly(hasta);
+      if (d) where.fecha = { ...where.fecha, lte: d };
+    }
     if (proveedorId) where.proveedorId = proveedorId;
     // Para pantalla "Recepción de compras": solo compras que aún no tienen recepción guardada
     if (sinRecepcion === 'true' || sinRecepcion === '1') {
@@ -24,7 +35,7 @@ router.get('/', soloVerCompras, async (req, res) => {
       where,
       orderBy: [{ numeroCompra: 'asc' }, { fecha: 'asc' }, { createdAt: 'asc' }],
       include: {
-        proveedor: { select: { id: true, nombre: true } },
+        proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
         user: { select: { id: true, nombre: true, email: true } },
         detalles: {
           include: {
@@ -69,13 +80,15 @@ router.get('/', soloVerCompras, async (req, res) => {
 
 router.get('/totales-dia', soloVerCompras, async (req, res) => {
   try {
-    const fecha = req.query.fecha ? new Date(req.query.fecha) : new Date();
-    const inicio = new Date(fecha);
-    inicio.setHours(0, 0, 0, 0);
-    const fin = new Date(fecha);
-    fin.setHours(23, 59, 59, 999);
+    const fechaStrRaw = req.query.fecha != null && String(req.query.fecha).trim()
+      ? String(req.query.fecha).trim()
+      : utcInstantToCalendarDayString(new Date());
+    const fechaDay = parseYmdToPrismaDateOnly(fechaStrRaw);
+    if (!fechaDay) {
+      return sendError(res, 400, MSG.COMPRAS_FECHA_INVALIDA, 'COMPRAS_012');
+    }
     const compras = await prisma.compra.findMany({
-      where: { fecha: { gte: inicio, lte: fin } },
+      where: { fecha: fechaDay },
       select: { totalBultos: true, totalMonto: true },
     });
     const totalBultos = compras.reduce((a, c) => a + (c.totalBultos ?? 0), 0);
@@ -84,7 +97,7 @@ router.get('/totales-dia', soloVerCompras, async (req, res) => {
       const n = typeof m === 'number' && !Number.isNaN(m) ? m : (m != null && typeof m.toString === 'function' ? parseFloat(String(m)) : 0);
       return a + (Number.isFinite(n) ? n : 0);
     }, 0);
-    res.json({ totalBultos, totalMonto, fecha: inicio.toISOString().slice(0, 10) });
+    res.json({ totalBultos, totalMonto, fecha: fechaDay.toISOString().slice(0, 10) });
   } catch (e) {
     sendError(res, 500, MSG.COMPRAS_TOTALES, 'COMPRAS_002', e);
   }
@@ -158,13 +171,18 @@ router.post('/', soloComprador, async (req, res) => {
     if (detallesCrear.length === 0) {
       return sendError(res, 400, MSG.COMPRAS_AL_MENOS_UN_ITEM, 'COMPRAS_005');
     }
+    const fechaCompra = parseYmdToPrismaDateOnly(fecha);
+    if (!fechaCompra) {
+      return sendError(res, 400, MSG.COMPRAS_FECHA_INVALIDA, 'COMPRAS_011');
+    }
+
     const { _max } = await prisma.compra.aggregate({ _max: { numeroCompra: true } });
     const numeroCompra = (Number(_max?.numeroCompra) || 0) + 1;
     const proveedorIdFinal = await resolverProveedorId();
     const compra = await prisma.compra.create({
       data: {
         numeroCompra,
-        fecha: new Date(fecha),
+        fecha: fechaCompra,
         totalBultos,
         totalMonto,
         userId: req.userId,
@@ -172,7 +190,7 @@ router.post('/', soloComprador, async (req, res) => {
         detalles: { create: detallesCrear },
       },
       include: {
-        proveedor: { select: { id: true, nombre: true } },
+        proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
         user: { select: { id: true, nombre: true } },
         detalles: {
           include: {
@@ -196,26 +214,46 @@ router.post('/', soloComprador, async (req, res) => {
       },
     });
     if (req.userId) {
-      await createLog(prisma, {
+      const logDetails = {
+        numeroCompra: compra.numeroCompra,
+        fecha: compra.fecha,
+        proveedor: compra.proveedor?.nombre,
+        totalBultos: compra.totalBultos,
+        totalMonto: String(compra.totalMonto),
+        items: (compra.detalles || []).map((d) => ({
+          articulo: d.producto?.descripcion ?? d.producto?.codigo ?? '—',
+          codigo: d.producto?.codigo ?? '—',
+          bultos: d.bultos,
+          precioPorBulto: Number(d.precioPorBulto),
+          total: Number(d.total),
+        })),
+      };
+      const activityLogId = await createLog(prisma, {
         userId: req.userId,
         action: 'crear',
         entity: 'compra',
         entityId: compra.id,
-        details: {
-          numeroCompra: compra.numeroCompra,
-          fecha: compra.fecha,
-          proveedor: compra.proveedor?.nombre,
-          totalBultos: compra.totalBultos,
-          totalMonto: String(compra.totalMonto),
-          items: (compra.detalles || []).map((d) => ({
-            articulo: d.producto?.descripcion ?? d.producto?.codigo ?? '—',
-            codigo: d.producto?.codigo ?? '—',
-            bultos: d.bultos,
-            precioPorBulto: Number(d.precioPorBulto),
-            total: Number(d.total),
-          })),
-        },
+        details: logDetails,
       });
+      if (activityLogId) {
+        try {
+          await appendCompraAuditoriaDesdeActivityLog(prisma, {
+            activityLogId,
+            userId: req.userId,
+            occurredAt: new Date(),
+            entity: 'compra',
+            action: 'crear',
+            entityId: compra.id,
+            details: logDetails,
+            compraId: compra.id,
+            recepcionId: null,
+            fuente: 'online',
+            confianza: 'alta',
+          });
+        } catch (e) {
+          console.error('[COMPRAS] Auditoría canónica (no bloquea):', e?.message || e);
+        }
+      }
     }
     res.status(201).json(compra);
   } catch (e) {
@@ -248,7 +286,7 @@ router.get('/:id', soloVerCompras, async (req, res) => {
     const compra = await prisma.compra.findUnique({
       where: { id: req.params.id },
       include: {
-        proveedor: { select: { id: true, nombre: true } },
+        proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
         user: { select: { id: true, nombre: true, email: true } },
         detalles: {
           include: {

@@ -8,6 +8,7 @@ export const PANTALLAS = [
   { id: 'home', path: '/', label: 'Panel de control (Home)' },
   { id: 'comprar', path: '/comprar', label: 'Nueva compra' },
   { id: 'ver-compras', path: '/ver-compras', label: 'Ver compras' },
+  { id: 'trazabilidad-compras', path: '/trazabilidad-compras', label: 'Trazabilidad de compras' },
   { id: 'recepcion', path: '/recepcion', label: 'Recepción de compras' },
   { id: 'ver-recepciones', path: '/ver-recepciones', label: 'Ver recepciones' },
   { id: 'info-final-articulos', path: '/info-final-articulos', label: 'Info Final de Artículos' },
