@@ -10,7 +10,7 @@ import AppLoader from '../components/AppLoader';
 import ProveedorLabel from '../components/ProveedorLabel';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
-import { formatNum, formatDate, todayStr, formatProveedorText, getProveedorNombre, getProveedorCodigo } from '../lib/format';
+import { formatNum, formatDate, todayStr, formatProveedorText, getProveedorNombre, getProveedorCodigo, fechaCivilYmdKey } from '../lib/format';
 import './VerCompras.css';
 
 const isApp = () => Capacitor.isNativePlatform();
@@ -114,15 +114,117 @@ function exportarPorProveedor(comprasList) {
   XLSX.writeFile(wb, 'compras-por-proveedor.xlsx');
 }
 
-/** Exporta una sola hoja con todas las líneas de todas las compras (por artículo). Incluye columnas de recepción si existen. */
+/**
+ * Exporta una sola hoja agregada por día de compra + código de artículo (todos los proveedores en una fila).
+ * Los importes unitarios son promedios ponderados por cantidad (bultos o unidades recibidas), no promedios simples.
+ */
 function exportarPorArticulo(comprasList) {
+  /**
+   * @typedef {{
+   *   fechaKey: string,
+   *   fechaRef: string | Date,
+   *   codigo: string,
+   *   descripcion: string,
+   *   sumBultos: number,
+   *   sumSubtotal: number,
+   *   sumCantidadRec: number,
+   *   sumCostoTotalRec: number,
+   *   sumUxbBultos: number,
+   *   sumBultosUxb: number,
+   *   sumPvCant: number,
+   *   sumCantPv: number,
+   *   sumCostoConPv: number,
+   *   sumPvConCosto: number,
+   * }} Agg
+   */
+
+  /** @type {Map<string, Map<string, Agg>>} */
+  const porFechaCodigo = new Map();
+
+  comprasList.forEach((c) => {
+    const fechaKey = fechaCivilYmdKey(c.fecha);
+    if (!fechaKey) return;
+    (c.detalles || []).forEach((d) => {
+      const codigoTrim = String(d.producto?.codigo ?? '').trim();
+      const codigoKey = codigoTrim || `__sin_codigo_${d.productoId ?? d.producto?.id ?? d.id}`;
+      let porCodigo = porFechaCodigo.get(fechaKey);
+      if (!porCodigo) {
+        porCodigo = new Map();
+        porFechaCodigo.set(fechaKey, porCodigo);
+      }
+      let agg = porCodigo.get(codigoKey);
+      if (!agg) {
+        agg = {
+          fechaKey,
+          fechaRef: c.fecha,
+          codigo: codigoTrim,
+          descripcion: String(d.producto?.descripcion ?? '').trim(),
+          sumBultos: 0,
+          sumSubtotal: 0,
+          sumCantidadRec: 0,
+          sumCostoTotalRec: 0,
+          sumUxbBultos: 0,
+          sumBultosUxb: 0,
+          sumPvCant: 0,
+          sumCantPv: 0,
+          sumCostoConPv: 0,
+          sumPvConCosto: 0,
+        };
+        porCodigo.set(codigoKey, agg);
+      }
+      if (!agg.descripcion && d.producto?.descripcion) {
+        agg.descripcion = String(d.producto.descripcion).trim();
+      }
+
+      const bultos = Number(d.bultos) || 0;
+      agg.sumBultos += bultos;
+      agg.sumSubtotal += subtotalCompra(d);
+
+      const dr = getDetalleRecepcion(d.id, c.recepcion);
+      const cantRaw = dr != null && dr.cantidad != null && dr.cantidad !== '' ? Number(dr.cantidad) : NaN;
+      const cantRec = Number.isFinite(cantRaw) && cantRaw > 0 ? cantRaw : 0;
+
+      if (dr && cantRec > 0) {
+        const costoUnidad = costoPorUnidad(d.precioPorBulto, dr.uxb);
+        const pv = dr.precioVenta != null ? Number(dr.precioVenta) : NaN;
+        if (costoUnidad != null) {
+          const costoLinea = cantRec * costoUnidad;
+          agg.sumCostoTotalRec += costoLinea;
+          agg.sumCantidadRec += cantRec;
+          if (Number.isFinite(pv)) {
+            agg.sumCostoConPv += costoLinea;
+            agg.sumPvConCosto += pv * cantRec;
+          }
+        }
+        if (Number.isFinite(pv)) {
+          agg.sumPvCant += pv * cantRec;
+          agg.sumCantPv += cantRec;
+        }
+      }
+
+      if (dr && bultos > 0) {
+        const uxbN = Number(dr.uxb);
+        if (Number.isFinite(uxbN) && uxbN > 0) {
+          agg.sumUxbBultos += uxbN * bultos;
+          agg.sumBultosUxb += bultos;
+        }
+      }
+    });
+  });
+
+  const pares = [];
+  porFechaCodigo.forEach((porCodigo, fechaKey) => {
+    porCodigo.forEach((agg) => {
+      pares.push({ fechaKey, agg });
+    });
+  });
+  pares.sort((a, b) => {
+    if (a.fechaKey !== b.fechaKey) return a.fechaKey.localeCompare(b.fechaKey);
+    return (a.agg.codigo || a.agg.descripcion).localeCompare(b.agg.codigo || b.agg.descripcion, 'es', { sensitivity: 'base' });
+  });
+
   const encabezados = [
-    'Nº Compra',
     'Fecha',
-    'Proveedor',
-    'Cód. proveedor',
-    'Total $ compra',
-    'Total bultos compra',
     'Cód. artículo',
     'Descripción',
     'Bultos Comp.',
@@ -135,41 +237,32 @@ function exportarPorArticulo(comprasList) {
     'Precio Venta',
     'Margen %',
   ];
-  const filas = [];
-  comprasList.forEach((c) => {
-    const proveedorNombre = getProveedorNombre(c.proveedor) ?? '';
-    const proveedorCodigo = getProveedorCodigo(c.proveedor) ?? '';
-    const totalMontoRaw = c.totalMonto;
-    const totalMontoNum = totalMontoRaw != null && typeof totalMontoRaw.toString === 'function'
-      ? parseFloat(String(totalMontoRaw))
-      : Number(totalMontoRaw);
-    const totalMontoExcel = Number.isFinite(totalMontoNum) ? totalMontoNum : '';
-    const totalBultos = c.totalBultos ?? '';
-    (c.detalles || []).forEach((d) => {
-      const dr = getDetalleRecepcion(d.id, c.recepcion);
-      const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb) : null;
-      const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0 ? (Number(dr.cantidad) * costoUnidad) : null;
-      filas.push([
-        getNumeroCompra(c),
-        formatDate(c.fecha),
-        proveedorNombre,
-        proveedorCodigo,
-        totalMontoExcel,
-        totalBultos,
-        d.producto?.codigo ?? '',
-        d.producto?.descripcion ?? '',
-        d.bultos ?? 0,
-        d.precioPorBulto != null ? Number(d.precioPorBulto) : '',
-        subtotalCompra(d),
-        dr != null ? (dr.cantidad ?? '') : '',
-        costoUnidad != null ? costoUnidad : '',
-        costoTotal != null ? costoTotal : '',
-        dr != null ? (dr.uxb ?? '') : '',
-        dr?.precioVenta != null ? dr.precioVenta : '',
-        dr?.margenPorc != null ? dr.margenPorc : '',
-      ]);
-    });
+
+  const filas = pares.map(({ agg }) => {
+    const precioPorBultoPond = agg.sumBultos > 0 ? agg.sumSubtotal / agg.sumBultos : null;
+    const costoUnidadPond = agg.sumCantidadRec > 0 ? agg.sumCostoTotalRec / agg.sumCantidadRec : null;
+    const uxbPond = agg.sumBultosUxb > 0 ? agg.sumUxbBultos / agg.sumBultosUxb : null;
+    const precioVentaPond = agg.sumCantPv > 0 ? agg.sumPvCant / agg.sumCantPv : null;
+    const margenRecalculado = agg.sumCostoConPv > 0
+      ? ((agg.sumPvConCosto - agg.sumCostoConPv) / agg.sumCostoConPv) * 100
+      : null;
+
+    return [
+      formatDate(agg.fechaRef),
+      agg.codigo,
+      agg.descripcion,
+      agg.sumBultos,
+      precioPorBultoPond != null && Number.isFinite(precioPorBultoPond) ? precioPorBultoPond : '',
+      agg.sumSubtotal,
+      agg.sumCantidadRec > 0 ? agg.sumCantidadRec : '',
+      costoUnidadPond != null && Number.isFinite(costoUnidadPond) ? costoUnidadPond : '',
+      agg.sumCantidadRec > 0 ? agg.sumCostoTotalRec : '',
+      uxbPond != null && Number.isFinite(uxbPond) ? uxbPond : '',
+      precioVentaPond != null && Number.isFinite(precioVentaPond) ? precioVentaPond : '',
+      margenRecalculado != null && Number.isFinite(margenRecalculado) ? margenRecalculado : '',
+    ];
   });
+
   const ws = XLSX.utils.aoa_to_sheet([encabezados, ...filas]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Por artículo');

@@ -36,6 +36,18 @@ function calendarYmdParts(value) {
   return null;
 }
 
+/**
+ * Clave `YYYY-MM-DD` para agrupar por día civil (misma semántica que `formatDate` en listas de compra).
+ * @param {string | number | Date | null | undefined} value
+ * @returns {string} cadena vacía si no hay fecha válida
+ */
+export function fechaCivilYmdKey(value) {
+  const parts = calendarYmdParts(value);
+  if (!parts) return '';
+  const { y, mo, d } = parts;
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
 function formatWithUtcCalendarLocale(value, options) {
   const parts = calendarYmdParts(value);
   if (!parts) return null;
