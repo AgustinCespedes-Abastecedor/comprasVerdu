@@ -23,10 +23,12 @@ import ThemeToggle from '../components/ThemeToggle';
 import { hapticImpact } from '../lib/haptics';
 import './Home.css';
 
+// Grid 2 columnas (fila a fila): col. izq. compras, col. der. recepción + info final.
 const actions = [
   { to: '/comprar', permiso: 'comprar', title: 'Nueva compra', cta: 'Ir a comprar', icon: 'cart', variant: 'compras', tileLabel: 'Nueva compra' },
   { to: '/recepcion', permiso: 'recepcion', title: 'Recepción de compras', cta: 'Ir a recepción', icon: 'recepcion', variant: 'recepcion', tileLabel: 'Recepción' },
   { to: '/ver-compras', permiso: 'ver-compras', title: 'Ver compras', cta: 'Ver listado', icon: 'verCompras', variant: 'compras', tileLabel: 'Ver compras' },
+  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion', tileLabel: 'Recepciones' },
   {
     to: '/trazabilidad-compras',
     permiso: '__trazabilidad_compras__',
@@ -36,7 +38,6 @@ const actions = [
     variant: 'compras',
     tileLabel: 'Trazabilidad',
   },
-  { to: '/ver-recepciones', permiso: 'ver-recepciones', title: 'Ver recepciones', cta: 'Ver listado', icon: 'listRecepciones', variant: 'recepcion', tileLabel: 'Recepciones' },
   { to: '/info-final-articulos', permiso: 'info-final-articulos', title: 'Info Final de Artículos', cta: 'Ver info', icon: 'infoArticulos', variant: 'info', tileLabel: 'Info artículos' },
 ];
 
