@@ -2,7 +2,7 @@
 
 ## Requisitos
 
-1. **Node.js** (ya lo tienes)
+1. **Node.js >= 22** — Capacitor CLI 8 lo exige. En la raíz del repo y en `frontend/` hay un **`.nvmrc`** con `22`. Comprobá la versión con `node -v`. Si tenés **Node 18 u otra menor**, los scripts `apk:build` / `apk:release` fallan en el chequeo `[android:doctor]`; podés **instalar Node 22** (por ejemplo [nvm](https://github.com/nvm-sh/nvm) + `nvm install` y `nvm use` en el repo, o NodeSource en Linux: ver `scripts/install-node22-linux.sh`) **o** compilar la APK **solo con Docker** (siguiente sección), sin cambiar Node en el host.
 2. **Android Studio** (reciente) y **Android SDK Platform 36** instalado (**SDK Manager** → *Android API 36* o la plataforma que pida el proyecto). Sin esa plataforma, Gradle falla con “failed to find target” o errores en `checkDebugAarMetadata`.
 3. **JDK 21 para Gradle** — Capacitor 8 compila el proyecto Android con **Java 21**. En Android Studio: **File → Settings** (o **Android Studio → Settings** en macOS) → **Build, Execution, Deployment** → **Build Tools** → **Gradle** → **Gradle JDK**: elegí **JDK 21** (p. ej. **jbr-21** del propio Studio o **Temurin 21**). Si queda en JDK 17, el sync / la compilación suelen fallar con errores de versión de bytecode o del compilador.
 
@@ -97,10 +97,29 @@ npm run apk:release
 
 Salida: `frontend/android/app/build/outputs/apk/release/app-release-unsigned.apk`
 
+### Compilar la APK con Docker (sin Node 22 ni Android SDK en el host)
+
+Si la máquina tiene **Node anterior a la 22** o no querés instalar Android SDK / Gradle localmente, podés generar la **APK debug** dentro de un contenedor (el Dockerfile instala Node 22, JDK y el SDK necesario).
+
+**Requisito:** [Docker Engine](https://docs.docker.com/engine/install/) disponible en el PATH.
+
+Desde la **raíz del monorepo**:
+
+```bash
+npm run apk:docker
+```
+
+Equivale a ejecutar `bash scripts/build-apk-docker.sh`: construye la imagen definida en `frontend/docker/apk/Dockerfile`, corre el build web, `cap sync android` y `assembleDebug`, y **copia la APK al host**.
+
+**Salida en el host:** `frontend/app-debug.apk` (mismo artefacto debug que en Gradle local, pero ruta fija en la raíz de `frontend/` para descargas o CI).
+
+La primera ejecución descarga imágenes base y dependencias; las siguientes suelen ser más rápidas.
+
 ## Si el build falla en Android Studio
 
 | Síntoma | Qué revisar |
 |--------|-------------|
+| `[android:doctor] Se requiere Node.js >= 22` al ejecutar `npm run apk:build` | Actualizá Node a **22+** (`.nvmrc` en el repo) o usá **`npm run apk:docker`** desde la raíz sin instalar Node 22 en el sistema. |
 | “SDK android-36 not found” / “failed to find target” / `checkDebugAarMetadata` | **SDK Manager** → pestaña **SDK Platforms** → marcá **Android API 36** (o la versión que indique el error) y **Apply**. Instalá también **Android SDK Build-Tools** recientes en la pestaña **SDK Tools**. |
 | Errores de Java 21 / “release 21” / bytecode | **Gradle JDK = 21** (ver requisitos arriba). |
 | Sync OK pero “OutOfMemoryError” en Gradle | Ya subimos memoria en `android/gradle.properties`; cerrá otros procesos o subí `-Xmx` un poco más. |

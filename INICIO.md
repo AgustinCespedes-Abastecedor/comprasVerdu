@@ -95,7 +95,7 @@ Al compilar la APK, el frontend usa `VITE_API_URL` de `frontend/.env` para conec
    ```
    VITE_API_URL=http://192.168.12.123:4000/api
    ```
-3. Compilá:
+3. Compilá con `npm run apk` desde la raíz (necesitás **Node.js ≥ 22**). Si no podés actualizar Node en esa máquina, desde la raíz ejecutá `npm run apk:docker` para obtener `frontend/app-debug.apk` usando solo Docker. Guía completa: [docs/CAPACITOR.md](docs/CAPACITOR.md).
    ```powershell
    npm run apk
    ```
