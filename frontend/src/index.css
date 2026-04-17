@@ -5,6 +5,11 @@
 :root {
   /* Fallback si el panel de notificaciones se renderiza fuera de .app-header */
   --app-header-stack-height: 4rem;
+  /*
+   * Panel notificaciones APK (cortes en NotificationBell.css; las @media no usan var):
+   * hoja fija si ancho ≤560px (móviles/fold) o si alto ≤460px y ancho ≤960px (landscape);
+   * tablets tipo iPad mini portrait 744px usan dropdown bajo la campana.
+   */
   --font: 'DM Sans', system-ui, sans-serif;
   /* Botones / CTAs: estilo neón (display, mayúsculas en CSS) */
   --font-button: 'Orbitron', 'DM Sans', system-ui, sans-serif;

@@ -2,6 +2,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  overflow: visible;
 }
 
 .notification-bell__trigger {
@@ -65,20 +66,21 @@
 }
 
 /*
- * Panel de notificaciones: fixed respecto al viewport con márgenes seguros.
- * Evita que en APK o móvil se corte al usar position:absolute + ancho ~92vw anclado solo a la campana.
+ * Panel por defecto (web, tablet, APK tablet / landscape ancho):
+ * anclado bajo la campana, alineado al borde derecho del trigger.
+ * Ancho: 22rem capado al viewport dinámico + insets (360–430dp típicos, fold estrecho).
  */
 .notification-bell__dropdown {
-  position: fixed;
+  position: absolute;
   z-index: 160;
-  left: max(0.5rem, var(--app-safe-left));
-  right: max(0.5rem, var(--app-safe-right));
-  top: calc(var(--app-safe-top) + var(--app-header-stack-height, 4rem) + 0.35rem);
-  width: auto;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  left: auto;
+  min-width: 0;
+  width: min(22rem, calc(100dvw - max(0.75rem, var(--app-safe-left)) - max(0.75rem, var(--app-safe-right))));
   max-width: 22rem;
-  margin-inline: auto;
   box-sizing: border-box;
-  max-height: min(72dvh, 26rem);
+  max-height: min(26rem, calc(100dvh - var(--app-safe-top) - var(--app-header-stack-height, 4rem) - 1.25rem));
   display: flex;
   flex-direction: column;
   border-radius: 12px;
@@ -86,6 +88,25 @@
   background: var(--surface);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   overflow: hidden;
+  transform-origin: top right;
+  animation: notification-bell-dropdown-in 0.16s ease-out;
+}
+
+@keyframes notification-bell-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-bell__dropdown {
+    animation: none;
+  }
 }
 
 .notification-bell__head {
@@ -233,6 +254,41 @@ html.is-native .notification-bell__icon {
   height: 0.8125rem;
 }
 
-html.is-native .notification-bell__dropdown {
-  max-height: min(68dvh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - var(--app-header-stack-height, 3.2rem) - 1.25rem));
+/*
+ * APK — modo “hoja” fija centrada (safe area) solo cuando conviene frente al WebView:
+ * 1) Ancho ≤560px: móviles / phablets / fold cerrado (iPad mini 744+ queda fuera → dropdown bajo campana).
+ * 2) Alto ≤460px y ancho ≤960px: landscape de teléfono (p. ej. 926×430); el ancla bajo campana deja poco aire útil.
+ * Cortes documentados también en index.css (:root comentario).
+ */
+@media (max-width: 560px), ((max-height: 460px) and (max-width: 960px)) {
+  html.is-native .notification-bell__dropdown {
+    position: fixed;
+    top: calc(var(--app-safe-top) + var(--app-header-stack-height, 3.2rem) + 0.35rem);
+    right: max(0.5rem, var(--app-safe-right));
+    left: max(0.5rem, var(--app-safe-left));
+    width: auto;
+    max-width: min(22rem, calc(100dvw - max(0.5rem, var(--app-safe-left)) - max(0.5rem, var(--app-safe-right))));
+    margin-inline: auto;
+    transform-origin: center top;
+    max-height: min(68dvh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - var(--app-header-stack-height, 3.2rem) - 1.25rem));
+  }
+}
+
+/* Altura útil con barras del sistema: svh evita saltos cuando dvh cambia (Chrome/Android) */
+@supports (height: 100svh) {
+  .notification-bell__dropdown {
+    max-height: min(
+      26rem,
+      calc(100svh - var(--app-safe-top) - var(--app-header-stack-height, 4rem) - 1.25rem)
+    );
+  }
+
+  @media (max-width: 560px), ((max-height: 460px) and (max-width: 960px)) {
+    html.is-native .notification-bell__dropdown {
+      max-height: min(
+        68dvh,
+        calc(100svh - var(--app-safe-top) - var(--app-safe-bottom) - var(--app-header-stack-height, 3.2rem) - 1.25rem)
+      );
+    }
+  }
 }
