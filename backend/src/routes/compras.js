@@ -6,6 +6,11 @@ import { createLog } from '../lib/logs.js';
 import { appendCompraAuditoriaDesdeActivityLog } from '../lib/compraAuditoria.js';
 import { parseYmdToPrismaDateOnly, logWarnIfInvalidYmdQuery } from '../lib/dateOnly.js';
 import { utcInstantToCalendarDayString } from '../lib/appCalendarDay.js';
+import {
+  notifyAllActiveUsers,
+  tituloCompraProveedorBultos,
+  formatMontoNotificacion,
+} from '../lib/notifications.js';
 
 const router = Router();
 
@@ -255,6 +260,24 @@ router.post('/', soloComprador, async (req, res) => {
         }
       }
     }
+    const compradorNombre = (compra.user?.nombre || '').trim() || 'Usuario';
+    const proveedorNombre = compra.proveedor?.nombre || 'Proveedor';
+    const titulo = tituloCompraProveedorBultos({
+      numeroCompra: compra.numeroCompra,
+      proveedorNombre,
+      totalBultos,
+    });
+    const montoStr = formatMontoNotificacion(compra.totalMonto);
+    const mensaje = `Comprador: ${compradorNombre} · Total compra $ ${montoStr} · Ítems: ${(compra.detalles || []).length}.`;
+    void notifyAllActiveUsers(prisma, {
+      type: 'nueva_compra',
+      title: titulo,
+      message: mensaje,
+      compraId: compra.id,
+      recepcionId: null,
+      actorUserId: req.userId,
+    }).catch((err) => console.error('[COMPRAS] Notificaciones (no bloquea):', err?.message || err));
+
     res.status(201).json(compra);
   } catch (e) {
     sendError(res, 500, MSG.COMPRAS_GUARDAR, 'COMPRAS_006', e);

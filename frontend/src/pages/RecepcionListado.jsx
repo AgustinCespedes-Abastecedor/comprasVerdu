@@ -9,6 +9,7 @@ import AppLoader from '../components/AppLoader';
 import { useResponse } from '../context/ResponseContext';
 import ProveedorLabel from '../components/ProveedorLabel';
 import { formatNum, formatDate, todayStr } from '../lib/format';
+import { NOTIFICATIONS_POLL_REQUEST } from '../lib/notificationEvents';
 import './RecepcionListado.css';
 
 function getNumeroCompra(c) {
@@ -122,6 +123,7 @@ export default function RecepcionListado() {
     try {
       await recepciones.save({ compraId: compra.id, detalles });
       showSuccess('Recepción guardada correctamente.');
+      window.dispatchEvent(new CustomEvent(NOTIFICATIONS_POLL_REQUEST));
       setList((prev) => prev.filter((c) => c.id !== compra.id));
       setExpandidoId(null);
       setRecepcionCargada((prev) => ({ ...prev, [compra.id]: true }));

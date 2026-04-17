@@ -5,6 +5,11 @@ import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
 import { appendCompraAuditoriaDesdeActivityLog } from '../lib/compraAuditoria.js';
 import { parseYmdToPrismaDateOnly, logWarnIfInvalidYmdQuery } from '../lib/dateOnly.js';
+import {
+  notifyAllActiveUsers,
+  tituloRecepcionCompraProveedorBultos,
+  formatMontoNotificacion,
+} from '../lib/notifications.js';
 
 const router = Router();
 
@@ -81,6 +86,7 @@ router.post('/', soloRecepcion, async (req, res) => {
     const compra = await prisma.compra.findUnique({
       where: { id: compraId },
       include: {
+        proveedor: { select: { nombre: true } },
         detalles: { include: { producto: { select: { descripcion: true, codigo: true } } } },
       },
     });
@@ -130,7 +136,15 @@ router.post('/', soloRecepcion, async (req, res) => {
         include: {
           detalles: true,
           user: { select: { id: true, nombre: true } },
-          compra: { select: { id: true, numeroCompra: true, fecha: true } },
+          compra: {
+            select: {
+              id: true,
+              numeroCompra: true,
+              fecha: true,
+              totalBultos: true,
+              proveedor: { select: { nombre: true } },
+            },
+          },
         },
       });
     });
@@ -178,6 +192,27 @@ router.post('/', soloRecepcion, async (req, res) => {
         }
       }
     }
+    if (wasNew && recepcion?.compra?.id) {
+      const provNombre = recepcion.compra?.proveedor?.nombre || compra.proveedor?.nombre || 'Proveedor';
+      const udsRecibidas = payload.reduce((a, p) => a + (Number(p.cantidad) || 0), 0);
+      const recepcionista = (recepcion.user?.nombre || '').trim() || 'Usuario';
+      const titulo = tituloRecepcionCompraProveedorBultos({
+        numeroRecepcion: recepcion.numeroRecepcion,
+        numeroCompra: recepcion.compra?.numeroCompra,
+        proveedorNombre: provNombre,
+        totalBultos: Number(recepcion.compra?.totalBultos) || Number(compra.totalBultos) || 0,
+      });
+      const mensaje = `Recepcionista: ${recepcionista} · Líneas cargadas: ${payload.length} · Uds. recepción: ${udsRecibidas}.`;
+      void notifyAllActiveUsers(prisma, {
+        type: 'recepcion_registrada',
+        title: titulo,
+        message: mensaje,
+        compraId: recepcion.compra.id,
+        recepcionId: recepcion.id,
+        actorUserId: req.userId,
+      }).catch((err) => console.error('[RECEP] Notificaciones (no bloquea):', err?.message || err));
+    }
+
     res.status(201).json(recepcion);
   } catch (e) {
     sendError(res, 500, MSG.RECEP_GUARDAR, 'RECEP_005', e);
@@ -210,6 +245,7 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
     const recepcion = await prisma.recepcion.findUnique({
       where: { id: recepcionId },
       include: {
+        compra: { select: { id: true, numeroCompra: true } },
         detalles: {
           include: {
             detalleCompra: { select: { id: true, precioPorBulto: true } },
@@ -220,6 +256,7 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
     if (!recepcion) {
       return sendError(res, 404, MSG.RECEP_NO_ENCONTRADA, 'RECEP_007');
     }
+    const yaEstabaCompleta = recepcion.completa === true;
 
     const byId = new Map(recepcion.detalles.map((d) => [d.id, d]));
     const payloads = [];
@@ -271,6 +308,8 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
             id: true,
             numeroCompra: true,
             fecha: true,
+            totalBultos: true,
+            totalMonto: true,
             proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
           },
         },
@@ -286,6 +325,30 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
         },
       },
     });
+    if (!yaEstabaCompleta && updated?.completa && updated?.compra?.id) {
+      const provNombre = updated.compra?.proveedor?.nombre || 'Proveedor';
+      const cerrador = (updated.user?.nombre || '').trim() || 'Usuario';
+      const titulo = tituloRecepcionCompraProveedorBultos({
+        numeroRecepcion: updated.numeroRecepcion,
+        numeroCompra: updated.compra?.numeroCompra,
+        proveedorNombre: provNombre,
+        totalBultos: Number(updated.compra?.totalBultos) || 0,
+      });
+      const montoStr = formatMontoNotificacion(updated.compra?.totalMonto);
+      const lineasPrecio = (updated.detalles || []).filter(
+        (d) => d.precioVenta != null && String(d.precioVenta).trim() !== ''
+      ).length;
+      const mensaje = `Cierre por: ${cerrador} · Total compra $ ${montoStr} · Precios cargados en ${lineasPrecio} líneas · Proceso cerrado.`;
+      void notifyAllActiveUsers(prisma, {
+        type: 'recepcion_completada',
+        title: titulo,
+        message: mensaje,
+        compraId: updated.compra.id,
+        recepcionId: recepcionId,
+        actorUserId: req.userId,
+      }).catch((err) => console.error('[RECEP_008] Notificaciones (no bloquea):', err?.message || err));
+    }
+
     if (req.userId) {
       try {
         const items = (updated?.detalles || []).map((d) => ({

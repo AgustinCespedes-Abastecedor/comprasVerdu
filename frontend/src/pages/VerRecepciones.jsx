@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import ProveedorLabel from '../components/ProveedorLabel';
 import { useResponse } from '../context/ResponseContext';
 import { formatNum, formatDate, formatPct, todayStr } from '../lib/format';
+import { NOTIFICATIONS_POLL_REQUEST } from '../lib/notificationEvents';
 import './VerCompras.css';
 
 function getNumeroRecepcion(r) {
@@ -152,6 +153,7 @@ export default function VerRecepciones() {
       setList((prev) => prev.map((rec) => (rec.id === actualizada.id ? actualizada : rec)));
       cerrarModalPrecios();
       showSuccess('Precios de venta y márgenes actualizados.');
+      window.dispatchEvent(new CustomEvent(NOTIFICATIONS_POLL_REQUEST));
     } catch (e) {
       showError(e ?? { message: 'Error al guardar precios' });
     } finally {

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { hapticImpact } from '../lib/haptics';
+import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import './AppHeader.css';
 
 /**
@@ -7,6 +9,7 @@ import './AppHeader.css';
  * El logo lleva siempre a la página de inicio.
  */
 export default function AppHeader({ leftContent, rightContent }) {
+  const { user } = useAuth();
   return (
     <header className="app-header">
       <div className="app-header-left">
@@ -26,6 +29,7 @@ export default function AppHeader({ leftContent, rightContent }) {
         </Link>
       </div>
       <div className="app-header-right">
+        {user ? <NotificationBell /> : null}
         {rightContent}
       </div>
     </header>

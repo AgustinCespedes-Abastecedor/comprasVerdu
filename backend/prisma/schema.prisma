@@ -32,8 +32,26 @@ model User {
   recepciones  Recepcion[]
   activityLogs ActivityLog[]
   compraAuditoriaEventos CompraAuditoriaEvento[]
+  notifications UserNotification[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+}
+
+/// Alertas in-app (campana): compras y recepciones; el cliente hace polling.
+model UserNotification {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// nueva_compra | recepcion_registrada | recepcion_completada
+  type         String
+  title        String
+  message      String
+  read         Boolean   @default(false)
+  compraId     String?
+  recepcionId  String?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, read, createdAt])
 }
 
 model ActivityLog {

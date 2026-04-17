@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import { proveedores, productos, compras } from '../api/client';
 import ProveedorLabel from '../components/ProveedorLabel';
 import { todayStr, formatEntero, formatProveedorText } from '../lib/format';
+import { NOTIFICATIONS_POLL_REQUEST } from '../lib/notificationEvents';
 import { useResponse } from '../context/ResponseContext';
 import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
@@ -322,6 +323,7 @@ export default function PlanillaCompra() {
         detalles,
       });
       showSuccess('Compra guardada correctamente. Podés consultarla en Ver Compras.');
+      window.dispatchEvent(new CustomEvent(NOTIFICATIONS_POLL_REQUEST));
       setTotalesDia((t) => ({
         ...t,
         totalBultos: t.totalBultos + totalesCompra.bultos,

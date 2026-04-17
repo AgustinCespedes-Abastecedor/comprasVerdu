@@ -146,6 +146,21 @@ a {
   --scrollbar-size: 10px;
   --scrollbar-radius: 6px;
 
+  /* Header: campana (dorado) / logout (bordo, alineado a la marca) */
+  --header-bell-fg: #e6cf5c;
+  --header-bell-bg: rgba(212, 175, 55, 0.2);
+  --header-bell-bg-hover: rgba(212, 175, 55, 0.34);
+  --header-bell-ring: rgba(230, 207, 92, 0.5);
+  --header-logout-fg: #e8a0a8;
+  --header-logout-bg: rgba(114, 40, 48, 0.38);
+  --header-logout-bg-hover: rgba(114, 40, 48, 0.52);
+  --header-logout-ring: rgba(232, 160, 168, 0.55);
+  /* Volver atrás (mismo bordo que logout / títulos rojos del header) */
+  --header-back-fg: var(--header-logout-fg);
+  --header-back-bg: var(--header-logout-bg);
+  --header-back-bg-hover: var(--header-logout-bg-hover);
+  --header-back-ring: var(--header-logout-ring);
+
   /* Home */
   --home-bg: #0d1117;
   --home-header-bg: #161b22;
@@ -272,6 +287,20 @@ a {
   --scrollbar-thumb-active: #1a7f37;
   --scrollbar-size: 10px;
   --scrollbar-radius: 6px;
+
+  /* Header: campana (dorado) / logout (bordo) */
+  --header-bell-fg: #8b6914;
+  --header-bell-bg: rgba(184, 134, 11, 0.2);
+  --header-bell-bg-hover: rgba(184, 134, 11, 0.32);
+  --header-bell-ring: rgba(139, 105, 20, 0.45);
+  --header-logout-fg: #722f37;
+  --header-logout-bg: rgba(114, 47, 55, 0.12);
+  --header-logout-bg-hover: rgba(114, 47, 55, 0.22);
+  --header-logout-ring: rgba(114, 47, 55, 0.35);
+  --header-back-fg: var(--header-logout-fg);
+  --header-back-bg: var(--header-logout-bg);
+  --header-back-bg-hover: var(--header-logout-bg-hover);
+  --header-back-ring: var(--header-logout-ring);
 
   /* Home */
   --home-bg: #f6f8fa;

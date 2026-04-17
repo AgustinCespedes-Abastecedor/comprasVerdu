@@ -152,27 +152,28 @@
   min-width: 24px;
   min-height: 24px;
   padding: 0;
-  color: var(--home-muted);
-  background: transparent;
+  color: var(--header-logout-fg, #722f37);
+  background: var(--header-logout-bg, rgba(114, 47, 55, 0.15));
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .home-header-logout:hover {
-  color: var(--home-text);
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--header-logout-fg, #722f37);
+  background: var(--header-logout-bg-hover, rgba(114, 47, 55, 0.28));
 }
 
 [data-theme="light"] .home-header-logout:hover {
-  background: rgba(0, 0, 0, 0.05);
+  color: var(--header-logout-fg, #722f37);
+  background: var(--header-logout-bg-hover, rgba(114, 47, 55, 0.22));
 }
 
 .home-header-logout:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--home-accent-soft);
+  box-shadow: 0 0 0 2px var(--header-logout-ring, rgba(114, 47, 55, 0.35));
 }
 
 .home-header-logout svg,

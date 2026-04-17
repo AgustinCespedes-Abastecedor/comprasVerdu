@@ -5,8 +5,10 @@ import { App as CapApp } from '@capacitor/app';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ResponseProvider } from './context/ResponseContext';
+import { InAppNotificationProvider } from './context/InAppNotificationContext';
 import { PullToRefreshProvider } from './context/PullToRefreshContext';
 import PullToRefresh from './components/PullToRefresh';
+import NotificationPollingHost from './components/NotificationPollingHost';
 import { puedeAcceder, puedeGestionarUsuarios } from './lib/roles';
 import AppLoader from './components/AppLoader';
 import Login from './pages/Login';
@@ -160,13 +162,16 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <ResponseProvider>
-          <PullToRefreshProvider>
-            <BackButtonHandler />
-            <PullToRefresh />
-            <div className="app-shell" role="application" aria-label="Compras Verdu">
-              <AppRoutesWithTransition />
-            </div>
-          </PullToRefreshProvider>
+          <InAppNotificationProvider>
+            <NotificationPollingHost />
+            <PullToRefreshProvider>
+              <BackButtonHandler />
+              <PullToRefresh />
+              <div className="app-shell" role="application" aria-label="Compras Verdu">
+                <AppRoutesWithTransition />
+              </div>
+            </PullToRefreshProvider>
+          </InAppNotificationProvider>
         </ResponseProvider>
       </AuthProvider>
     </ThemeProvider>

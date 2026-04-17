@@ -13,6 +13,7 @@ import { usersRouter } from './routes/users.js';
 import { rolesRouter } from './routes/roles.js';
 import { logsRouter } from './routes/logs.js';
 import { trazabilidadRouter } from './routes/trazabilidad.js';
+import { notificationsRouter } from './routes/notifications.js';
 import { authMiddleware } from './middleware/auth.js';
 import { sendError, MSG } from './lib/errors.js';
 import { getJwtSecret } from './lib/config.js';
@@ -100,6 +101,7 @@ app.use('/api/users', runAsync(authMiddleware), usersRouter);
 app.use('/api/roles', runAsync(authMiddleware), rolesRouter);
 app.use('/api/logs', runAsync(authMiddleware), logsRouter);
 app.use('/api/trazabilidad', runAsync(authMiddleware), trazabilidadRouter);
+app.use('/api/notifications', runAsync(authMiddleware), notificationsRouter);
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 

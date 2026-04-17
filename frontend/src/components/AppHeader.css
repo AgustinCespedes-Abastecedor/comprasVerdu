@@ -32,6 +32,55 @@
   justify-content: flex-end;
 }
 
+/*
+ * Botones "volver" (Link en app-header-left): bordo de marca, alineado a logout y títulos rojos.
+ * Especificidad sobre *.css de cada pantalla (antes usaban verde accent / gris).
+ */
+.app-header-left .planilla-back,
+.app-header-left .vercompras-back,
+.app-header-left .recepcion-listado-back,
+.app-header-left .gestion-usuarios-back,
+.app-header-left .logs-back,
+.app-header-left .manual-back,
+.app-header-left .traz-back {
+  color: var(--header-back-fg, #722f37);
+  background: var(--header-back-bg, rgba(114, 47, 55, 0.15));
+  transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.app-header-left .planilla-back:hover,
+.app-header-left .vercompras-back:hover,
+.app-header-left .recepcion-listado-back:hover,
+.app-header-left .gestion-usuarios-back:hover,
+.app-header-left .logs-back:hover,
+.app-header-left .manual-back:hover,
+.app-header-left .traz-back:hover {
+  color: var(--header-back-fg, #722f37);
+  background: var(--header-back-bg-hover, rgba(114, 47, 55, 0.25));
+}
+
+[data-theme="light"] .app-header-left .planilla-back:hover,
+[data-theme="light"] .app-header-left .vercompras-back:hover,
+[data-theme="light"] .app-header-left .recepcion-listado-back:hover,
+[data-theme="light"] .app-header-left .gestion-usuarios-back:hover,
+[data-theme="light"] .app-header-left .logs-back:hover,
+[data-theme="light"] .app-header-left .manual-back:hover,
+[data-theme="light"] .app-header-left .traz-back:hover {
+  color: var(--header-back-fg, #722f37);
+  background: var(--header-back-bg-hover, rgba(114, 47, 55, 0.22));
+}
+
+.app-header-left .planilla-back:focus-visible,
+.app-header-left .vercompras-back:focus-visible,
+.app-header-left .recepcion-listado-back:focus-visible,
+.app-header-left .gestion-usuarios-back:focus-visible,
+.app-header-left .logs-back:focus-visible,
+.app-header-left .manual-back:focus-visible,
+.app-header-left .traz-back:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--header-back-ring, rgba(114, 47, 55, 0.35));
+}
+
 /* Logo centrado en el eje X; click lleva al inicio */
 .app-header-logo {
   position: absolute;
@@ -130,7 +179,8 @@ html.is-native .app-header .vercompras-back,
 html.is-native .app-header .recepcion-listado-back,
 html.is-native .app-header .gestion-usuarios-back,
 html.is-native .app-header .logs-back,
-html.is-native .app-header .manual-back {
+html.is-native .app-header .manual-back,
+html.is-native .app-header .traz-back {
   min-width: 24px;
   min-height: 24px;
   width: 24px;
@@ -139,6 +189,13 @@ html.is-native .app-header .manual-back {
 
 html.is-native .app-header .home-btn-logout,
 html.is-native .app-header .home-header-logout {
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+html.is-native .app-header .notification-bell__trigger {
   min-width: 24px;
   min-height: 24px;
   width: 24px;

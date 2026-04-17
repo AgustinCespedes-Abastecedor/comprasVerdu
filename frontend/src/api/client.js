@@ -160,6 +160,16 @@ export const roles = {
   delete: (id) => api(`/roles/${id}`, { method: 'DELETE' }),
 };
 
+/** Notificaciones in-app (campana). Listado propio del usuario autenticado. */
+export const notifications = {
+  list: (params) => {
+    const q = new URLSearchParams(params || {}).toString();
+    return api(`/notifications${q ? `?${q}` : ''}`);
+  },
+  markRead: (id) => api(`/notifications/${encodeURIComponent(id)}/read`, { method: 'PATCH' }),
+  markAllRead: () => api('/notifications/read-all', { method: 'PATCH' }),
+};
+
 /** Historial de actividad (solo quien tiene gestión de usuarios). Params: userId?, entity?, desde?, hasta?, limit? */
 export const logs = {
   list: (params) => {
