@@ -109,7 +109,7 @@ export function useNotificationsPolling() {
         }
         if (fresh.length > 0) dispatchUpdated();
       } catch (err) {
-        if (process.env.NODE_ENV !== 'production') {
+        if (import.meta.env.DEV) {
           console.warn('[NOTIF] polling:', err?.message || err);
         }
       }
