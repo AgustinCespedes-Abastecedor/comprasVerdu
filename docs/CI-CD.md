@@ -24,6 +24,10 @@ El repositorio tiene pipelines para **no deployar nada que no pueda pasar a prod
 - **Environment:** `production` (podés exigir aprobación en GitHub).
 - **Opcional:** Secret `RENDER_DEPLOY_HOOK_PRODUCTION` para disparar el deploy en Render desde el workflow.
 
+### Base de datos en Render / arranque del backend
+
+El backend debe arrancar con **`npm start`** (recomendado en Render: `npm install && npm start`). El script **`prestart`** ejecuta **`prisma migrate deploy`**, de modo que cada deploy aplica migraciones pendientes antes de levantar Express. El cliente Prisma se genera en **`postinstall`**. Evitá `prisma db push` en producción si el repo ya usa la carpeta `prisma/migrations/`.
+
 ## Configuración en GitHub
 
 ### Branch Protection (recomendado)

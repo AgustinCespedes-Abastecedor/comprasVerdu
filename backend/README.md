@@ -20,6 +20,8 @@ npm run dev
 npm start
 ```
 
+En producción, `npm start` ejecuta antes **`prisma migrate deploy`** (script `prestart`): aplica migraciones pendientes (p. ej. alertas `UserNotification`) y luego arranca el servidor.
+
 ## Si el backend no arranca
 
 1. **Error de Prisma / base de datos**  
@@ -42,7 +44,8 @@ npm start
 | `npm start`     | Servidor para producción             |
 | `npm run db:generate` | Regenerar cliente Prisma (tras cambiar el schema) |
 | `npm run db:push`    | Aplicar schema a la base             |
-| `npm run db:migrate` | Crear/aplicar migraciones            |
+| `npm run db:migrate` | Crear/aplicar migraciones (desarrollo) |
+| `npm run db:migrate:deploy` | Aplicar migraciones versionadas (staging/producción o CI manual) |
 | `npm run db:seed`    | Seed de **roles** en Postgres (sin usuarios). Si el backend corre en Docker (compose de la raíz), preferí `npm run db:seed` **desde la raíz del monorepo**. |
 | `npm run check:elab` | Verifica `DATABASE_URL` (Postgres) y conexión a **ELABASTECEDOR** + tabla `Usuarios` (solo lectura) |
 

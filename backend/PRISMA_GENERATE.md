@@ -1,12 +1,12 @@
 # Cliente Prisma (generado)
 
-El cliente de Prisma se genera en **`generated/client`** (fuera de `node_modules`) para evitar el error **EPERM** en Windows al reemplazar el `.dll` del motor.
+El cliente se genera en **`node_modules/.prisma`** (comportamiento por defecto de Prisma).
 
 ## Comportamiento
 
-- **`npm run dev`** y **`npm start`** ejecutan `prisma generate` **antes** de arrancar el servidor.
-- Así el cliente se regenera siempre que inicias la app y ningún proceso tiene el archivo bloqueado.
-- No hace falta ejecutar `npx prisma generate` a mano salvo que quieras generarlo sin levantar el servidor.
+- **`postinstall`** (`scripts/ensure-prisma.js`): ejecuta **`prisma generate`** tras `npm install` (si falla por EPERM en Windows, el install no se aborta y podés correr `npm run db:generate` con el backend cerrado).
+- **`npm start`** (producción): el script **`prestart`** ejecuta **`prisma migrate deploy`** y después arranca **`node src/index.js`**. Así staging/producción (p. ej. Render) aplican migraciones al desplegar.
+- **`npm run dev`**: no ejecuta migraciones; en Docker de desarrollo el entrypoint corre `migrate deploy` antes de `npm run dev`.
 
 ## Si querés generar solo el cliente
 
@@ -16,5 +16,3 @@ Con el servidor **detenido**:
 cd backend
 npx prisma generate
 ```
-
-Si el servidor está corriendo, no pasa nada: la próxima vez que lo inicies con `npm run dev` o `npm start` se volverá a generar.

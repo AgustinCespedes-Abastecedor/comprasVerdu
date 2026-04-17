@@ -163,7 +163,7 @@ El frontend corre en `http://localhost:5173` y usa el proxy a `http://localhost:
 ## Despliegue en Render
 
 - **PostgreSQL:** crear un servicio PostgreSQL en Render y usar la `DATABASE_URL` interna que te da Render.
-- **Backend:** crear un Web Service con el directorio `backend`, comando `npm install && npx prisma generate && npx prisma db push && npm start`. Definir variables de entorno: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL` (URL del frontend en Render).
+- **Backend:** crear un Web Service con el directorio `backend`, comando **`npm install && npm start`**. El `postinstall` ejecuta `prisma generate` y el script **`prestart`** ejecuta **`prisma migrate deploy`** antes de levantar el servidor (incluye la tabla de alertas `UserNotification` y el resto de migraciones). Definir variables de entorno: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL` (URL del frontend en Render). No uses `db push` en producción si ya usás migraciones versionadas: puede desalinear el historial de `_prisma_migrations`.
 - **Frontend:** crear un sitio estático con el directorio `frontend`, build `npm run build`, carpeta public `dist`. Configurar la variable `VITE_API_URL` si el API está en otra URL (y usar esa variable en el cliente para las peticiones en producción).
 
 Si en producción el frontend y el API están en el mismo dominio (reverse proxy), no hace falta cambiar la base de las peticiones.
