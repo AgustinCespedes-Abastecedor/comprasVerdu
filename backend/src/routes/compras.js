@@ -11,6 +11,7 @@ import {
   tituloCompraProveedorBultos,
   formatMontoNotificacion,
 } from '../lib/notifications.js';
+import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
 
 const router = Router();
 
@@ -36,46 +37,64 @@ router.get('/', soloVerCompras, async (req, res) => {
     if (sinRecepcion === 'true' || sinRecepcion === '1') {
       where.recepcion = null;
     }
-    const compras = await prisma.compra.findMany({
-      where,
-      orderBy: [{ numeroCompra: 'asc' }, { fecha: 'asc' }, { createdAt: 'asc' }],
-      include: {
-        proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
-        user: { select: { id: true, nombre: true, email: true } },
-        detalles: {
-          include: {
-            producto: {
-              select: {
-                id: true,
-                codigo: true,
-                descripcion: true,
-                stockSucursales: true,
-                stockCD: true,
-                ventasN1: true,
-                ventasN2: true,
-                ventas7dias: true,
-                costo: true,
-                precioVenta: true,
-                margenPorc: true,
-              },
-            },
-          },
-        },
-        recepcion: {
-          include: {
-            detalles: {
-              select: {
-                id: true,
-                detalleCompraId: true,
-                cantidad: true,
-                uxb: true,
-                precioVenta: true,
-                margenPorc: true,
-              },
+    const include = {
+      proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
+      user: { select: { id: true, nombre: true, email: true } },
+      detalles: {
+        include: {
+          producto: {
+            select: {
+              id: true,
+              codigo: true,
+              descripcion: true,
+              stockSucursales: true,
+              stockCD: true,
+              ventasN1: true,
+              ventasN2: true,
+              ventas7dias: true,
+              costo: true,
+              precioVenta: true,
+              margenPorc: true,
             },
           },
         },
       },
+      recepcion: {
+        include: {
+          detalles: {
+            select: {
+              id: true,
+              detalleCompraId: true,
+              cantidad: true,
+              uxb: true,
+              precioVenta: true,
+              margenPorc: true,
+            },
+          },
+        },
+      },
+    };
+    const orderBy = [{ numeroCompra: 'asc' }, { fecha: 'asc' }, { createdAt: 'asc' }];
+
+    if (wantsPagedEnvelope(req.query)) {
+      const { page, pageSize, skip } = parseOffsetPagination(req.query);
+      const [total, items] = await Promise.all([
+        prisma.compra.count({ where }),
+        prisma.compra.findMany({
+          where,
+          orderBy,
+          skip,
+          take: pageSize,
+          include,
+        }),
+      ]);
+      return res.json({ items, total, page, pageSize });
+    }
+
+    const compras = await prisma.compra.findMany({
+      where,
+      orderBy,
+      include,
     });
     res.json(compras);
   } catch (e) {

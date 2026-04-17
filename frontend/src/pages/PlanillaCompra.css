@@ -608,7 +608,11 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0;
+  padding-left: var(--app-safe-left);
+  padding-right: var(--app-safe-right);
+  padding-top: 0;
+  padding-bottom: 0;
+  box-sizing: border-box;
   animation: planilla-provider-backdrop-in 0.2s ease;
 }
 
@@ -625,8 +629,7 @@
 .planilla-provider-picker-sheet {
   width: 100%;
   max-width: 28rem;
-  max-height: 85vh;
-  max-height: min(85vh, calc(100dvh - var(--app-safe-top) - var(--app-keyboard-inset, 0px) - 1rem));
+  max-height: min(85dvh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - var(--app-keyboard-inset, 0px) - 1rem));
   background: var(--planilla-card-bg);
   border: 1px solid var(--planilla-border);
   border-radius: 16px;
@@ -1141,7 +1144,7 @@ html.is-native .planilla-add-article-wrap .planilla-search-label {
 }
 
 html.is-native .planilla-search-results-list {
-  max-height: min(18rem, 50vh);
+  max-height: min(18rem, 50dvh);
   z-index: 1100;
   -webkit-overflow-scrolling: touch;
 }

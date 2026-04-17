@@ -75,7 +75,7 @@
 .login-card {
   width: 100%;
   max-width: 380px;
-  max-height: min(calc(100vh - 2rem), calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
+  max-height: calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   background: var(--surface);

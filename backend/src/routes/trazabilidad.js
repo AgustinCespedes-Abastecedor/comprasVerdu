@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { parseYmdToPrismaDateOnly, logWarnIfInvalidYmdQuery } from '../lib/dateOnly.js';
+import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
 
 const router = Router();
 
@@ -64,47 +65,24 @@ function auditoriaRowToEventoUi(row) {
   };
 }
 
-/** GET /trazabilidad/compras - Trazabilidad por compra (logs + usuario). Requiere ver-compras o trazabilidad-compras. */
-router.get('/compras', async (req, res) => {
-  try {
-    if (!tienePermiso(req.permisos, 'ver-compras') && !tienePermiso(req.permisos, 'trazabilidad-compras')) {
-      return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'TRAZ_001');
-    }
+const compraTrazSelect = {
+  id: true,
+  numeroCompra: true,
+  fecha: true,
+  totalBultos: true,
+  totalMonto: true,
+  createdAt: true,
+  updatedAt: true,
+  proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
+  user: { select: { id: true, nombre: true, email: true } },
+  recepcion: { select: { id: true, numeroRecepcion: true, createdAt: true, updatedAt: true, completa: true, userId: true } },
+};
 
-    const { desde, hasta, proveedorId } = req.query;
-    logWarnIfInvalidYmdQuery('GET /trazabilidad/compras', 'desde', desde);
-    logWarnIfInvalidYmdQuery('GET /trazabilidad/compras', 'hasta', hasta);
-    const where = {};
-    if (desde) {
-      const d = parseYmdToPrismaDateOnly(desde);
-      if (d) where.fecha = { ...where.fecha, gte: d };
-    }
-    if (hasta) {
-      const d = parseYmdToPrismaDateOnly(hasta);
-      if (d) where.fecha = { ...where.fecha, lte: d };
-    }
-    if (proveedorId) where.proveedorId = proveedorId;
+const compraTrazOrderBy = [{ numeroCompra: 'asc' }, { fecha: 'asc' }, { createdAt: 'asc' }];
 
-    const compras = await prisma.compra.findMany({
-      where,
-      orderBy: [{ numeroCompra: 'asc' }, { fecha: 'asc' }, { createdAt: 'asc' }],
-      select: {
-        id: true,
-        numeroCompra: true,
-        fecha: true,
-        totalBultos: true,
-        totalMonto: true,
-        createdAt: true,
-        updatedAt: true,
-        proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
-        user: { select: { id: true, nombre: true, email: true } },
-        recepcion: { select: { id: true, numeroRecepcion: true, createdAt: true, updatedAt: true, completa: true, userId: true } },
-      },
-    });
-
-    if (compras.length === 0) {
-      return res.json([]);
-    }
+/** Enriquece compras con eventos de auditoría + ActivityLog (misma página de resultados). */
+async function buildTrazabilidadComprasRows(compras) {
+  if (compras.length === 0) return [];
 
     const compraIds = compras.map((c) => c.id);
     const recepcionIds = compras.map((c) => c.recepcion?.id).filter(Boolean);
@@ -286,6 +264,57 @@ router.get('/compras', async (req, res) => {
       eventos: mergeEventos(auditoriaByCompra.get(c.id) || [], byCompraId.get(c.id) || []),
     }));
 
+    return out;
+}
+
+/** GET /trazabilidad/compras - Trazabilidad por compra (logs + usuario). Requiere ver-compras o trazabilidad-compras. */
+router.get('/compras', async (req, res) => {
+  try {
+    if (!tienePermiso(req.permisos, 'ver-compras') && !tienePermiso(req.permisos, 'trazabilidad-compras')) {
+      return sendError(res, 403, MSG.AUTH_SIN_PERMISO, 'TRAZ_001');
+    }
+
+    const { desde, hasta, proveedorId } = req.query;
+    logWarnIfInvalidYmdQuery('GET /trazabilidad/compras', 'desde', desde);
+    logWarnIfInvalidYmdQuery('GET /trazabilidad/compras', 'hasta', hasta);
+    const where = {};
+    if (desde) {
+      const d = parseYmdToPrismaDateOnly(desde);
+      if (d) where.fecha = { ...where.fecha, gte: d };
+    }
+    if (hasta) {
+      const d = parseYmdToPrismaDateOnly(hasta);
+      if (d) where.fecha = { ...where.fecha, lte: d };
+    }
+    if (proveedorId) where.proveedorId = proveedorId;
+
+    if (wantsPagedEnvelope(req.query)) {
+      const { page, pageSize, skip } = parseOffsetPagination(req.query);
+      const [total, compras] = await Promise.all([
+        prisma.compra.count({ where }),
+        prisma.compra.findMany({
+          where,
+          orderBy: compraTrazOrderBy,
+          skip,
+          take: pageSize,
+          select: compraTrazSelect,
+        }),
+      ]);
+      const items = await buildTrazabilidadComprasRows(compras);
+      return res.json({ items, total, page, pageSize });
+    }
+
+    const compras = await prisma.compra.findMany({
+      where,
+      orderBy: compraTrazOrderBy,
+      select: compraTrazSelect,
+    });
+
+    if (compras.length === 0) {
+      return res.json([]);
+    }
+
+    const out = await buildTrazabilidadComprasRows(compras);
     res.json(out);
   } catch (e) {
     sendError(res, 500, MSG.TRAZ_COMPRAS_LISTAR, 'TRAZ_002', e);

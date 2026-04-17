@@ -105,6 +105,7 @@ export const productos = {
 };
 
 export const compras = {
+  /** Con `page` en params la API devuelve `{ items, total, page, pageSize }`; sin `page`, array completo (legacy). */
   list: (params) => {
     const q = new URLSearchParams(params).toString();
     return api(`/compras${q ? `?${q}` : ''}`);
@@ -116,6 +117,7 @@ export const compras = {
 };
 
 export const trazabilidad = {
+  /** Con `page` en params: `{ items, total, page, pageSize }`; sin `page`: array. */
   compras: (params) => {
     const q = new URLSearchParams(params || {}).toString();
     return api(`/trazabilidad/compras${q ? `?${q}` : ''}`);
@@ -123,6 +125,7 @@ export const trazabilidad = {
 };
 
 export const recepciones = {
+  /** Con `page`: envelope paginado; sin `page`: array. */
   list: (params) => {
     const q = new URLSearchParams(params || {}).toString();
     return api(`/recepciones${q ? `?${q}` : ''}`);
@@ -133,8 +136,14 @@ export const recepciones = {
 };
 
 export const infoFinalArticulos = {
-  /** Lista artículos recepcionados en la fecha (YYYY-MM-DD), con info Tecnolar y costo ponderado */
-  list: (fecha) => api(`/info-final-articulos?fecha=${encodeURIComponent(fecha || '')}`),
+  /** Lista artículos en la fecha. Con `page`/`pageSize` en el segundo argumento: envelope `{ items, total, page, pageSize }`. */
+  list: (fecha, pagination = {}) => {
+    const clean = Object.fromEntries(
+      Object.entries({ fecha: fecha || '', ...pagination }).filter(([, v]) => v !== undefined && v !== ''),
+    );
+    const q = new URLSearchParams(clean).toString();
+    return api(`/info-final-articulos?${q}`);
+  },
   /** Días con al menos una recepción con detalle (últimos ~450 días), según día de recepción */
   fechasConDatos: () => api('/info-final-articulos/fechas-con-datos'),
   /** Guardar UXB para un artículo en una fecha (registra en historial) */
@@ -142,10 +151,13 @@ export const infoFinalArticulos = {
 };
 
 export const users = {
+  /** Con `page` en params: `{ items, total, page, pageSize }`. Sin `page`: array (p. ej. selector en Historial). */
   list: (params) => {
     const q = new URLSearchParams(params || {}).toString();
     return api(`/users${q ? `?${q}` : ''}`);
   },
+  /** Resumen mínimo (id, nombre, email) para selectores. Requiere gestión de usuarios. */
+  getSummary: (id) => api(`/users/${encodeURIComponent(id)}/resumen`),
   /** Datos desde dbo.Usuarios (ELABASTECEDOR) por código. Solo con login externo. */
   elabDetalle: (externUserId) =>
     api(`/users/extern/${encodeURIComponent(String(externUserId))}/elab`),

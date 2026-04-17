@@ -10,6 +10,7 @@ import { useResponse } from '../context/ResponseContext';
 import ProveedorLabel from '../components/ProveedorLabel';
 import { formatNum, formatDate, todayStr } from '../lib/format';
 import { NOTIFICATIONS_POLL_REQUEST } from '../lib/notificationEvents';
+import ListPaginationBar from '../components/ListPaginationBar';
 import './RecepcionListado.css';
 
 function getNumeroCompra(c) {
@@ -26,6 +27,9 @@ function parseNum(str) {
 
 export default function RecepcionListado() {
   const [list, setList] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
   const [filtroDesde, setFiltroDesde] = useState('');
   const [filtroHasta, setFiltroHasta] = useState('');
@@ -37,17 +41,33 @@ export default function RecepcionListado() {
   const { showSuccess, showError } = useResponse();
 
   const params = useMemo(() => {
-    const p = { sinRecepcion: true };
+    const p = { sinRecepcion: true, page: String(page), pageSize: String(pageSize) };
     if (filtroDesde) p.desde = filtroDesde;
     if (filtroHasta) p.hasta = filtroHasta;
     return p;
-  }, [filtroDesde, filtroHasta]);
+  }, [filtroDesde, filtroHasta, page, pageSize]);
+
+  const filtrosKey = `${filtroDesde}|${filtroHasta}`;
+  useEffect(() => {
+    setPage(1);
+  }, [filtrosKey]);
+
+  const applyListPayload = (data) => {
+    if (data && Array.isArray(data.items)) {
+      setList(data.items);
+      setTotal(typeof data.total === 'number' ? data.total : data.items.length);
+    } else {
+      const arr = Array.isArray(data) ? data : [];
+      setList(arr);
+      setTotal(arr.length);
+    }
+  };
 
   const loadList = useCallback(() => {
     setLoading(true);
     return compras.list(params)
-      .then((data) => setList(Array.isArray(data) ? data : []))
-      .catch(() => setList([]))
+      .then((data) => applyListPayload(data))
+      .catch(() => { setList([]); setTotal(0); })
       .finally(() => setLoading(false));
   }, [params]);
 
@@ -55,8 +75,8 @@ export default function RecepcionListado() {
     let cancelled = false;
     setLoading(true);
     compras.list(params)
-      .then((data) => { if (!cancelled) setList(Array.isArray(data) ? data : []); })
-      .catch(() => { if (!cancelled) setList([]); })
+      .then((data) => { if (!cancelled) applyListPayload(data); })
+      .catch(() => { if (!cancelled) { setList([]); setTotal(0); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [params]);
@@ -124,9 +144,9 @@ export default function RecepcionListado() {
       await recepciones.save({ compraId: compra.id, detalles });
       showSuccess('Recepción guardada correctamente.');
       window.dispatchEvent(new CustomEvent(NOTIFICATIONS_POLL_REQUEST));
-      setList((prev) => prev.filter((c) => c.id !== compra.id));
       setExpandidoId(null);
       setRecepcionCargada((prev) => ({ ...prev, [compra.id]: true }));
+      await loadList();
     } catch (e) {
       showError(e ?? { message: 'Error al guardar la recepción' });
     } finally {
@@ -188,6 +208,7 @@ export default function RecepcionListado() {
         ) : list.length === 0 ? (
           <div className="recepcion-listado-empty">No hay compras en el rango de fechas elegido.</div>
         ) : (
+          <>
           <div className="recepcion-listado-list">
             {list.map((c) => (
               <article key={c.id} className="recepcion-listado-card">
@@ -276,6 +297,16 @@ export default function RecepcionListado() {
               </article>
             ))}
           </div>
+          <ListPaginationBar
+            total={total}
+            page={page}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            disabled={loading}
+            navLabel="Paginación de compras pendientes de recepción"
+          />
+          </>
         )}
       </main>
     </div>

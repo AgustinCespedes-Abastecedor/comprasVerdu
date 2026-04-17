@@ -13,7 +13,7 @@
 .gestion-usuarios-modal-edit-btn-cancel,
 .gestion-usuarios-modal-edit-btn-save,
 .logs-btn-refresh,
-.logs-pagination-btn,
+.list-pg-btn,
 .recepcion-listado-btn-guardar,
 .vercompras-btn-export,
 .verrecepciones-btn-precio,
@@ -165,7 +165,7 @@
   filter: none;
 }
 
-.logs-pagination-btn {
+.list-pg-btn {
   color: var(--btn-fg-surface);
   text-shadow: none;
   background: var(--btn-grad-surface);
@@ -174,7 +174,7 @@
   letter-spacing: 0.12em;
 }
 
-.logs-pagination-btn:hover:not(:disabled) {
+.list-pg-btn:hover:not(:disabled) {
   border-color: var(--border-hover);
   filter: brightness(1.05);
 }

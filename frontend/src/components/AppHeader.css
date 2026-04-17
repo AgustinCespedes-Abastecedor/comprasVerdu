@@ -1,5 +1,7 @@
 /* Barra superior compartida: logo siempre centrado en el eje X */
 .app-header {
+  /* Altura útil para anclar dropdowns/toasts fijos (campana) sin solapar el header */
+  --app-header-stack-height: 4rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -136,6 +138,7 @@
 
 /* ----- App/Android: header más compacto y profesional ----- */
 html.is-native .app-header {
+  --app-header-stack-height: 3.2rem;
   min-height: 3rem;
   padding: 0.4rem 0.65rem;
   padding-left: max(0.65rem, calc(var(--app-safe-left) + 0.3rem));
@@ -205,6 +208,7 @@ html.is-native .app-header .notification-bell__trigger {
 /* Móvil en navegador: misma densidad que APK (sin depender de is-native) */
 @media (max-width: 768px) {
   .app-header {
+    --app-header-stack-height: 3.35rem;
     min-height: 3.25rem;
     padding: 0.5rem 0.75rem;
     padding-left: max(0.75rem, calc(var(--app-safe-left) + 0.35rem));

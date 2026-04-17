@@ -19,6 +19,8 @@ import UsuarioElabDetailModal from '../components/gestion/UsuarioElabDetailModal
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useIsNativeApp } from '../hooks/useIsNativeApp';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import ListPaginationBar from '../components/ListPaginationBar';
+import { normalizeUsersListPayload } from '../lib/usersApiResponse';
 import './GestionUsuarios.css';
 
 /** Espera a que el usuario deje de escribir antes de consultar al servidor (ms). */
@@ -27,6 +29,9 @@ const BUSCAR_USUARIOS_DEBOUNCE_MS = 380;
 export default function GestionUsuarios() {
   const { user } = useAuth();
   const [list, setList] = useState([]);
+  const [listTotal, setListTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [rolesList, setRolesList] = useState([]);
   /** Solo la primera carga de la lista: pantalla completa con AppLoader. */
   const [initialLoading, setInitialLoading] = useState(true);
@@ -72,11 +77,21 @@ export default function GestionUsuarios() {
   }, []);
 
   const buildUserListParams = useCallback(() => {
-    const params = {};
+    const params = { page: String(page), pageSize: String(pageSize) };
     if (debouncedSearch.trim()) params.q = debouncedSearch.trim();
     if (roleFilter) params.roleId = roleFilter;
     return params;
+  }, [debouncedSearch, roleFilter, page, pageSize]);
+
+  useEffect(() => {
+    setPage(1);
   }, [debouncedSearch, roleFilter]);
+
+  const applyUsersPayload = (data) => {
+    const { items, total } = normalizeUsersListPayload(data);
+    setList(items);
+    setListTotal(total);
+  };
 
   /** Petición al servidor para la lista (compartida por efecto y acciones manuales). */
   const fetchUserListFromServer = useCallback(
@@ -89,12 +104,13 @@ export default function GestionUsuarios() {
     try {
       const data = await fetchUserListFromServer();
       if (seq !== listFetchSeqRef.current) return;
-      setList(data);
+      applyUsersPayload(data);
       setError('');
       setErrorCode('');
     } catch (e) {
       if (seq !== listFetchSeqRef.current) return;
       setList([]);
+      setListTotal(0);
       setError(e.message);
       setErrorCode(e?.code ?? '');
     } finally {
@@ -131,12 +147,13 @@ export default function GestionUsuarios() {
       try {
         const data = await fetchUserListFromServer();
         if (cancelled || seq !== listFetchSeqRef.current) return;
-        setList(data);
+        applyUsersPayload(data);
         setError('');
         setErrorCode('');
       } catch (e) {
         if (cancelled || seq !== listFetchSeqRef.current) return;
         setList([]);
+        setListTotal(0);
         setError(e.message);
         setErrorCode(e?.code ?? '');
       }
@@ -150,7 +167,7 @@ export default function GestionUsuarios() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedSearch, roleFilter, fetchUserListFromServer]);
+  }, [debouncedSearch, roleFilter, fetchUserListFromServer, page, pageSize]);
 
   const { registerRefresh } = usePullToRefresh();
   const doRefresh = useCallback(async () => {
@@ -405,9 +422,9 @@ export default function GestionUsuarios() {
                     )}
                   </p>
                 )}
-                {!initialLoading && list.length > 0 && (
+                {!initialLoading && listTotal > 0 && (
                   <p className="gestion-usuarios-count" aria-live="polite">
-                    {list.length} {list.length === 1 ? 'usuario' : 'usuarios'}
+                    {listTotal.toLocaleString('es-AR')} {listTotal === 1 ? 'usuario' : 'usuarios'} en total
                   </p>
                 )}
                 {authConfigReady && !externalAuthLogin && (
@@ -441,7 +458,7 @@ export default function GestionUsuarios() {
 
             {initialLoading ? (
               <AppLoader message="Cargando usuarios..." />
-            ) : list.length === 0 ? (
+            ) : listTotal === 0 ? (
               <div className="gestion-usuarios-table-wrap gestion-usuarios-table-wrap--list">
                 <div className="gestion-usuarios-empty">
                   <p>No hay usuarios que coincidan con los filtros.</p>
@@ -507,6 +524,17 @@ export default function GestionUsuarios() {
                   })}
                 </ul>
               </div>
+            )}
+            {!initialLoading && listTotal > 0 && (
+              <ListPaginationBar
+                total={listTotal}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                disabled={listRefreshing}
+                navLabel="Paginación de usuarios"
+              />
             )}
           </section>
         )}

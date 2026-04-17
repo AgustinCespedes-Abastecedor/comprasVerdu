@@ -10,6 +10,7 @@ import {
   tituloRecepcionCompraProveedorBultos,
   formatMontoNotificacion,
 } from '../lib/notifications.js';
+import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
 
 const router = Router();
 
@@ -31,36 +32,54 @@ router.get('/', soloVerRecepciones, async (req, res) => {
         if (d) where.compra.fecha = { ...where.compra.fecha, lte: d };
       }
     }
-    const recepciones = await prisma.recepcion.findMany({
-      where,
-      orderBy: [{ compra: { numeroCompra: 'asc' } }, { createdAt: 'asc' }],
-      include: {
-        compra: {
-          select: {
-            id: true,
-            numeroCompra: true,
-            fecha: true,
-            createdAt: true,
-            proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
-          },
+    const include = {
+      compra: {
+        select: {
+          id: true,
+          numeroCompra: true,
+          fecha: true,
+          createdAt: true,
+          proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
         },
-        user: { select: { id: true, nombre: true } },
-        detalles: {
-          include: {
-            detalleCompra: {
-              include: {
-                producto: {
-                  select: {
-                    id: true,
-                    codigo: true,
-                    descripcion: true,
-                  },
+      },
+      user: { select: { id: true, nombre: true } },
+      detalles: {
+        include: {
+          detalleCompra: {
+            include: {
+              producto: {
+                select: {
+                  id: true,
+                  codigo: true,
+                  descripcion: true,
                 },
               },
             },
           },
         },
       },
+    };
+    const orderBy = [{ compra: { numeroCompra: 'asc' } }, { createdAt: 'asc' }];
+
+    if (wantsPagedEnvelope(req.query)) {
+      const { page, pageSize, skip } = parseOffsetPagination(req.query);
+      const [total, items] = await Promise.all([
+        prisma.recepcion.count({ where }),
+        prisma.recepcion.findMany({
+          where,
+          orderBy,
+          skip,
+          take: pageSize,
+          include,
+        }),
+      ]);
+      return res.json({ items, total, page, pageSize });
+    }
+
+    const recepciones = await prisma.recepcion.findMany({
+      where,
+      orderBy,
+      include,
     });
     res.json(recepciones);
   } catch (e) {

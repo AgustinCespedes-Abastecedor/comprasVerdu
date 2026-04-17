@@ -71,7 +71,92 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  align-items: center;
+  align-items: flex-start;
+}
+
+.logs-filters-user-wrap {
+  flex: 1 1 100%;
+  min-width: min(100%, 18rem);
+  max-width: 28rem;
+}
+
+@media (min-width: 720px) {
+  .logs-filters-user-wrap {
+    flex: 1 1 16rem;
+  }
+}
+
+/* Filtro de usuario (Historial): búsqueda + select paginado */
+.logs-user-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.logs-user-filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.logs-user-filter-row--select {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.logs-user-filter-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.logs-user-filter-search {
+  width: 100%;
+}
+
+.logs-user-filter-hint {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.logs-user-filter-error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--danger, #b91c1c);
+}
+
+.logs-user-filter-select {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.logs-user-filter-more {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.logs-user-filter-more:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.logs-user-filter-more:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .logs-select,
@@ -108,73 +193,6 @@
   font-size: 0.75rem;
   color: var(--text-muted);
   margin-left: 0.25rem;
-}
-
-.logs-pagination {
-  margin-top: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.75rem 0;
-  border-top: 1px solid var(--border);
-}
-
-.logs-pagination-info {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
-
-.logs-pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.logs-pagination-size {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
-
-.logs-pagination-size span {
-  white-space: nowrap;
-}
-
-.logs-select--small {
-  padding: 0.35rem 0.5rem;
-  min-width: 4rem;
-}
-
-.logs-pagination-btn {
-  padding: 0.4rem 0.6rem;
-  font-size: 0.875rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.logs-pagination-btn:hover:not(:disabled) {
-  border-color: var(--border-hover);
-  background: var(--bg);
-}
-
-.logs-pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.logs-pagination-page {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  padding: 0 0.25rem;
 }
 
 .logs-table-wrap {
@@ -306,14 +324,18 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 1.25rem;
+  padding: max(1.25rem, var(--app-safe-top))
+           max(1.25rem, var(--app-safe-right))
+           max(1.25rem, var(--app-safe-bottom))
+           max(1.25rem, var(--app-safe-left));
+  box-sizing: border-box;
 }
 
 .logs-modal {
   width: 100%;
-  max-width: min(92vw, 720px);
-  height: min(92vh, 900px);
-  max-height: min(92vh, 900px);
+  max-width: min(92dvw, 720px);
+  height: min(92dvh, 900px);
+  max-height: min(92dvh, 900px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -687,10 +709,16 @@ html.is-native .logs-btn-refresh {
   -webkit-tap-highlight-color: transparent;
 }
 
-html.is-native .logs-pagination-btn {
-  min-width: 24px;
-  min-height: 24px;
+html.is-native .list-pg-btn {
+  min-height: 40px;
+  min-width: 2.5rem;
+  padding: 0.4rem 0.65rem;
   -webkit-tap-highlight-color: transparent;
+}
+
+html.is-native .list-pg-select {
+  min-height: 40px;
+  padding: 0.4rem 0.55rem;
 }
 
 /* Modal de auditoría: el contenido usa Modal.css; reforzar scroll y toques en APK */

@@ -8,7 +8,8 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 1.25rem;
+  padding: max(1rem, var(--app-safe-top)) max(1rem, var(--app-safe-right)) max(1rem, var(--app-safe-bottom)) max(1rem, var(--app-safe-left));
+  box-sizing: border-box;
   animation: modal-overlay-in 0.18s ease-out;
 }
 
@@ -25,8 +26,10 @@
 .modal-overlay--top {
   align-items: flex-start;
   justify-content: center;
-  padding-top: max(1.25rem, env(safe-area-inset-top, 0px));
-  padding-bottom: 1rem;
+  padding-top: max(1.25rem, var(--app-safe-top));
+  padding-right: max(1rem, var(--app-safe-right));
+  padding-bottom: max(1rem, var(--app-safe-bottom));
+  padding-left: max(1rem, var(--app-safe-left));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -55,19 +58,19 @@
 }
 
 .modal-box--medium {
-  max-width: min(92vw, 520px);
-  max-height: min(90vh, 640px);
+  max-width: min(92dvw, 520px);
+  max-height: min(90dvh, 640px);
 }
 
 .modal-box--wide {
-  max-width: min(92vw, 640px);
-  max-height: min(90vh, 800px);
+  max-width: min(92dvw, 640px);
+  max-height: min(90dvh, 800px);
 }
 
 .modal-box--large {
-  max-width: min(92vw, 720px);
-  height: min(92vh, 900px);
-  max-height: min(92vh, 900px);
+  max-width: min(92dvw, 720px);
+  height: min(92dvh, 900px);
+  max-height: min(92dvh, 900px);
 }
 
 .modal-header {
@@ -162,15 +165,15 @@ html.is-native .modal-overlay--top {
 }
 
 html.is-native .modal-box--medium {
-  max-height: min(90vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
+  max-height: min(90dvh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
 }
 
 html.is-native .modal-box--wide {
-  max-height: min(90vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
+  max-height: min(90dvh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
 }
 
 html.is-native .modal-box--large {
-  max-height: min(92vh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
+  max-height: min(92dvh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 2rem));
 }
 
 html.is-native .modal-close {

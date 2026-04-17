@@ -9,6 +9,7 @@ import InfoFinalMonthGrid from '../components/InfoFinalMonthGrid';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatMoneda, formatPct, formatEntero, todayStr } from '../lib/format';
 import { formatForReport } from '../lib/errorReport';
+import ListPaginationBar from '../components/ListPaginationBar';
 import './VerCompras.css';
 
 /** Redondea a 2 decimales para comparar números. */
@@ -34,6 +35,9 @@ function diferenciasTecnolarRecepcion(item) {
 
 export default function InfoFinalArticulos() {
   const [list, setList] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(false);
   const [fecha, setFecha] = useState(() => todayStr());
   const [expandidoKey, setExpandidoKey] = useState(null);
@@ -56,27 +60,42 @@ export default function InfoFinalArticulos() {
       .catch(() => setDiasConDatos(new Set()));
   }, []);
 
+  useEffect(() => {
+    setPage(1);
+  }, [fecha]);
+
+  const applyListPayload = (data) => {
+    if (data && Array.isArray(data.items)) {
+      setList(data.items);
+      setTotal(typeof data.total === 'number' ? data.total : data.items.length);
+    } else {
+      const arr = Array.isArray(data) ? data : [];
+      setList(arr);
+      setTotal(arr.length);
+    }
+  };
+
   const loadList = useCallback(() => {
     if (!fecha) return Promise.resolve();
     setLoading(true);
     return infoFinalArticulos
-      .list(fecha)
-      .then((data) => setList(Array.isArray(data) ? data : []))
-      .catch(() => setList([]))
+      .list(fecha, { page: String(page), pageSize: String(pageSize) })
+      .then((data) => applyListPayload(data))
+      .catch(() => { setList([]); setTotal(0); })
       .finally(() => setLoading(false));
-  }, [fecha]);
+  }, [fecha, page, pageSize]);
 
   useEffect(() => {
     if (!fecha) return;
     let cancelled = false;
     setLoading(true);
     infoFinalArticulos
-      .list(fecha)
-      .then((data) => { if (!cancelled) setList(Array.isArray(data) ? data : []); })
-      .catch(() => { if (!cancelled) setList([]); })
+      .list(fecha, { page: String(page), pageSize: String(pageSize) })
+      .then((data) => { if (!cancelled) applyListPayload(data); })
+      .catch(() => { if (!cancelled) { setList([]); setTotal(0); } })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [fecha]);
+  }, [fecha, page, pageSize]);
 
   useEffect(() => {
     loadMarcasCalendario();
@@ -189,13 +208,14 @@ export default function InfoFinalArticulos() {
       </section>
       {loading ? (
         <AppLoader message="Cargando artículos..." />
-      ) : list.length === 0 ? (
+      ) : total === 0 ? (
         <div className="vercompras-empty">
           No hay artículos con recepción modificada ese día calendario (se usa la última modificación: precios,
           líneas guardadas o UXB). Elegí el día en que guardaste los datos; los días con marca naranja tuvieron
           actividad en recepciones.
         </div>
       ) : (
+        <>
         <div className="vercompras-list info-final-list">
           {list.map((item) => {
             const key = itemKey(item);
@@ -332,6 +352,16 @@ export default function InfoFinalArticulos() {
             );
           })}
         </div>
+        <ListPaginationBar
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          disabled={loading}
+          navLabel="Paginación de artículos del día"
+        />
+        </>
       )}
     </div>
   );

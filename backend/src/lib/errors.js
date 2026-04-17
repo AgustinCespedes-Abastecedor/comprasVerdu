@@ -65,6 +65,7 @@ export const MSG = {
   USERS_ROL_OBLIGATORIO: 'Debe seleccionar un rol.',
   USERS_ROL_INVALIDO: 'El rol seleccionado no es válido.',
   USERS_NO_ENCONTRADO: 'Usuario no encontrado.',
+  USERS_RESUMEN: 'No se pudo obtener los datos del usuario.',
   USERS_DEBE_HABER_ROL: 'Debe seleccionar un rol.',
   USERS_PASSWORD_CORTA: 'La contraseña debe tener al menos 8 caracteres.',
   USERS_PASSWORD_LARGA: 'La contraseña no puede superar 128 caracteres.',

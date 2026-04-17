@@ -64,13 +64,21 @@
   border: 2px solid var(--surface);
 }
 
+/*
+ * Panel de notificaciones: fixed respecto al viewport con márgenes seguros.
+ * Evita que en APK o móvil se corte al usar position:absolute + ancho ~92vw anclado solo a la campana.
+ */
 .notification-bell__dropdown {
-  position: absolute;
-  z-index: 80;
-  right: 0;
-  top: calc(100% + 0.35rem);
-  width: min(92vw, 22rem);
-  max-height: min(72vh, 26rem);
+  position: fixed;
+  z-index: 160;
+  left: max(0.5rem, var(--app-safe-left));
+  right: max(0.5rem, var(--app-safe-right));
+  top: calc(var(--app-safe-top) + var(--app-header-stack-height, 4rem) + 0.35rem);
+  width: auto;
+  max-width: 22rem;
+  margin-inline: auto;
+  box-sizing: border-box;
+  max-height: min(72dvh, 26rem);
   display: flex;
   flex-direction: column;
   border-radius: 12px;
@@ -115,6 +123,7 @@
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .notification-bell__empty {
@@ -222,4 +231,8 @@ html.is-native .notification-bell__trigger {
 html.is-native .notification-bell__icon {
   width: 0.8125rem;
   height: 0.8125rem;
+}
+
+html.is-native .notification-bell__dropdown {
+  max-height: min(68dvh, calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - var(--app-header-stack-height, 3.2rem) - 1.25rem));
 }

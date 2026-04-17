@@ -10,6 +10,7 @@ import ProveedorLabel from '../components/ProveedorLabel';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatDate, formatDateTime, formatNum, formatProveedorText, todayStr } from '../lib/format';
+import ListPaginationBar from '../components/ListPaginationBar';
 import './TrazabilidadCompras.css';
 
 const isApp = () => Capacitor.isNativePlatform();
@@ -84,6 +85,9 @@ function detalleEvento(ev) {
 
 export default function TrazabilidadCompras() {
   const [list, setList] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
   const [filtroDesde, setFiltroDesde] = useState('');
   const [filtroHasta, setFiltroHasta] = useState('');
@@ -122,21 +126,34 @@ export default function TrazabilidadCompras() {
     apiProveedores.list().then(setProveedoresList).catch(() => setProveedoresList([]));
   }, []);
 
+  const filtrosKey = `${filtroDesde}|${filtroHasta}|${proveedorId}`;
+  useEffect(() => {
+    setPage(1);
+  }, [filtrosKey]);
+
   const cargar = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page: String(page), pageSize: String(pageSize) };
       if (filtroDesde) params.desde = filtroDesde;
       if (filtroHasta) params.hasta = filtroHasta;
       if (proveedorId) params.proveedorId = proveedorId;
       const data = await trazabilidad.compras(params);
-      setList(Array.isArray(data) ? data : []);
+      if (data && Array.isArray(data.items)) {
+        setList(data.items);
+        setTotal(typeof data.total === 'number' ? data.total : data.items.length);
+      } else {
+        const arr = Array.isArray(data) ? data : [];
+        setList(arr);
+        setTotal(arr.length);
+      }
     } catch {
       setList([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [filtroDesde, filtroHasta, proveedorId]);
+  }, [filtroDesde, filtroHasta, proveedorId, page, pageSize]);
 
   useEffect(() => {
     cargar();
@@ -331,6 +348,7 @@ export default function TrazabilidadCompras() {
       ) : list.length === 0 ? (
         <div className="traz-empty">No hay compras con los filtros elegidos.</div>
       ) : (
+        <>
         <div className="traz-list">
           {list.map((c) => {
             const expandido = expandidoKey === c.id;
@@ -433,6 +451,16 @@ export default function TrazabilidadCompras() {
             );
           })}
         </div>
+        <ListPaginationBar
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          disabled={loading}
+          navLabel="Paginación de trazabilidad por compra"
+        />
+        </>
       )}
     </div>
   );

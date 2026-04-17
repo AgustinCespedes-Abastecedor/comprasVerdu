@@ -7,6 +7,7 @@ import { sendError, MSG } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
 import { appendCompraAuditoriaEvento } from '../lib/compraAuditoria.js';
 import { getCalendarDayBoundsUtc, utcInstantToCalendarDayString } from '../lib/appCalendarDay.js';
+import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
 
 const router = Router();
 
@@ -136,50 +137,61 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
       });
     }
 
-    const codigosUnicos = [...new Set(list.map((a) => a.codigo))];
-    let ivaPorCodigo = {};
-    try {
-      ivaPorCodigo = await fetchIvaPorcentajePorCodigos(codigosUnicos);
-    } catch (e) {
-      console.error('Info final: IVA por código (no crítico):', e?.message || e);
-    }
+    list.sort(
+      (a, b) => (a.descripcion || '').localeCompare(b.descripcion || '', 'es', { sensitivity: 'base' })
+        || String(a.codigo).localeCompare(String(b.codigo)),
+    );
 
-    const listConIva = list.map((item) => {
-      const codNorm = normalizarCodigoStock(item.codigo);
-      const ivaPct = ivaPorCodigo[codNorm] ?? 0;
-      const costoConIva = item.costoConIva != null ? Number(item.costoConIva) : null;
-      let costoSinIva = null;
-      if (costoConIva != null && ivaPct > 0) {
-        costoSinIva = Math.round((costoConIva / (1 + ivaPct / 100)) * 100) / 100;
-      } else if (costoConIva != null) {
-        costoSinIva = costoConIva;
+    const aplicarIvaYTecnolar = async (subset) => {
+      const codigosSubset = [...new Set(subset.map((a) => a.codigo))];
+      let ivaPorCodigo = {};
+      try {
+        ivaPorCodigo = codigosSubset.length ? await fetchIvaPorcentajePorCodigos(codigosSubset) : {};
+      } catch (e) {
+        console.error('Info final: IVA por código (no crítico):', e?.message || e);
       }
-      return { ...item, costoConIva, costoSinIva, ivaPorcentaje: ivaPct > 0 ? ivaPct : null };
-    });
+      const conIva = subset.map((item) => {
+        const codNorm = normalizarCodigoStock(item.codigo);
+        const ivaPct = ivaPorCodigo[codNorm] ?? 0;
+        const costoConIva = item.costoConIva != null ? Number(item.costoConIva) : null;
+        let costoSinIva = null;
+        if (costoConIva != null && ivaPct > 0) {
+          costoSinIva = Math.round((costoConIva / (1 + ivaPct / 100)) * 100) / 100;
+        } else if (costoConIva != null) {
+          costoSinIva = costoConIva;
+        }
+        return { ...item, costoConIva, costoSinIva, ivaPorcentaje: ivaPct > 0 ? ivaPct : null };
+      });
+      let tecnolarMap = {};
+      try {
+        tecnolarMap = codigosSubset.length ? await fetchInfoTecnolarPorCodigos(codigosSubset) : {};
+      } catch (errTecnolar) {
+        console.error('Info final: fetch Tecnolar (no crítico):', errTecnolar?.message || errTecnolar);
+      }
+      return conIva.map((item) => {
+        const norm = normalizarCodigoStock(item.codigo);
+        const t = tecnolarMap[norm] || { uxb: null, precioCosto: 0, margen: 0, precioVenta: 0 };
+        return {
+          ...item,
+          tecnolar: {
+            uxb: t.uxb,
+            precioCosto: t.precioCosto,
+            margen: t.margen,
+            precioVenta: t.precioVenta,
+          },
+        };
+      });
+    };
 
-    let tecnolarMap = {};
-    try {
-      tecnolarMap = await fetchInfoTecnolarPorCodigos(codigosUnicos);
-    } catch (errTecnolar) {
-      console.error('Info final: fetch Tecnolar (no crítico):', errTecnolar?.message || errTecnolar);
+    if (wantsPagedEnvelope(req.query)) {
+      const { page, pageSize, skip } = parseOffsetPagination(req.query);
+      const total = list.length;
+      const pageSlice = list.slice(skip, skip + pageSize);
+      const items = await aplicarIvaYTecnolar(pageSlice);
+      return res.json({ items, total, page, pageSize });
     }
 
-    const listConTecnolar = listConIva.map((item) => {
-      const norm = normalizarCodigoStock(item.codigo);
-      const t = tecnolarMap[norm] || { uxb: null, precioCosto: 0, margen: 0, precioVenta: 0 };
-      return {
-        ...item,
-        tecnolar: {
-          uxb: t.uxb,
-          precioCosto: t.precioCosto,
-          margen: t.margen,
-          precioVenta: t.precioVenta,
-        },
-      };
-    });
-
-    listConTecnolar.sort((a, b) => (a.descripcion || '').localeCompare(b.descripcion || '') || String(a.codigo).localeCompare(String(b.codigo)));
-
+    const listConTecnolar = await aplicarIvaYTecnolar(list);
     res.json(listConTecnolar);
   } catch (e) {
     sendError(res, 500, MSG.INFO_OBTENER, 'INFO_003', e);

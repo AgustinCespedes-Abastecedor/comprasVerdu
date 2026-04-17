@@ -1,19 +1,18 @@
 .response-toast {
   position: fixed;
   top: max(1rem, calc(var(--app-safe-top) + 0.5rem));
-  left: max(1rem, var(--app-safe-left));
-  right: max(1rem, var(--app-safe-right));
-  margin-left: auto;
-  margin-right: auto;
-  width: 100%;
-  max-width: min(calc(100vw - 2rem), 480px);
-  transform: translateX(0);
+  left: max(0.65rem, var(--app-safe-left));
+  right: max(0.65rem, var(--app-safe-right));
+  width: auto;
+  max-width: 480px;
+  margin-inline: auto;
+  box-sizing: border-box;
   z-index: 9999;
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0.875rem 1.25rem;
-  min-width: 280px;
+  min-width: 0;
   border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   font-size: 0.9375rem;

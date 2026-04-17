@@ -8,6 +8,7 @@ import { validateEmail, validatePassword, validateNombre } from '../lib/validati
 import { isExternalAuthLoginEnabled } from '../lib/configAuthExterno.js';
 import { getMergedUsersForGestion } from '../lib/usuariosListMerged.js';
 import { fetchUsuarioExternoDetallePorCodigo } from '../lib/usuariosSqlServer.js';
+import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
 
 const router = Router();
 
@@ -38,7 +39,13 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
     if (isExternalAuthLoginEnabled()) {
       try {
         const list = await getMergedUsersForGestion({ q, roleId, activo });
-        return res.json(list);
+        if (!wantsPagedEnvelope(req.query)) {
+          return res.json(list);
+        }
+        const { page, pageSize, skip } = parseOffsetPagination(req.query);
+        const total = list.length;
+        const items = list.slice(skip, skip + pageSize);
+        return res.json({ items, total, page, pageSize });
       } catch (e) {
         return sendError(res, 503, MSG.USERS_SQL_LISTAR, 'USERS_024', e);
       }
@@ -54,34 +61,23 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
     if (roleId && typeof roleId === 'string' && roleId.trim()) {
       where.roleId = roleId.trim();
     }
-    const users = await prisma.user.findMany({
-      where,
-      orderBy: [{ role: { nombre: 'asc' } }, { nombre: 'asc' }],
-      select: {
-        id: true,
-        email: true,
-        nombre: true,
-        externUserId: true,
-        roleId: true,
-        role: { select: { id: true, nombre: true } },
-        createdAt: true,
-        _count: { select: { compras: true } },
-      },
-    });
-    let withActivo = users.map((u) => ({ ...u, activo: true }));
-    try {
-      const activoRows = await prisma.user.findMany({
-        where: { id: { in: users.map((u) => u.id) } },
-        select: { id: true, activo: true },
-      });
-      const activoMap = Object.fromEntries(activoRows.map((r) => [r.id, r.activo]));
-      withActivo = users.map((u) => ({ ...u, activo: activoMap[u.id] !== false }));
-    } catch {
-      /* columna activo puede no existir aún */
-    }
-    if (activo === 'true' || activo === '1') withActivo = withActivo.filter((u) => u.activo !== false);
-    else if (activo === 'false' || activo === '0') withActivo = withActivo.filter((u) => u.activo === false);
-    const list = withActivo.map((u) => ({
+    if (activo === 'true' || activo === '1') where.activo = true;
+    else if (activo === 'false' || activo === '0') where.activo = false;
+
+    const orderBy = [{ role: { nombre: 'asc' } }, { nombre: 'asc' }];
+    const select = {
+      id: true,
+      email: true,
+      nombre: true,
+      externUserId: true,
+      roleId: true,
+      activo: true,
+      role: { select: { id: true, nombre: true } },
+      createdAt: true,
+      _count: { select: { compras: true } },
+    };
+
+    const mapUserRow = (u) => ({
       id: u.id,
       email: u.email,
       nombre: u.nombre,
@@ -91,10 +87,55 @@ router.get('/', soloGestionUsuarios, async (req, res) => {
       activo: u.activo !== false,
       createdAt: u.createdAt,
       _count: u._count,
-    }));
-    res.json(list);
+    });
+
+    if (wantsPagedEnvelope(req.query)) {
+      const { page, pageSize, skip } = parseOffsetPagination(req.query);
+      const [total, users] = await Promise.all([
+        prisma.user.count({ where }),
+        prisma.user.findMany({
+          where,
+          orderBy,
+          skip,
+          take: pageSize,
+          select,
+        }),
+      ]);
+      const items = users.map(mapUserRow);
+      return res.json({ items, total, page, pageSize });
+    }
+
+    const users = await prisma.user.findMany({
+      where,
+      orderBy,
+      select,
+    });
+    res.json(users.map(mapUserRow));
   } catch (e) {
     sendError(res, 500, MSG.USERS_LISTAR, 'USERS_001', e);
+  }
+});
+
+/**
+ * GET /users/:id/resumen — Nombre y email para selectores (p. ej. Historial de actividad).
+ * Debe declararse antes de PATCH /:id.
+ */
+router.get('/:id/resumen', soloGestionUsuarios, async (req, res) => {
+  try {
+    const id = String(req.params.id ?? '').trim();
+    if (!id) {
+      return sendError(res, 400, MSG.USERS_RESUMEN, 'USERS_028');
+    }
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, nombre: true, email: true },
+    });
+    if (!user) {
+      return sendError(res, 404, MSG.USERS_NO_ENCONTRADO, 'USERS_008');
+    }
+    return res.json(user);
+  } catch (e) {
+    return sendError(res, 500, MSG.USERS_RESUMEN, 'USERS_029', e);
   }
 });
 

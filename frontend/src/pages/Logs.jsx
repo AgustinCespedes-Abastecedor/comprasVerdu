@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { logs as logsApi, users } from '../api/client';
+import { logs as logsApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import AppHeader from '../components/AppHeader';
@@ -9,6 +9,8 @@ import AppLoader from '../components/AppLoader';
 import ThemeToggle from '../components/ThemeToggle';
 import { Eye } from 'lucide-react';
 import Modal from '../components/Modal';
+import LogsUserFilter from '../components/logs/LogsUserFilter';
+import ListPaginationBar from '../components/ListPaginationBar';
 import { formatDateTime, formatDateOnly, formatMoneda, formatPct, todayStr } from '../lib/format';
 import './Logs.css';
 
@@ -78,7 +80,6 @@ export default function Logs() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-  const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroUsuario, setFiltroUsuario] = useState('');
   const [filtroEntidad, setFiltroEntidad] = useState('');
@@ -108,18 +109,9 @@ export default function Logs() {
   }, [filtroUsuario, filtroEntidad, desde, hasta, page, pageSize]);
 
   useEffect(() => {
-    users.list({}).then(setUsersList).catch(() => setUsersList([]));
-  }, []);
-
-  useEffect(() => {
     setLoading(true);
     loadLogs().finally(() => setLoading(false));
   }, [loadLogs]);
-
-  const goToPage = (p) => {
-    const pNum = Math.max(1, Math.min(p, Math.ceil(total / pageSize) || 1));
-    setPage(pNum);
-  };
 
   const onFilterChange = () => setPage(1);
 
@@ -149,28 +141,23 @@ export default function Logs() {
         </p>
 
         <div className="logs-filters">
-          <select
-            value={filtroUsuario}
-            onChange={(e) => {
-              const v = e.target.value;
-              setFiltroUsuario(v);
-              if (v) {
-                setDesde('');
-                setHasta('');
-              } else {
-                setDesde(todayStr());
-                setHasta(todayStr());
-              }
-              onFilterChange();
-            }}
-            className="logs-select"
-            aria-label="Filtrar por usuario"
-          >
-            <option value="">Todos los usuarios</option>
-            {usersList.map((u) => (
-              <option key={u.id} value={u.id}>{u.nombre} ({u.email})</option>
-            ))}
-          </select>
+          <div className="logs-filters-user-wrap">
+            <LogsUserFilter
+              value={filtroUsuario}
+              disabled={loading}
+              onChange={(userId) => {
+                setFiltroUsuario(userId);
+                if (userId) {
+                  setDesde('');
+                  setHasta('');
+                } else {
+                  setDesde(todayStr());
+                  setHasta(todayStr());
+                }
+                onFilterChange();
+              }}
+            />
+          </div>
           <select
             value={filtroEntidad}
             onChange={(e) => { setFiltroEntidad(e.target.value); onFilterChange(); }}
@@ -256,65 +243,19 @@ export default function Logs() {
               )}
             </div>
             {total > 0 && (
-              <nav className="logs-pagination" aria-label="Paginación del historial">
-                <div className="logs-pagination-info">
-                  Mostrando {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, total)} de {total.toLocaleString('es-AR')} registros
-                </div>
-                <div className="logs-pagination-controls">
-                  <label className="logs-pagination-size">
-                    <span>Por página:</span>
-                    <select
-                      value={pageSize}
-                      onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                      className="logs-select logs-select--small"
-                      aria-label="Registros por página"
-                    >
-                      <option value={25}>25</option>
-                      <option value={50}>50</option>
-                      <option value={100}>100</option>
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    className="logs-pagination-btn"
-                    onClick={() => goToPage(1)}
-                    disabled={page <= 1}
-                    aria-label="Primera página"
-                  >
-                    ««
-                  </button>
-                  <button
-                    type="button"
-                    className="logs-pagination-btn"
-                    onClick={() => goToPage(page - 1)}
-                    disabled={page <= 1}
-                    aria-label="Página anterior"
-                  >
-                    «
-                  </button>
-                  <span className="logs-pagination-page">
-                    Página {page} de {Math.ceil(total / pageSize) || 1}
-                  </span>
-                  <button
-                    type="button"
-                    className="logs-pagination-btn"
-                    onClick={() => goToPage(page + 1)}
-                    disabled={page >= Math.ceil(total / pageSize)}
-                    aria-label="Página siguiente"
-                  >
-                    »
-                  </button>
-                  <button
-                    type="button"
-                    className="logs-pagination-btn"
-                    onClick={() => goToPage(Math.ceil(total / pageSize))}
-                    disabled={page >= Math.ceil(total / pageSize) || total === 0}
-                    aria-label="Última página"
-                  >
-                    »»
-                  </button>
-                </div>
-              </nav>
+              <ListPaginationBar
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setPage(1);
+                }}
+                disabled={loading}
+                navLabel="Paginación del historial"
+                pageSizeOptions={[25, 50, 100]}
+              />
             )}
           </>
         )}

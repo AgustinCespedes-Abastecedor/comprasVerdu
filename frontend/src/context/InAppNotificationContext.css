@@ -1,17 +1,18 @@
 .inapp-toast-stack {
   position: fixed;
   bottom: max(1rem, calc(var(--app-safe-bottom) + 0.75rem));
-  left: max(1rem, var(--app-safe-left));
-  right: max(1rem, var(--app-safe-right));
+  left: max(0.65rem, var(--app-safe-left));
+  right: max(0.65rem, var(--app-safe-right));
   z-index: 9998;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   align-items: stretch;
   pointer-events: none;
-  max-width: min(calc(100vw - 2rem), 420px);
-  margin-left: auto;
-  margin-right: auto;
+  width: auto;
+  max-width: 420px;
+  margin-inline: auto;
+  box-sizing: border-box;
 }
 
 .inapp-toast {
@@ -20,6 +21,7 @@
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
+  min-width: 0;
   border-radius: 10px;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
   border: 1px solid var(--border);

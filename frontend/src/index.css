@@ -3,6 +3,8 @@
 }
 
 :root {
+  /* Fallback si el panel de notificaciones se renderiza fuera de .app-header */
+  --app-header-stack-height: 4rem;
   --font: 'DM Sans', system-ui, sans-serif;
   /* Botones / CTAs: estilo neón (display, mayúsculas en CSS) */
   --font-button: 'Orbitron', 'DM Sans', system-ui, sans-serif;

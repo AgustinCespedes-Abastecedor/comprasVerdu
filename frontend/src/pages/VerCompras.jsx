@@ -8,9 +8,11 @@ import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import ProveedorLabel from '../components/ProveedorLabel';
-import { ChevronDown, Search, X } from 'lucide-react';
+import { ChevronDown, FileSpreadsheet, Loader2, Search, X } from 'lucide-react';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatNum, formatDate, todayStr, formatProveedorText, getProveedorNombre, getProveedorCodigo, fechaCivilYmdKey } from '../lib/format';
+import { fetchAllPagedItems } from '../lib/fetchPagedCollection';
+import ListPaginationBar from '../components/ListPaginationBar';
 import './VerCompras.css';
 
 const isApp = () => Capacitor.isNativePlatform();
@@ -271,7 +273,11 @@ function exportarPorArticulo(comprasList) {
 
 export default function VerCompras() {
   const [list, setList] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
+  const [exportando, setExportando] = useState(false);
   const [filtroDesde, setFiltroDesde] = useState('');
   const [filtroHasta, setFiltroHasta] = useState('');
   const [proveedorId, setProveedorId] = useState('');
@@ -309,25 +315,58 @@ export default function VerCompras() {
     apiProveedores.list().then(setProveedoresList).catch(() => setProveedoresList([]));
   }, []);
 
+  const filtrosKey = `${filtroDesde}|${filtroHasta}|${proveedorId}`;
+  useEffect(() => {
+    setPage(1);
+  }, [filtrosKey]);
+
   const cargar = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page: String(page), pageSize: String(pageSize) };
       if (filtroDesde) params.desde = filtroDesde;
       if (filtroHasta) params.hasta = filtroHasta;
       if (proveedorId) params.proveedorId = proveedorId;
       const data = await compras.list(params);
-      setList(data);
+      if (data && Array.isArray(data.items)) {
+        setList(data.items);
+        setTotal(typeof data.total === 'number' ? data.total : data.items.length);
+      } else {
+        setList(Array.isArray(data) ? data : []);
+        setTotal(Array.isArray(data) ? data.length : 0);
+      }
     } catch (e) {
       setList([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [filtroDesde, filtroHasta, proveedorId]);
+  }, [filtroDesde, filtroHasta, proveedorId, page, pageSize]);
 
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  const baseListParams = useMemo(() => {
+    const params = {};
+    if (filtroDesde) params.desde = filtroDesde;
+    if (filtroHasta) params.hasta = filtroHasta;
+    if (proveedorId) params.proveedorId = proveedorId;
+    return params;
+  }, [filtroDesde, filtroHasta, proveedorId]);
+
+  const exportarTodo = async (fn) => {
+    setExportando(true);
+    try {
+      const all = await fetchAllPagedItems(
+        ({ page: p, pageSize: ps }) => compras.list({ ...baseListParams, page: String(p), pageSize: String(ps) }),
+        { pageSize: 100 },
+      );
+      fn(all);
+    } finally {
+      setExportando(false);
+    }
+  };
 
   const { registerRefresh } = usePullToRefresh();
   useEffect(() => {
@@ -503,13 +542,35 @@ export default function VerCompras() {
           Filtro por <strong>fecha de compra</strong> cargada en la planilla (no por recepción).
         </p>
       </div>
-      {!loading && list.length > 0 && (
+      {!loading && total > 0 && (
         <div className="vercompras-export">
-          <button type="button" className="vercompras-btn-export" onClick={() => exportarPorProveedor(list)}>
-            Exportar por proveedor
+          <button
+            type="button"
+            className="vercompras-btn-export"
+            disabled={exportando}
+            onClick={() => exportarTodo(exportarPorProveedor)}
+            aria-label="Exportar a Excel por proveedor, con todo el filtro actual"
+          >
+            {exportando ? (
+              <Loader2 className="vercompras-btn-export-icon vercompras-btn-export-icon--spin" aria-hidden strokeWidth={2} />
+            ) : (
+              <FileSpreadsheet className="vercompras-btn-export-icon" aria-hidden strokeWidth={2} />
+            )}
+            <span className="vercompras-btn-export-label">por proveedor</span>
           </button>
-          <button type="button" className="vercompras-btn-export" onClick={() => exportarPorArticulo(list)}>
-            Exportar por artículo
+          <button
+            type="button"
+            className="vercompras-btn-export"
+            disabled={exportando}
+            onClick={() => exportarTodo(exportarPorArticulo)}
+            aria-label="Exportar a Excel por artículo, con todo el filtro actual"
+          >
+            {exportando ? (
+              <Loader2 className="vercompras-btn-export-icon vercompras-btn-export-icon--spin" aria-hidden strokeWidth={2} />
+            ) : (
+              <FileSpreadsheet className="vercompras-btn-export-icon" aria-hidden strokeWidth={2} />
+            )}
+            <span className="vercompras-btn-export-label">por artículo</span>
           </button>
         </div>
       )}
@@ -518,6 +579,7 @@ export default function VerCompras() {
       ) : list.length === 0 ? (
         <div className="vercompras-empty">No hay compras con los filtros elegidos.</div>
       ) : (
+        <>
         <div className="vercompras-list">
           {list.map((c) => {
             const expandido = expandidoKey === c.id;
@@ -598,6 +660,16 @@ export default function VerCompras() {
             );
           })}
         </div>
+        <ListPaginationBar
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+          disabled={loading}
+          navLabel="Paginación de compras"
+        />
+        </>
       )}
     </div>
   );
