@@ -47,7 +47,7 @@ Este documento resume el análisis de seguridad frente a ataques en red/Internet
 - **Límite global:** 300 peticiones por 15 minutos por IP en `/api`.
 - **Auth:** 10 peticiones por 15 minutos en `/api/auth/login` y `/api/auth/registro` (mitiga fuerza bruta).
 - Se usa `express-rate-limit` con `standardHeaders: true` (cabecera `RateLimit-*` en respuestas).
-- En producción se activa `trust proxy: 1` para que la IP sea la del cliente cuando hay proxy (Render, Nginx, etc.). Podés desactivarlo con `TRUST_PROXY=false`.
+- En producción se activa `trust proxy: 1` para que la IP sea la del cliente cuando hay reverse proxy (Nginx, Traefik, etc.). Podés desactivarlo con `TRUST_PROXY=false`.
 
 ---
 

@@ -20,7 +20,7 @@ export function getJwtSecret() {
   if (isProduction) {
     if (!raw || typeof raw !== 'string' || !raw.trim()) {
       throw new Error(
-        'JWT_SECRET debe estar definido en producción. Configurá la variable de entorno (ej. en Render o .env) con un valor de al menos 32 caracteres. Generá uno con: openssl rand -base64 32'
+        'JWT_SECRET debe estar definido en producción. Configurá la variable de entorno (contenedor, compose o .env) con un valor de al menos 32 caracteres. Generá uno con: openssl rand -base64 32'
       );
     }
     const secret = raw.trim();

@@ -158,12 +158,22 @@ El frontend corre en `http://localhost:5173` y usa el proxy a `http://localhost:
 
 ## CI/CD y despliegue
 
-- **Pipeline:** En cada PR y push a `main`/`develop` se ejecuta **Lint, tests y build** (backend + frontend). Nada se deploya si falla. Ver [docs/CI-CD.md](docs/CI-CD.md) para Branch Protection, entornos **staging** y **production**, y deploy en Render desde GitHub Actions.
+- **Pipeline (GitHub Actions):** En cada PR y push a `main`/`develop` se ejecuta **lint, tests y build**. Ver [docs/CI-CD.md](docs/CI-CD.md) para Branch Protection y el flujo con el servidor.
 
-## Despliegue en Render
+## Despliegue en el servidor (Docker Compose)
 
-- **PostgreSQL:** crear un servicio PostgreSQL en Render y usar la `DATABASE_URL` interna que te da Render.
-- **Backend:** crear un Web Service con el directorio `backend`, comando **`npm install && npm start`**. El `postinstall` ejecuta `prisma generate` y el script **`prestart`** ejecuta **`prisma migrate deploy`** antes de levantar el servidor (incluye la tabla de alertas `UserNotification` y el resto de migraciones). Definir variables de entorno: `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL` (URL del frontend en Render). No uses `db push` en producción si ya usás migraciones versionadas: puede desalinear el historial de `_prisma_migrations`.
-- **Frontend:** crear un sitio estático con el directorio `frontend`, build `npm run build`, carpeta public `dist`. Configurar la variable `VITE_API_URL` si el API está en otra URL (y usar esa variable en el cliente para las peticiones en producción).
+En el host donde corre la app:
 
-Si en producción el frontend y el API están en el mismo dominio (reverse proxy), no hace falta cambiar la base de las peticiones.
+```bash
+docker compose up -d --build
+```
+
+Desde la raíz del repo. Si usás variables en un archivo `env` o `.env` **en la raíz** para sustituir `POSTGRES_*` en el compose, podés usar:
+
+```bash
+./scripts/docker-compose-env.sh up -d --build
+```
+
+- **Stack:** `docker-compose.yml` levanta **PostgreSQL**, **backend** (imagen `backend/Dockerfile`) y **frontend** (Nginx sirve el build de Vite y proxea `/api` al backend). Detalle de puertos y redes está comentado al inicio de `docker-compose.yml`.
+- **Configuración:** `backend/.env` con `JWT_SECRET`, `FRONTEND_URL` (URL pública que ven los usuarios), integración SQL Server (`EXTERNAL_*`) si aplica. `DATABASE_URL` la define el compose hacia el servicio `db`; no pongas `127.0.0.1` para Postgres **dentro** de Docker.
+- **Migraciones:** al arrancar el contenedor backend se ejecuta **`prisma migrate deploy`** (definido en `backend/Dockerfile`); cada rebuild/redeploy aplica migraciones pendientes.

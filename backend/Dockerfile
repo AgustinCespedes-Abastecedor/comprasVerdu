@@ -49,5 +49,5 @@ ENV PORT=4000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:${PORT}/api/health || exit 1
 
-# Misma lógica que `npm start` en Render (prestart = migrate deploy), sin depender de npm como PID 1.
+# migrate deploy antes del servidor (equivalente al script prestart de npm start en desarrollo manual).
 CMD ["sh", "-c", "npx prisma migrate deploy && node src/index.js"]
