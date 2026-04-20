@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import * as XLSX from 'xlsx';
 import { compras, proveedores as apiProveedores } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { useResponse } from '../context/ResponseContext';
+import { esRolComprador } from '../lib/roles';
 import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
@@ -46,57 +49,94 @@ function getDetalleRecepcion(detalleCompraId, recepcion) {
   return recepcion.detalles.find((dr) => dr.detalleCompraId === detalleCompraId) || null;
 }
 
+/** Entero >= 0 para bultos; NaN si inválido. */
+function parseBultosEntero(str) {
+  if (str === '' || str == null) return NaN;
+  const x = String(str).replace(/\./g, '').replace(',', '.');
+  const n = Number(x);
+  if (!Number.isFinite(n) || n < 0) return NaN;
+  return Math.trunc(n);
+}
+
+/** Bultos originales persistidos (null = nunca ajustado por comprador). */
+function bultosOriginalRegistrado(detalle) {
+  if (detalle?.bultosOriginal == null || detalle.bultosOriginal === '') return null;
+  const o = Number(detalle.bultosOriginal);
+  return Number.isFinite(o) ? o : null;
+}
+
+function totalesCompraDesdeDetalles(compra, draftById) {
+  let totalBultos = 0;
+  let totalMonto = 0;
+  for (const d of compra.detalles || []) {
+    let b = Number(d.bultos) || 0;
+    if (draftById && Object.prototype.hasOwnProperty.call(draftById, d.id)) {
+      const parsed = parseBultosEntero(draftById[d.id]);
+      if (!Number.isNaN(parsed)) b = parsed;
+    }
+    const p = Number(d.precioPorBulto) || 0;
+    totalBultos += b;
+    totalMonto += b * p;
+  }
+  return { totalBultos, totalMonto };
+}
+
 const EXCEL_SHEET_NAME_MAX = 31;
 const INVALID_SHEET_CHARS = /[:\\/?*[\]]/g;
 
-/** Devuelve un nombre de hoja único, válido para Excel (máx 31 caracteres, sin : \\ / ? * [ ]). */
-function nombreHojaUnico(base, usados) {
-  let nombre = base.replace(INVALID_SHEET_CHARS, ' ').slice(0, EXCEL_SHEET_NAME_MAX);
-  if (!usados.has(nombre)) {
-    usados.add(nombre);
-    return nombre;
-  }
-  let n = 2;
-  let candidato;
-  do {
-    const sufijo = ` (${n})`;
-    candidato = (base.replace(INVALID_SHEET_CHARS, ' ').slice(0, EXCEL_SHEET_NAME_MAX - sufijo.length) + sufijo).slice(0, EXCEL_SHEET_NAME_MAX);
-    n++;
-  } while (usados.has(candidato));
-  usados.add(candidato);
-  return candidato;
-}
-
-/** Exporta un libro Excel con una hoja por compra (por proveedor). Incluye columnas de recepción si existen. */
+/**
+ * Una sola hoja: nombre = fecha de exportación (YYYY-MM-DD). Compras ordenadas por proveedor;
+ * entre un proveedor y otro, filas en blanco. Cada compra conserva el mismo bloque que antes
+ * (proveedor, total, encabezados, filas de ítems).
+ */
 function exportarPorProveedor(comprasList) {
-  const wb = XLSX.utils.book_new();
-  const nombresUsados = new Set();
-  comprasList.forEach((c) => {
-    const base = `Compra ${getNumeroCompra(c)}`;
-    const nombreHoja = nombreHojaUnico(base, nombresUsados);
+  const encabezados = [
+    'Código',
+    'Descripción',
+    'Bultos Comp.',
+    '$/Bulto (compra)',
+    'Peso cajón (kg)',
+    'Subtotal (compra)',
+    'Bultos Recib.',
+    'Costo unidad (rec.)',
+    'Costo total (rec.)',
+    'UxB',
+    'UxB final',
+    'Precio Venta',
+    'Margen %',
+  ];
+  const colCount = encabezados.length;
+  const padRow = (row) => {
+    const next = [...row];
+    while (next.length < colCount) next.push('');
+    return next;
+  };
+
+  const sorted = [...comprasList].sort((a, b) => {
+    const provA = (getProveedorNombre(a.proveedor) || '').localeCompare(
+      getProveedorNombre(b.proveedor) || '',
+      'es',
+      { sensitivity: 'base' },
+    );
+    if (provA !== 0) return provA;
+    const nroA = Number(a.numeroCompra) || 0;
+    const nroB = Number(b.numeroCompra) || 0;
+    if (nroA !== nroB) return nroA - nroB;
+    return String(a.fecha || '').localeCompare(String(b.fecha || ''));
+  });
+
+  const rows = [];
+  let previousProveedorId;
+  for (const c of sorted) {
+    const provId = String(c.proveedor?.id ?? c.proveedorId ?? '');
+    if (previousProveedorId !== undefined && provId !== previousProveedorId) {
+      rows.push(padRow([]));
+      rows.push(padRow([]));
+    }
+    previousProveedorId = provId;
+
     const proveedorNombre = getProveedorNombre(c.proveedor) ?? '—';
     const proveedorCodigo = getProveedorCodigo(c.proveedor) ?? '';
-    const encabezados = [
-      'Código',
-      'Descripción',
-      'Bultos Comp.',
-      '$/Bulto (compra)',
-      'Peso cajón (kg)',
-      'Subtotal (compra)',
-      'Bultos Recib.',
-      'Costo unidad (rec.)',
-      'Costo total (rec.)',
-      'UxB',
-      'UxB final',
-      'Precio Venta',
-      'Margen %',
-    ];
-    const colCount = encabezados.length;
-    const padRow = (row) => {
-      const next = [...row];
-      while (next.length < colCount) next.push('');
-      return next;
-    };
     const totalMontoRaw = c.totalMonto;
     const totalMontoNum = totalMontoRaw != null && typeof totalMontoRaw.toString === 'function'
       ? parseFloat(String(totalMontoRaw))
@@ -126,12 +166,19 @@ function exportarPorProveedor(comprasList) {
         dr?.margenPorc != null ? dr.margenPorc : '',
       ];
     });
-    const filaProveedor = padRow(['Proveedor', proveedorNombre, 'Cód. proveedor', proveedorCodigo]);
-    const filaTotalCompra = padRow(['Total $ compra', totalMontoExcel]);
-    const ws = XLSX.utils.aoa_to_sheet([filaProveedor, filaTotalCompra, encabezados, ...filas]);
-    XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
-  });
-  XLSX.writeFile(wb, 'compras-por-proveedor.xlsx');
+    rows.push(padRow(['Proveedor', proveedorNombre, 'Cód. proveedor', proveedorCodigo]));
+    rows.push(padRow(['Total $ compra', totalMontoExcel]));
+    rows.push(padRow([...encabezados]));
+    filas.forEach((fila) => rows.push(padRow(fila)));
+  }
+
+  const wb = XLSX.utils.book_new();
+  const fechaExport = todayStr();
+  let nombreHoja = fechaExport.replace(INVALID_SHEET_CHARS, ' ').trim().slice(0, EXCEL_SHEET_NAME_MAX);
+  if (!nombreHoja) nombreHoja = 'Export';
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
+  XLSX.writeFile(wb, `compras-por-proveedor-${fechaExport}.xlsx`);
 }
 
 /**
@@ -290,6 +337,10 @@ function exportarPorArticulo(comprasList) {
 }
 
 export default function VerCompras() {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useResponse();
+  const puedeEditarBultos = esRolComprador(user);
+
   const [list, setList] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -304,9 +355,73 @@ export default function VerCompras() {
   const [providerPickerOpen, setProviderPickerOpen] = useState(false);
   const [providerSearch, setProviderSearch] = useState('');
   const providerSearchInputRef = useRef(null);
+  const [editingCompraId, setEditingCompraId] = useState(null);
+  const [bultosDraft, setBultosDraft] = useState({});
+  const [guardandoBultos, setGuardandoBultos] = useState(false);
 
   const toggleExpandir = (id) => {
     setExpandidoKey((prev) => (prev === id ? null : id));
+  };
+
+  useEffect(() => {
+    if (editingCompraId && expandidoKey !== editingCompraId) {
+      setEditingCompraId(null);
+      setBultosDraft({});
+    }
+  }, [expandidoKey, editingCompraId]);
+
+  const iniciarEdicionBultos = (compra) => {
+    const draft = {};
+    (compra.detalles || []).forEach((d) => {
+      draft[d.id] = String(d.bultos ?? '');
+    });
+    setBultosDraft(draft);
+    setEditingCompraId(compra.id);
+  };
+
+  const cancelarEdicionBultos = () => {
+    setEditingCompraId(null);
+    setBultosDraft({});
+  };
+
+  const actualizarBultoDraft = (detalleId, value) => {
+    setBultosDraft((prev) => ({ ...prev, [detalleId]: value }));
+  };
+
+  const guardarBultosCompra = async (compra) => {
+    const detalles = (compra.detalles || []).map((d) => {
+      const raw = bultosDraft[d.id] ?? String(d.bultos ?? '');
+      const b = parseBultosEntero(raw);
+      return { id: d.id, bultos: b };
+    });
+    if (detalles.some(({ bultos }) => Number.isNaN(bultos))) {
+      showError('Ingresá cantidades de bultos válidas (entero mayor o igual a cero).');
+      return;
+    }
+    for (const d of compra.detalles || []) {
+      const dr = getDetalleRecepcion(d.id, compra.recepcion);
+      const b = detalles.find((x) => x.id === d.id)?.bultos ?? 0;
+      const cantRec = dr != null ? Number(dr.cantidad) || 0 : 0;
+      if (cantRec > b) {
+        showError(
+          'No podés dejar menos bultos comprados que los recepcionados. Revisá las cantidades.',
+          'COMPRAS_019',
+        );
+        return;
+      }
+    }
+    setGuardandoBultos(true);
+    try {
+      const actualizada = await compras.patchDetallesBultos(compra.id, { detalles });
+      setList((prev) => prev.map((row) => (row.id === compra.id ? actualizada : row)));
+      setEditingCompraId(null);
+      setBultosDraft({});
+      showSuccess('Cantidades actualizadas. Los totales se recalcularon con el nuevo valor.');
+    } catch (e) {
+      showError(e ?? { message: 'No se pudieron guardar los cambios.' });
+    } finally {
+      setGuardandoBultos(false);
+    }
   };
 
   const filteredProveedores = useMemo(() => {
@@ -567,7 +682,7 @@ export default function VerCompras() {
             className="vercompras-btn-export"
             disabled={exportando}
             onClick={() => exportarTodo(exportarPorProveedor)}
-            aria-label="Exportar a Excel por proveedor, con todo el filtro actual"
+            aria-label="Exportar a Excel en una sola hoja (fecha de hoy), compras agrupadas por proveedor, con el filtro actual"
           >
             {exportando ? (
               <Loader2 className="vercompras-btn-export-icon vercompras-btn-export-icon--spin" aria-hidden strokeWidth={2} />
@@ -618,13 +733,62 @@ export default function VerCompras() {
                 </button>
                 {expandido && (
                   <div id={`vercomp-detalle-${c.id}`} className="vercompras-card-body">
+                    {puedeEditarBultos && c.detalles?.length > 0 && (
+                      <div className="vercompras-bultos-toolbar">
+                        {editingCompraId === c.id ? (
+                          <>
+                            <button
+                              type="button"
+                              className="vercompras-btn-bultos vercompras-btn-bultos-primary"
+                              onClick={() => guardarBultosCompra(c)}
+                              disabled={guardandoBultos}
+                            >
+                              {guardandoBultos ? 'Guardando…' : 'Guardar cantidades'}
+                            </button>
+                            <button
+                              type="button"
+                              className="vercompras-btn-bultos vercompras-btn-bultos-secondary"
+                              onClick={cancelarEdicionBultos}
+                              disabled={guardandoBultos}
+                            >
+                              Cancelar
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            className="vercompras-btn-bultos vercompras-btn-bultos-secondary"
+                            onClick={() => iniciarEdicionBultos(c)}
+                          >
+                            Editar cantidades (bultos)
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <div className="vercompras-card-totales">
-                      <span className="vercompras-total-chip" aria-label={`Total bultos: ${formatNum(c.totalBultos)} bultos`}>
-                        {formatNum(c.totalBultos)} bultos
-                      </span>
-                      <span className="vercompras-total-chip vercompras-total-chip--monto" aria-label={`Total compra: $ ${formatNum(c.totalMonto)}`}>
-                        $ {formatNum(c.totalMonto)}
-                      </span>
+                      {(() => {
+                        const enEdicion = editingCompraId === c.id;
+                        const { totalBultos: tb, totalMonto: tm } = enEdicion
+                          ? totalesCompraDesdeDetalles(c, bultosDraft)
+                          : {
+                              totalBultos: c.totalBultos,
+                              totalMonto: c.totalMonto != null && typeof c.totalMonto.toString === 'function'
+                                ? parseFloat(String(c.totalMonto))
+                                : Number(c.totalMonto),
+                            };
+                        const montoFmt = Number.isFinite(tm) ? formatNum(tm) : formatNum(c.totalMonto);
+                        return (
+                          <>
+                            <span className="vercompras-total-chip" aria-label={`Total bultos: ${formatNum(tb)} bultos`}>
+                              {formatNum(tb)} bultos
+                              {enEdicion && <span className="vercompras-total-preview-hint"> (vista previa)</span>}
+                            </span>
+                            <span className="vercompras-total-chip vercompras-total-chip--monto" aria-label={`Total compra: $ ${montoFmt}`}>
+                              $ {montoFmt}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                     {c.detalles?.length > 0 && (
                       <div className="vercompras-detalle-wrap">
@@ -653,17 +817,56 @@ export default function VerCompras() {
                               const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0
                                 ? (Number(dr.cantidad) * costoUnidad)
                                 : null;
-                              const subtotal = subtotalCompra(d);
+                              const enEdicionFila = editingCompraId === c.id;
+                              let bultosParaSubtotal = Number(d.bultos) || 0;
+                              if (enEdicionFila && bultosDraft[d.id] !== undefined) {
+                                const pb = parseBultosEntero(bultosDraft[d.id]);
+                                if (!Number.isNaN(pb)) bultosParaSubtotal = pb;
+                              }
+                              const subtotal = bultosParaSubtotal * (Number(d.precioPorBulto) || 0);
                               const uxbBruto = dr != null && dr.uxb != null ? Number(dr.uxb) : NaN;
                               const uxbFinalVal = Number.isFinite(uxbBruto) && uxbBruto > 0
                                 ? uxbNetoParaCosto(uxbBruto, d.pesoCajon)
                                 : 0;
                               const uxbFinalTxt = dr != null && uxbFinalVal > 0 ? formatNum(uxbFinalVal) : '—';
+                              const origReg = bultosOriginalRegistrado(d);
                               return (
                                 <tr key={d.id}>
                                   <td>{d.producto?.codigo}</td>
                                   <td className="vercompras-col-desc">{d.producto?.descripcion}</td>
-                                  <td className="vercompras-col-num">{formatNum(d.bultos)}</td>
+                                  <td className="vercompras-col-num vercompras-col-bultos">
+                                    {enEdicionFila ? (
+                                      <div className="vercompras-bultos-stack">
+                                        {origReg != null && (
+                                          <span className="vercompras-bultos-orig" title="Cantidad original (registro)">
+                                            {formatNum(origReg)}
+                                          </span>
+                                        )}
+                                        <input
+                                          type="text"
+                                          className="vercompras-bultos-input"
+                                          value={bultosDraft[d.id] ?? ''}
+                                          onChange={(e) => actualizarBultoDraft(d.id, e.target.value)}
+                                          inputMode="numeric"
+                                          aria-label={`Bultos comprados para ${d.producto?.descripcion || d.producto?.codigo}`}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="vercompras-bultos-stack">
+                                        {origReg != null && (
+                                          <span className="vercompras-bultos-orig" title="Cantidad original al registrar la compra">
+                                            {formatNum(origReg)}
+                                          </span>
+                                        )}
+                                        <span
+                                          className={origReg != null ? 'vercompras-bultos-new-val' : 'vercompras-bultos-solo'}
+                                          title={origReg != null ? 'Cantidad vigente (tras ajuste)' : undefined}
+                                        >
+                                          {formatNum(d.bultos)}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </td>
                                   <td className="vercompras-col-num">{d.precioPorBulto != null ? formatNum(d.precioPorBulto) : '—'}</td>
                                   <td className="vercompras-col-num">{d.pesoCajon != null ? formatNum(d.pesoCajon) : '—'}</td>
                                   <td className="vercompras-col-num vercompras-col-subtotal">{formatNum(subtotal)}</td>

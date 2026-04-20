@@ -146,6 +146,8 @@ model DetalleCompra {
   compraId          String
   productoId        String
   bultos            Int               @default(0)
+  /// Bultos al registrar la compra; se fija en la primera corrección por comprador. null = nunca corregido.
+  bultosOriginal    Int?
   precioPorBulto     Decimal           @default(0) @db.Decimal(12, 2)
   /// Peso del envase/cajón por bulto (kg). Se resta del UxB de recepción para calcular costo por kg útil.
   pesoCajon         Decimal           @default(0) @db.Decimal(8, 2)

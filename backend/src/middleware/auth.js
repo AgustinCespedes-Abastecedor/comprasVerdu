@@ -86,6 +86,15 @@ export function soloGestionUsuariosOroles(req, res, next) {
 /** Solo quien tiene permiso "comprar" (crear compras). */
 export const soloComprador = requierePermiso('comprar');
 
+/** Solo usuarios cuyo rol en base se llama exactamente "Comprador" (no Administrador ni otros). */
+export function soloRolComprador(req, res, next) {
+  const nombre = String(req.rol?.nombre || '').trim();
+  if (nombre !== 'Comprador') {
+    return sendError(res, 403, MSG.COMPRAS_EDIT_BULTOS_SOLO_ROL_COMPRADOR, 'COMPRAS_014');
+  }
+  next();
+}
+
 /** Solo quien tiene permiso "ver-compras" (listar y ver compras). */
 export const soloVerCompras = requierePermiso('ver-compras');
 

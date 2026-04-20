@@ -32,6 +32,12 @@ export function puedeVerCompras(user) {
   return tienePermisoPantalla(user, 'ver-compras');
 }
 
+/** Rol en base exactamente "Comprador" (ajuste de bultos en Ver compras, etc.). */
+export function esRolComprador(user) {
+  if (!user) return false;
+  return String(user.role?.nombre || '').trim() === 'Comprador';
+}
+
 /** Valores permitidos en registro público (el backend mapea a roles por nombre). */
 export const ROLES_REGISTRO = ['COMPRADOR', 'RECEPCIONISTA', 'VISOR'];
 

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { soloComprador, soloVerCompras } from '../middleware/auth.js';
+import { soloComprador, soloVerCompras, soloRolComprador } from '../middleware/auth.js';
 import { sendError, MSG, apiError } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
 import { appendCompraAuditoriaDesdeActivityLog } from '../lib/compraAuditoria.js';
@@ -311,6 +311,216 @@ router.post('/', soloComprador, async (req, res) => {
       return sendError(res, e.status, e.message, e.code);
     }
     sendError(res, 500, MSG.COMPRAS_GUARDAR, 'COMPRAS_006', e);
+  }
+});
+
+/**
+ * PATCH /compras/:id/detalles-bultos — Solo rol "Comprador". Ajusta bultos por línea, recalcula total línea y totales de compra.
+ * Body: { detalles: [{ id: detalleCompraId, bultos: number }] }
+ */
+router.patch('/:id/detalles-bultos', soloVerCompras, soloRolComprador, async (req, res) => {
+  try {
+    if (!req.userId) {
+      return sendError(res, 401, MSG.COMPRAS_USUARIO_NO_IDENTIFICADO, 'COMPRAS_003');
+    }
+    const compraId = req.params.id;
+    const { detalles: bodyDetalles } = req.body;
+    if (!Array.isArray(bodyDetalles) || bodyDetalles.length === 0) {
+      return sendError(res, 400, MSG.COMPRAS_PATCH_BULTOS_SIN_DETALLES, 'COMPRAS_015');
+    }
+
+    const compra = await prisma.compra.findUnique({
+      where: { id: compraId },
+      include: {
+        detalles: {
+          include: {
+            producto: { select: { codigo: true, descripcion: true } },
+          },
+        },
+        recepcion: {
+          include: {
+            detalles: { select: { detalleCompraId: true, cantidad: true } },
+          },
+        },
+      },
+    });
+    if (!compra) {
+      return sendError(res, 404, MSG.COMPRAS_NO_ENCONTRADA, 'COMPRAS_016');
+    }
+
+    const detalleById = new Map(compra.detalles.map((d) => [d.id, d]));
+    const cantidadRecibidaPorDetalle = new Map();
+    for (const dr of compra.recepcion?.detalles || []) {
+      if (dr.detalleCompraId) {
+        cantidadRecibidaPorDetalle.set(
+          dr.detalleCompraId,
+          Math.max(0, Number(dr.cantidad) || 0),
+        );
+      }
+    }
+
+    const updates = [];
+    for (const row of bodyDetalles) {
+      const detalleId = (row.id || row.detalleCompraId || '').toString().trim();
+      if (!detalleId) {
+        return sendError(res, 400, MSG.COMPRAS_DETALLE_NO_PERTENECE, 'COMPRAS_017');
+      }
+      const dc = detalleById.get(detalleId);
+      if (!dc) {
+        return sendError(res, 400, MSG.COMPRAS_DETALLE_NO_PERTENECE, 'COMPRAS_017');
+      }
+      const raw = row.bultos;
+      const n = Number(raw);
+      if (!Number.isFinite(n) || n < 0 || n !== Math.trunc(n)) {
+        return sendError(res, 400, MSG.COMPRAS_BULTOS_DEBE_SER_ENTERO, 'COMPRAS_018');
+      }
+      const bultosNuevo = Math.trunc(n);
+      const cantRec = cantidadRecibidaPorDetalle.get(detalleId) ?? 0;
+      if (bultosNuevo < cantRec) {
+        return sendError(res, 400, MSG.COMPRAS_BULTOS_MENOR_RECEPCION, 'COMPRAS_019');
+      }
+      const bultosAntes = Number(dc.bultos) || 0;
+      if (bultosAntes === bultosNuevo) continue;
+      const precioPorBulto = Number(dc.precioPorBulto) || 0;
+      const pesoPorBulto = Number(dc.pesoPorBulto) || 0;
+      const precioPorKg = pesoPorBulto > 0 ? precioPorBulto / pesoPorBulto : 0;
+      const total = bultosNuevo * precioPorBulto;
+      const setOriginal = dc.bultosOriginal == null;
+      updates.push({
+        id: detalleId,
+        bultosAntes,
+        bultosNuevo,
+        precioPorBulto,
+        precioPorKg,
+        total,
+        setOriginal,
+        dc,
+      });
+    }
+
+    if (updates.length === 0) {
+      const sinCambios = await prisma.compra.findUnique({
+        where: { id: compraId },
+        include: {
+          proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
+          user: { select: { id: true, nombre: true, email: true } },
+          detalles: { include: { producto: true } },
+          recepcion: {
+            include: {
+              detalles: {
+                select: {
+                  id: true,
+                  detalleCompraId: true,
+                  cantidad: true,
+                  uxb: true,
+                  precioVenta: true,
+                  margenPorc: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      return res.json(sinCambios);
+    }
+
+    const updatedCompra = await prisma.$transaction(async (tx) => {
+      for (const u of updates) {
+        const data = {
+          bultos: u.bultosNuevo,
+          total: u.total,
+          precioPorKg: u.precioPorKg,
+        };
+        if (u.setOriginal) {
+          data.bultosOriginal = u.bultosAntes;
+        }
+        await tx.detalleCompra.update({
+          where: { id: u.id },
+          data,
+        });
+      }
+      const detallesPost = await tx.detalleCompra.findMany({
+        where: { compraId },
+      });
+      const totalBultos = detallesPost.reduce((a, d) => a + (Number(d.bultos) || 0), 0);
+      const totalMonto = detallesPost.reduce((a, d) => {
+        const t = d.total;
+        const num = typeof t === 'number' && !Number.isNaN(t) ? t : parseFloat(String(t ?? 0));
+        return a + (Number.isFinite(num) ? num : 0);
+      }, 0);
+      await tx.compra.update({
+        where: { id: compraId },
+        data: {
+          totalBultos,
+          totalMonto,
+          updatedAt: new Date(),
+        },
+      });
+      return tx.compra.findUnique({
+        where: { id: compraId },
+        include: {
+          proveedor: { select: { id: true, nombre: true, codigoExterno: true } },
+          user: { select: { id: true, nombre: true, email: true } },
+          detalles: { include: { producto: true } },
+          recepcion: {
+            include: {
+              detalles: {
+                select: {
+                  id: true,
+                  detalleCompraId: true,
+                  cantidad: true,
+                  uxb: true,
+                  precioVenta: true,
+                  margenPorc: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+
+    const logDetails = {
+      numeroCompra: updatedCompra?.numeroCompra,
+      ajusteBultos: true,
+      items: updates.map((u) => ({
+        codigo: u.dc.producto?.codigo ?? '—',
+        articulo: u.dc.producto?.descripcion ?? '—',
+        bultosAntes: u.bultosAntes,
+        bultosDespues: u.bultosNuevo,
+        bultosOriginalPersistido: u.setOriginal ? u.bultosAntes : (u.dc.bultosOriginal != null ? Number(u.dc.bultosOriginal) : null),
+      })),
+    };
+    const activityLogId = await createLog(prisma, {
+      userId: req.userId,
+      action: 'actualizar',
+      entity: 'compra',
+      entityId: compraId,
+      details: logDetails,
+    });
+    if (activityLogId && updatedCompra?.id) {
+      try {
+        await appendCompraAuditoriaDesdeActivityLog(prisma, {
+          activityLogId,
+          userId: req.userId,
+          occurredAt: new Date(),
+          entity: 'compra',
+          action: 'actualizar',
+          entityId: compraId,
+          details: logDetails,
+          compraId: updatedCompra.id,
+          recepcionId: null,
+          fuente: 'online',
+          confianza: 'alta',
+        });
+      } catch (e) {
+        console.error('[COMPRAS] Auditoría canónica bultos (no bloquea):', e?.message || e);
+      }
+    }
+
+    res.json(updatedCompra);
+  } catch (e) {
+    sendError(res, 500, MSG.COMPRAS_GUARDAR, 'COMPRAS_020', e);
   }
 });
 

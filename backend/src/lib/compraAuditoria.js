@@ -10,6 +10,7 @@ export function tipoCanonicoDesdeLegacyLog(log) {
   const det = log.details && typeof log.details === 'object' ? log.details : null;
 
   if (entity === 'compra' && action === 'crear') return 'compra.creada';
+  if (entity === 'compra' && action === 'actualizar' && det?.ajusteBultos) return 'compra.bultos_actualizados';
   if (entity === 'recepcion') {
     if (det?.preciosVenta) return 'recepcion.precios_venta';
     if (action === 'crear') return 'recepcion.creada';

@@ -303,13 +303,19 @@ export default function Logs() {
 
               {Array.isArray(selectedLog.details?.items) && selectedLog.details.items.length > 0 && (() => {
                 const first = selectedLog.details.items[0] || {};
-                const isCompra = 'precioPorBulto' in first;
-                const isRecepcionPrecios = 'precioVenta' in first;
+                const isCompraAjusteBultos = Boolean(selectedLog.details?.ajusteBultos);
+                const isCompraCreacion = !isCompraAjusteBultos && 'precioPorBulto' in first;
+                const isCompra = isCompraCreacion || isCompraAjusteBultos;
+                const isRecepcionPrecios = 'precioVenta' in first && !isCompra;
                 return (
                   <section className="logs-modal-section logs-modal-section--items">
                     <h3 className="logs-modal-section-title">Detalle por ítem</h3>
                     <p className="logs-modal-section-desc">
-                      {isRecepcionPrecios ? 'Valores de precio y margen establecidos por el usuario.' : 'Foto de lo cargado: cada artículo con sus cantidades y montos.'}
+                      {isRecepcionPrecios
+                        ? 'Valores de precio y margen establecidos por el usuario.'
+                        : isCompraAjusteBultos
+                          ? 'Ajuste de bultos comprados por un comprador; se conserva la cantidad original en el sistema.'
+                          : 'Foto de lo cargado: cada artículo con sus cantidades y montos.'}
                     </p>
                     <div className="logs-modal-items-wrap">
                       <table className="logs-modal-items-table">
@@ -317,12 +323,19 @@ export default function Logs() {
                           <tr>
                             <th>Artículo</th>
                             <th>Código</th>
-                            {isCompra && (
+                            {isCompraCreacion && (
                               <>
                                 <th className="logs-modal-items-num">Bultos</th>
                                 <th className="logs-modal-items-num">Precio/bulto</th>
                                 <th className="logs-modal-items-num">Peso cajón (kg)</th>
                                 <th className="logs-modal-items-num">Total</th>
+                              </>
+                            )}
+                            {isCompraAjusteBultos && (
+                              <>
+                                <th className="logs-modal-items-num">Antes</th>
+                                <th className="logs-modal-items-num">Después</th>
+                                <th className="logs-modal-items-num">Ref. original</th>
                               </>
                             )}
                             {!isCompra && isRecepcionPrecios && (
@@ -344,7 +357,7 @@ export default function Logs() {
                             <tr key={idx}>
                               <td>{row.articulo ?? '—'}</td>
                               <td>{row.codigo ?? '—'}</td>
-                              {isCompra && (
+                              {isCompraCreacion && (
                                 <>
                                   <td className="logs-modal-items-num">{row.bultos ?? '—'}</td>
                                   <td className="logs-modal-items-num">{row.precioPorBulto != null ? formatMoneda(row.precioPorBulto) : '—'}</td>
@@ -352,6 +365,15 @@ export default function Logs() {
                                     {row.pesoCajon != null && row.pesoCajon !== '' ? formatNum(row.pesoCajon) : '—'}
                                   </td>
                                   <td className="logs-modal-items-num">{row.total != null ? formatMoneda(row.total) : '—'}</td>
+                                </>
+                              )}
+                              {isCompraAjusteBultos && (
+                                <>
+                                  <td className="logs-modal-items-num">{row.bultosAntes ?? '—'}</td>
+                                  <td className="logs-modal-items-num">{row.bultosDespues ?? '—'}</td>
+                                  <td className="logs-modal-items-num">
+                                    {row.bultosOriginalPersistido != null ? row.bultosOriginalPersistido : '—'}
+                                  </td>
                                 </>
                               )}
                               {!isCompra && isRecepcionPrecios && (

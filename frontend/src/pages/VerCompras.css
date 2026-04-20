@@ -1761,3 +1761,109 @@ html.is-native .verrecepciones-btn-precio {
 .info-final-intro p:last-child {
   margin-bottom: 0;
 }
+
+/* Edición de bultos (solo rol Comprador) */
+.vercompras-bultos-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.vercompras-btn-bultos {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--surface2, var(--bg));
+  color: var(--text);
+}
+
+.vercompras-btn-bultos:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.vercompras-btn-bultos-primary {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.vercompras-btn-bultos-secondary:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.vercompras-total-preview-hint {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.vercompras-col-bultos {
+  vertical-align: middle;
+}
+
+.vercompras-bultos-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  min-width: 4rem;
+}
+
+.vercompras-bultos-orig {
+  font-size: 0.6875rem;
+  line-height: 1.15;
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+.vercompras-bultos-new-val {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #4ade80;
+}
+
+[data-theme="light"] .vercompras-bultos-new-val {
+  color: #15803d;
+}
+
+.vercompras-bultos-solo {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #4ade80;
+}
+
+[data-theme="light"] .vercompras-bultos-solo {
+  color: #15803d;
+}
+
+.vercompras-bultos-input {
+  width: 4.75rem;
+  max-width: 100%;
+  padding: 0.35rem 0.45rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2, var(--bg));
+  color: #4ade80;
+}
+
+[data-theme="light"] .vercompras-bultos-input {
+  color: #15803d;
+}
+
+.vercompras-bultos-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}

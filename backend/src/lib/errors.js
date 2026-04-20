@@ -102,6 +102,12 @@ export const MSG = {
   COMPRAS_AL_MENOS_UN_ITEM: 'Debe haber al menos un ítem con bultos mayor a cero.',
   COMPRAS_NO_ENCONTRADA: 'Compra no encontrada.',
   COMPRAS_PESO_CAJON_NO_NUMERICO: 'El peso del cajón debe ser un número válido (kg).',
+  COMPRAS_EDIT_BULTOS_SOLO_ROL_COMPRADOR: 'Solo el rol Comprador puede modificar las cantidades de bultos de una compra.',
+  COMPRAS_DETALLE_NO_PERTENECE: 'Uno de los ítems no pertenece a esta compra.',
+  COMPRAS_BULTOS_DEBE_SER_ENTERO: 'La cantidad de bultos debe ser un número entero mayor o igual a cero.',
+  COMPRAS_BULTOS_MENOR_RECEPCION:
+    'No podés dejar menos bultos comprados que los ya recepcionados en depósito. Aumentá la cantidad o corregí la recepción primero.',
+  COMPRAS_PATCH_BULTOS_SIN_DETALLES: 'Enviá al menos un ítem con el id del detalle y la cantidad de bultos.',
 
   // Recepciones
   RECEP_LISTAR: 'No se pudo cargar el listado de recepciones.',

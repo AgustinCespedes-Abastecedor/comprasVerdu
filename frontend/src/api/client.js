@@ -114,6 +114,9 @@ export const compras = {
   create: (body) => api('/compras', { method: 'POST', body: JSON.stringify(body) }),
   get: (id) => api(`/compras/${id}`),
   getRecepcion: (compraId) => api(`/compras/${compraId}/recepcion`),
+  /** Solo rol Comprador. Body: { detalles: [{ id, bultos }] } */
+  patchDetallesBultos: (compraId, body) =>
+    api(`/compras/${compraId}/detalles-bultos`, { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 export const trazabilidad = {
