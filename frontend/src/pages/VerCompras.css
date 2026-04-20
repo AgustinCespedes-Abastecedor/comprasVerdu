@@ -669,7 +669,7 @@ html.is-native .vercompras-list.info-final-list {
 
 .vercompras-detalle {
   width: 100%;
-  min-width: 860px;
+  min-width: 980px;
   border-collapse: collapse;
   font-size: 0.85rem;
 }

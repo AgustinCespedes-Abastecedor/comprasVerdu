@@ -11,7 +11,7 @@ import { Eye } from 'lucide-react';
 import Modal from '../components/Modal';
 import LogsUserFilter from '../components/logs/LogsUserFilter';
 import ListPaginationBar from '../components/ListPaginationBar';
-import { formatDateTime, formatDateOnly, formatMoneda, formatPct, todayStr } from '../lib/format';
+import { formatDateTime, formatDateOnly, formatMoneda, formatNum, formatPct, todayStr } from '../lib/format';
 import './Logs.css';
 
 const ACCIONES_LABEL = {
@@ -321,6 +321,7 @@ export default function Logs() {
                               <>
                                 <th className="logs-modal-items-num">Bultos</th>
                                 <th className="logs-modal-items-num">Precio/bulto</th>
+                                <th className="logs-modal-items-num">Peso cajón (kg)</th>
                                 <th className="logs-modal-items-num">Total</th>
                               </>
                             )}
@@ -347,6 +348,9 @@ export default function Logs() {
                                 <>
                                   <td className="logs-modal-items-num">{row.bultos ?? '—'}</td>
                                   <td className="logs-modal-items-num">{row.precioPorBulto != null ? formatMoneda(row.precioPorBulto) : '—'}</td>
+                                  <td className="logs-modal-items-num">
+                                    {row.pesoCajon != null && row.pesoCajon !== '' ? formatNum(row.pesoCajon) : '—'}
+                                  </td>
                                   <td className="logs-modal-items-num">{row.total != null ? formatMoneda(row.total) : '—'}</td>
                                 </>
                               )}

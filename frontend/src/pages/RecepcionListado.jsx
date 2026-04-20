@@ -9,6 +9,7 @@ import AppLoader from '../components/AppLoader';
 import { useResponse } from '../context/ResponseContext';
 import ProveedorLabel from '../components/ProveedorLabel';
 import { formatNum, formatDate, todayStr } from '../lib/format';
+import { costoPorUnidadRecepcion, recepcionUxBBrutoInvalidoVsCajon, uxbNetoParaCosto } from '../lib/costoRecepcion';
 import { NOTIFICATIONS_POLL_REQUEST } from '../lib/notificationEvents';
 import ListPaginationBar from '../components/ListPaginationBar';
 import './RecepcionListado.css';
@@ -125,12 +126,20 @@ export default function RecepcionListado() {
     setUxb((prev) => ({ ...prev, [detalleCompraId]: value }));
   };
 
-  /** Costo por unidad. Solo cuando UxB > 0: precioPorBulto / UxB */
+  /** Costo por kg útil: precioPorBulto / (UxB − peso cajón), con peso cajón cargado en la compra. */
   const calcularCosto = (d) => {
     const uxbVal = parseNum(uxb[d.id]);
-    if (uxbVal <= 0) return '';
-    const costoPorBulto = Number(d.precioPorBulto) || 0;
-    return costoPorBulto / uxbVal;
+    const pesoCajon = d.pesoCajon != null ? Number(d.pesoCajon) : 0;
+    const c = costoPorUnidadRecepcion(d.precioPorBulto, uxbVal, pesoCajon);
+    return c != null ? c : '';
+  };
+
+  const uxbFinalMostrado = (d) => {
+    const bruto = parseNum(uxb[d.id]);
+    if (bruto <= 0) return '';
+    const pesoCajon = d.pesoCajon != null ? Number(d.pesoCajon) : 0;
+    const neto = uxbNetoParaCosto(bruto, pesoCajon);
+    return neto > 0 ? formatNum(neto) : '—';
   };
 
   const handleGuardarRecepcion = async (compra) => {
@@ -139,6 +148,18 @@ export default function RecepcionListado() {
       cantidad: parseNum(cantidades[d.id]),
       uxb: parseNum(uxb[d.id]),
     }));
+    const invalido = detalles.some((row) => {
+      const dc = (compra.detalles || []).find((d) => d.id === row.detalleCompraId);
+      const pesoCajon = dc?.pesoCajon != null ? Number(dc.pesoCajon) : 0;
+      return recepcionUxBBrutoInvalidoVsCajon(row.uxb, pesoCajon);
+    });
+    if (invalido) {
+      showError(
+        'El UxB debe ser mayor al peso del cajón de la compra en todos los artículos donde cargaste UxB. Revisá UxB final en la grilla.',
+        'RECEP_009',
+      );
+      return;
+    }
     setGuardando(true);
     try {
       await recepciones.save({ compraId: compra.id, detalles });
@@ -170,7 +191,11 @@ export default function RecepcionListado() {
 
       <main className="recepcion-listado-main">
         <div className="recepcion-listado-intro">
-          <p>Elegí una compra para cargar la cantidad recibida en depósito por artículo.</p>
+          <p>
+            Elegí una compra para cargar la cantidad recibida en depósito por artículo. El peso del cajón cargado en
+            la compra se descuenta del UxB para calcular el costo; la columna UxB final muestra ese
+            valor (kg útiles por bulto).
+          </p>
           <p className="recepcion-listado-intro-nota" role="note">
             Las fechas del filtro son la <strong>fecha de compra</strong> de la planilla. Al guardar, se
             actualiza la recepción y queda registrada la hora de <strong>última modificación</strong> de ese
@@ -235,8 +260,10 @@ export default function RecepcionListado() {
                           <th>Código</th>
                           <th>Descripción</th>
                           <th>Bultos</th>
-                          <th>Bultos Recibidos</th>
+                          <th>Peso cajón (kg)</th>
+                          <th>Bultos recibidos</th>
                           <th>UxB</th>
+                          <th>UxB final</th>
                           <th>Costo</th>
                         </tr>
                       </thead>
@@ -246,6 +273,7 @@ export default function RecepcionListado() {
                             <td>{d.producto?.codigo}</td>
                             <td>{d.producto?.descripcion}</td>
                             <td>{formatNum(d.bultos)}</td>
+                            <td>{formatNum(d.pesoCajon != null ? Number(d.pesoCajon) : 0)}</td>
                             <td>
                               <input
                                 type="text"
@@ -264,9 +292,14 @@ export default function RecepcionListado() {
                                 value={uxb[d.id] ?? ''}
                                 onChange={(e) => actualizarUxb(d.id, e.target.value)}
                                 placeholder="—"
-                                inputMode="numeric"
-                                aria-label={`Unidades por bulto para ${d.producto?.descripcion || d.producto?.codigo}`}
+                                inputMode="decimal"
+                                aria-label={`UxB en kilogramos (peso bruto por bulto) para ${d.producto?.descripcion || d.producto?.codigo}`}
                               />
+                            </td>
+                            <td>
+                              <span className="recepcion-listado-uxb-final" aria-live="polite">
+                                {uxbFinalMostrado(d)}
+                              </span>
                             </td>
                             <td>
                               <input

@@ -11,6 +11,7 @@ import {
   formatMontoNotificacion,
 } from '../lib/notifications.js';
 import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
+import { costoPorUnidadDesdeBulto, recepcionUxBBrutoInvalidoVsCajon } from '../lib/uxbCosto.js';
 
 const router = Router();
 
@@ -121,6 +122,15 @@ router.post('/', soloRecepcion, async (req, res) => {
         cantidad: Math.max(0, Number(d.cantidad) || 0),
         uxb: Math.max(0, Number(d.uxb) || 0),
       }));
+
+    for (const p of payload) {
+      if (p.uxb <= 0) continue;
+      const dc = compra.detalles.find((d) => d.id === p.detalleCompraId);
+      const pesoCajon = dc?.pesoCajon != null ? Number(dc.pesoCajon) : 0;
+      if (recepcionUxBBrutoInvalidoVsCajon(p.uxb, pesoCajon)) {
+        return sendError(res, 400, MSG.RECEP_UXB_NO_CUBRE_CAJON, 'RECEP_009');
+      }
+    }
 
     let wasNew = false;
     const recepcion = await prisma.$transaction(async (tx) => {
@@ -267,7 +277,7 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
         compra: { select: { id: true, numeroCompra: true } },
         detalles: {
           include: {
-            detalleCompra: { select: { id: true, precioPorBulto: true } },
+            detalleCompra: { select: { id: true, precioPorBulto: true, pesoCajon: true } },
           },
         },
       },
@@ -287,7 +297,8 @@ router.patch('/:id', soloRecepcion, async (req, res) => {
       const uxb = Number(detRec.uxb) || 0;
       const rawPrecioPorBulto = detRec.detalleCompra?.precioPorBulto;
       const precioPorBulto = rawPrecioPorBulto != null ? Number(rawPrecioPorBulto) : 0;
-      const costo = uxb > 0 && precioPorBulto > 0 ? precioPorBulto / uxb : 0;
+      const pesoCajon = detRec.detalleCompra?.pesoCajon != null ? Number(detRec.detalleCompra.pesoCajon) : 0;
+      const costo = costoPorUnidadDesdeBulto(precioPorBulto, uxb, pesoCajon);
       let margenPorc = null;
       if (costo > 0 && Number.isFinite(precioVenta)) {
         const m = ((precioVenta - costo) / costo) * 100;

@@ -101,6 +101,7 @@ export const MSG = {
   COMPRAS_FECHA_INVALIDA: 'La fecha de compra no es válida. Usá el formato YYYY-MM-DD.',
   COMPRAS_AL_MENOS_UN_ITEM: 'Debe haber al menos un ítem con bultos mayor a cero.',
   COMPRAS_NO_ENCONTRADA: 'Compra no encontrada.',
+  COMPRAS_PESO_CAJON_NO_NUMERICO: 'El peso del cajón debe ser un número válido (kg).',
 
   // Recepciones
   RECEP_LISTAR: 'No se pudo cargar el listado de recepciones.',
@@ -113,6 +114,8 @@ export const MSG = {
   RECEP_NO_ENCONTRADA: 'Recepción no encontrada.',
   RECEP_PRECIO_MINIMO: 'Ingresá al menos un precio de venta.',
   RECEP_NINGUN_DETALLE_VALIDO: 'Ningún detalle válido con precio de venta.',
+  RECEP_UXB_NO_CUBRE_CAJON:
+    'En uno o más artículos el UxB es menor o igual al peso del cajón cargado en la compra; no hay kilogramos útiles para repartir el costo. Corregí el UxB en recepción o el peso del cajón en la compra.',
 
   // Productos / Proveedores
   PROD_LISTAR: 'No se pudo cargar el listado de productos.',

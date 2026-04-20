@@ -19,7 +19,7 @@
     "db:export-roles": "node scripts/export-roles.mjs",
     "db:import-roles": "node scripts/import-roles.mjs",
     "lint": "eslint .",
-    "test": "node --test src/lib/errors.test.js src/lib/resolveExternoLoginEmail.test.js src/lib/usuariosSqlServer.test.js src/lib/elabLegacyPassword.test.js src/lib/validation.test.js src/lib/nivelRol.test.js src/lib/appCalendarDay.test.js src/lib/dateOnly.test.js",
+    "test": "node --test src/lib/errors.test.js src/lib/resolveExternoLoginEmail.test.js src/lib/usuariosSqlServer.test.js src/lib/elabLegacyPassword.test.js src/lib/validation.test.js src/lib/nivelRol.test.js src/lib/appCalendarDay.test.js src/lib/dateOnly.test.js src/lib/uxbCosto.test.js",
     "test:sql-usuarios": "RUN_SQL_USUARIOS_INTEG=1 node --test src/lib/usuariosSqlServer.integration.test.js",
     "analyze:clave-2558": "node scripts/analyze-usuario-2558-clave.js",
     "check:elab": "node scripts/check-elab.mjs"

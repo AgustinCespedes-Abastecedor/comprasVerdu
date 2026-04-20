@@ -8,6 +8,7 @@ import { createLog } from '../lib/logs.js';
 import { appendCompraAuditoriaEvento } from '../lib/compraAuditoria.js';
 import { getCalendarDayBoundsUtc, utcInstantToCalendarDayString } from '../lib/appCalendarDay.js';
 import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
+import { costoPorUnidadDesdeBulto } from '../lib/uxbCosto.js';
 
 const router = Router();
 
@@ -112,7 +113,9 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
     for (const [codigo, { rec, d, dc, prod }] of ultimaPorCodigo) {
       const uxb = Number(d.uxb) || 0;
       const precioPorBulto = Number(dc?.precioPorBulto) || 0;
-      const costoConIva = uxb > 0 && precioPorBulto > 0 ? Math.round((precioPorBulto / uxb) * 100) / 100 : null;
+      const pesoCajon = dc?.pesoCajon != null ? Number(dc.pesoCajon) : 0;
+      const costoRaw = costoPorUnidadDesdeBulto(precioPorBulto, uxb, pesoCajon);
+      const costoConIva = costoRaw > 0 ? Math.round(costoRaw * 100) / 100 : null;
       const lastSaveAt = lastSaveByCodigo.get(codigo);
       const recLastTouch = rec.updatedAt ? new Date(rec.updatedAt) : rec.createdAt ? new Date(rec.createdAt) : null;
       // Habilitar si no hay UXB guardado o si la recepción se tocó después del último guardado UXB en historial

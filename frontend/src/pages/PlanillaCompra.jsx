@@ -89,6 +89,7 @@ function productToFila(p, filaId) {
     uxb: p.uxb != null && !Number.isNaN(Number(p.uxb)) ? Number(p.uxb) : null,
     bultos: '',
     costoUnidad: '',
+    pesoCajon: '',
     costoTotal: '',
   };
 }
@@ -273,6 +274,7 @@ export default function PlanillaCompra() {
         orden: (original.orden ?? idx) + 0.5,
         bultos: '',
         costoUnidad: '',
+        pesoCajon: original.pesoCajon ?? '',
         costoTotal: '',
       };
       return [...prev.slice(0, idx + 1), nuevaFila, ...prev.slice(idx + 1)];
@@ -306,6 +308,7 @@ export default function PlanillaCompra() {
           descripcion: f.descripcion,
           bultos,
           precioPorBulto: costoUnidad,
+          pesoCajon: Math.max(0, parseNum(f.pesoCajon)),
           pesoPorBulto: 1,
         };
       });
@@ -486,7 +489,8 @@ export default function PlanillaCompra() {
             )}
           </div>
           <p className="planilla-hint" aria-live="polite">
-            Agregá artículos con el buscador. En cada ítem podés editar bultos y precio, duplicar o quitar.
+            Agregá artículos con el buscador. En cada ítem podés editar bultos, precio por bulto y peso del cajón
+            (kg), duplicar o quitar.
           </p>
         </section>
 
@@ -611,6 +615,21 @@ export default function PlanillaCompra() {
                       onChange={(e) => actualizarFila(f.filaId, 'costoUnidad', e.target.value)}
                       placeholder="0"
                       inputMode="decimal"
+                    />
+                  </div>
+                  <div className="planilla-item-field">
+                    <label className="planilla-item-field-label" htmlFor={`planilla-peso-cajon-${f.filaId}`}>
+                      Peso cajón (kg)
+                    </label>
+                    <input
+                      id={`planilla-peso-cajon-${f.filaId}`}
+                      type="text"
+                      className="planilla-item-input"
+                      value={f.pesoCajon}
+                      onChange={(e) => actualizarFila(f.filaId, 'pesoCajon', e.target.value)}
+                      placeholder="0"
+                      inputMode="decimal"
+                      aria-label={`Peso del cajón en kilogramos para ${f.descripcion}`}
                     />
                   </div>
                   <div className="planilla-item-field planilla-item-field-total">

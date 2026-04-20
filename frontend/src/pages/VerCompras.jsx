@@ -12,6 +12,7 @@ import { ChevronDown, FileSpreadsheet, Loader2, Search, X } from 'lucide-react';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatNum, formatDate, todayStr, formatProveedorText, getProveedorNombre, getProveedorCodigo, fechaCivilYmdKey } from '../lib/format';
 import { fetchAllPagedItems } from '../lib/fetchPagedCollection';
+import { costoPorUnidadRecepcion, uxbNetoParaCosto } from '../lib/costoRecepcion';
 import ListPaginationBar from '../components/ListPaginationBar';
 import './VerCompras.css';
 
@@ -21,12 +22,9 @@ function getNumeroCompra(c) {
   return c.numeroCompra != null ? c.numeroCompra : '—';
 }
 
-/** Costo por unidad = precioPorBulto / uxb cuando uxb > 0 (datos de recepción). */
-function costoPorUnidad(precioPorBulto, uxb) {
-  const u = Number(uxb) || 0;
-  if (u <= 0) return null;
-  const p = Number(precioPorBulto) || 0;
-  return p / u;
+/** Costo por kg útil = precioPorBulto / (UxB − peso cajón de la compra). */
+function costoPorUnidad(precioPorBulto, uxb, pesoCajon) {
+  return costoPorUnidadRecepcion(precioPorBulto, uxb, pesoCajon);
 }
 
 /** Subtotal de compra por artículo = bultos * precioPorBulto (datos de compra). */
@@ -78,7 +76,21 @@ function exportarPorProveedor(comprasList) {
     const nombreHoja = nombreHojaUnico(base, nombresUsados);
     const proveedorNombre = getProveedorNombre(c.proveedor) ?? '—';
     const proveedorCodigo = getProveedorCodigo(c.proveedor) ?? '';
-    const encabezados = ['Código', 'Descripción', 'Bultos Comp.', '$/Bulto (compra)', 'Subtotal (compra)', 'Bultos Recib.', 'Costo unidad (rec.)', 'Costo total (rec.)', 'UxB', 'Precio Venta', 'Margen %'];
+    const encabezados = [
+      'Código',
+      'Descripción',
+      'Bultos Comp.',
+      '$/Bulto (compra)',
+      'Peso cajón (kg)',
+      'Subtotal (compra)',
+      'Bultos Recib.',
+      'Costo unidad (rec.)',
+      'Costo total (rec.)',
+      'UxB',
+      'UxB final',
+      'Precio Venta',
+      'Margen %',
+    ];
     const colCount = encabezados.length;
     const padRow = (row) => {
       const next = [...row];
@@ -92,18 +104,24 @@ function exportarPorProveedor(comprasList) {
     const totalMontoExcel = Number.isFinite(totalMontoNum) ? totalMontoNum : '';
     const filas = (c.detalles || []).map((d) => {
       const dr = getDetalleRecepcion(d.id, c.recepcion);
-      const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb) : null;
+      const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb, d.pesoCajon) : null;
       const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0 ? (Number(dr.cantidad) * costoUnidad) : null;
+      const uxbBruto = dr != null && dr.uxb != null ? Number(dr.uxb) : NaN;
+      const uxbFin = Number.isFinite(uxbBruto) && uxbBruto > 0
+        ? uxbNetoParaCosto(uxbBruto, d.pesoCajon)
+        : 0;
       return [
         d.producto?.codigo ?? '',
         d.producto?.descripcion ?? '',
         d.bultos ?? 0,
         d.precioPorBulto != null ? Number(d.precioPorBulto) : '',
+        d.pesoCajon != null ? Number(d.pesoCajon) : '',
         subtotalCompra(d),
         dr != null ? (dr.cantidad ?? '') : '',
         costoUnidad != null ? costoUnidad : '',
         costoTotal != null ? costoTotal : '',
         dr != null ? (dr.uxb ?? '') : '',
+        uxbFin > 0 ? uxbFin : '',
         dr?.precioVenta != null ? dr.precioVenta : '',
         dr?.margenPorc != null ? dr.margenPorc : '',
       ];
@@ -187,7 +205,7 @@ function exportarPorArticulo(comprasList) {
       const cantRec = Number.isFinite(cantRaw) && cantRaw > 0 ? cantRaw : 0;
 
       if (dr && cantRec > 0) {
-        const costoUnidad = costoPorUnidad(d.precioPorBulto, dr.uxb);
+        const costoUnidad = costoPorUnidad(d.precioPorBulto, dr.uxb, d.pesoCajon);
         const pv = dr.precioVenta != null ? Number(dr.precioVenta) : NaN;
         if (costoUnidad != null) {
           const costoLinea = cantRec * costoUnidad;
@@ -617,11 +635,13 @@ export default function VerCompras() {
                               <th>Descripción</th>
                               <th className="vercompras-col-num">Bultos Comp.</th>
                               <th className="vercompras-col-num">$/Bulto</th>
+                              <th className="vercompras-col-num">P. cajón (kg)</th>
                               <th className="vercompras-col-num">Subtotal compra</th>
                               <th className="vercompras-col-num">Bultos Recib.</th>
                               <th className="vercompras-col-num">Costo unidad (rec.)</th>
                               <th className="vercompras-col-num">Costo total (rec.)</th>
                               <th className="vercompras-col-num">UxB</th>
+                              <th className="vercompras-col-num">UxB final</th>
                               <th className="vercompras-col-num">Precio Venta</th>
                               <th className="vercompras-col-num">Margen %</th>
                             </tr>
@@ -629,22 +649,29 @@ export default function VerCompras() {
                           <tbody>
                             {c.detalles.map((d) => {
                               const dr = getDetalleRecepcion(d.id, c.recepcion);
-                              const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb) : null;
+                              const costoUnidad = dr ? costoPorUnidad(d.precioPorBulto, dr.uxb, d.pesoCajon) : null;
                               const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0
                                 ? (Number(dr.cantidad) * costoUnidad)
                                 : null;
                               const subtotal = subtotalCompra(d);
+                              const uxbBruto = dr != null && dr.uxb != null ? Number(dr.uxb) : NaN;
+                              const uxbFinalVal = Number.isFinite(uxbBruto) && uxbBruto > 0
+                                ? uxbNetoParaCosto(uxbBruto, d.pesoCajon)
+                                : 0;
+                              const uxbFinalTxt = dr != null && uxbFinalVal > 0 ? formatNum(uxbFinalVal) : '—';
                               return (
                                 <tr key={d.id}>
                                   <td>{d.producto?.codigo}</td>
                                   <td className="vercompras-col-desc">{d.producto?.descripcion}</td>
                                   <td className="vercompras-col-num">{formatNum(d.bultos)}</td>
                                   <td className="vercompras-col-num">{d.precioPorBulto != null ? formatNum(d.precioPorBulto) : '—'}</td>
+                                  <td className="vercompras-col-num">{d.pesoCajon != null ? formatNum(d.pesoCajon) : '—'}</td>
                                   <td className="vercompras-col-num vercompras-col-subtotal">{formatNum(subtotal)}</td>
                                   <td className="vercompras-col-num">{dr != null ? formatNum(dr.cantidad) : '—'}</td>
                                   <td className="vercompras-col-num">{costoUnidad != null ? formatNum(costoUnidad) : '—'}</td>
                                   <td className="vercompras-col-num">{costoTotal != null ? formatNum(costoTotal) : '—'}</td>
                                   <td className="vercompras-col-num">{dr != null ? formatNum(dr.uxb) : '—'}</td>
+                                  <td className="vercompras-col-num">{uxbFinalTxt}</td>
                                   <td className="vercompras-col-num">{dr?.precioVenta != null ? formatNum(dr.precioVenta) : '—'}</td>
                                   <td className="vercompras-col-num">{dr?.margenPorc != null ? `${formatNum(dr.margenPorc)} %` : '—'}</td>
                                 </tr>

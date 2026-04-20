@@ -176,10 +176,13 @@
 .recepcion-listado-detalle-wrap {
   padding: 0 1.25rem 1.25rem;
   border-top: 1px solid var(--border);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .recepcion-listado-detalle {
   width: 100%;
+  min-width: 36rem;
   border-collapse: collapse;
   margin-top: 1rem;
   font-size: 0.875rem;
@@ -199,6 +202,11 @@
 
 .recepcion-listado-detalle td {
   color: var(--text);
+}
+
+.recepcion-listado-uxb-final {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
 .recepcion-listado-input-cantidad {

@@ -10,6 +10,7 @@ import Modal from '../components/Modal';
 import ProveedorLabel from '../components/ProveedorLabel';
 import { useResponse } from '../context/ResponseContext';
 import { formatNum, formatDate, formatPct, todayStr } from '../lib/format';
+import { costoPorUnidadRecepcion, uxbNetoParaCosto } from '../lib/costoRecepcion';
 import { NOTIFICATIONS_POLL_REQUEST } from '../lib/notificationEvents';
 import ListPaginationBar from '../components/ListPaginationBar';
 import './VerCompras.css';
@@ -22,12 +23,10 @@ function getNumeroCompra(c) {
   return c?.numeroCompra != null ? c.numeroCompra : '—';
 }
 
-/** Costo por unidad = precioPorBulto / uxb cuando uxb > 0 */
-function costoPorUnidad(precioPorBulto, uxb) {
-  const u = Number(uxb) || 0;
-  if (u <= 0) return '';
-  const p = Number(precioPorBulto) || 0;
-  return p / u;
+/** Costo por kg útil = precioPorBulto / (UxB − peso cajón). */
+function costoPorUnidad(precioPorBulto, uxb, pesoCajon) {
+  const c = costoPorUnidadRecepcion(precioPorBulto, uxb, pesoCajon);
+  return c != null ? c : '';
 }
 
 /** Margen % (MarkUP) = (precioVenta - costo) / costo * 100 */
@@ -278,8 +277,10 @@ export default function VerRecepciones() {
                               <th>Código</th>
                               <th>Descripción</th>
                               <th>Bultos</th>
+                              <th>P. cajón (kg)</th>
                               <th>Bultos Recibidos</th>
                               <th>UxB</th>
+                              <th>UxB final</th>
                               <th>Costo</th>
                               <th>Precio Venta</th>
                               <th>Margen %</th>
@@ -288,17 +289,21 @@ export default function VerRecepciones() {
                           <tbody>
                             {r.detalles.map((d) => {
                               const dc = d.detalleCompra;
-                              const costo = costoPorUnidad(dc?.precioPorBulto, d.uxb);
+                              const costo = costoPorUnidad(dc?.precioPorBulto, d.uxb, dc?.pesoCajon);
                               const costoNum = costo !== '' ? Number(costo) : 0;
                               const pv = d.precioVenta != null ? Number(d.precioVenta) : null;
                               const margen = d.margenPorc != null ? Number(d.margenPorc) : (pv != null && costoNum > 0 ? margenPorc(pv, costoNum) : null);
+                              const uxbBruto = Number(d.uxb) || 0;
+                              const uxbFin = uxbBruto > 0 ? uxbNetoParaCosto(uxbBruto, dc?.pesoCajon) : 0;
                               return (
                                 <tr key={d.id}>
                                   <td>{dc?.producto?.codigo}</td>
                                   <td>{dc?.producto?.descripcion}</td>
                                   <td>{formatNum(dc?.bultos)}</td>
+                                  <td>{dc?.pesoCajon != null ? formatNum(dc.pesoCajon) : '—'}</td>
                                   <td>{formatNum(d.cantidad)}</td>
                                   <td>{formatNum(d.uxb)}</td>
+                                  <td>{uxbFin > 0 ? formatNum(uxbFin) : '—'}</td>
                                   <td>{costo !== '' ? formatNum(costo) : '—'}</td>
                                   <td>{pv != null ? formatNum(pv) : '—'}</td>
                                   <td>{margen != null ? formatPct(margen) : '—'}</td>
@@ -356,7 +361,7 @@ export default function VerRecepciones() {
                 <tbody>
                   {(modalRecepcion.detalles || []).map((d) => {
                     const dc = d.detalleCompra;
-                    const costo = costoPorUnidad(dc?.precioPorBulto, d.uxb);
+                    const costo = costoPorUnidad(dc?.precioPorBulto, d.uxb, dc?.pesoCajon);
                     const costoNum = costo !== '' ? Number(costo) : 0;
                     const codigo = dc?.producto?.codigo;
                     const checkedUsarActual = !!usarPrecioActual[d.id];

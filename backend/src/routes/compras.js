@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { soloComprador, soloVerCompras } from '../middleware/auth.js';
-import { sendError, MSG } from '../lib/errors.js';
+import { sendError, MSG, apiError } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
 import { appendCompraAuditoriaDesdeActivityLog } from '../lib/compraAuditoria.js';
 import { parseYmdToPrismaDateOnly, logWarnIfInvalidYmdQuery } from '../lib/dateOnly.js';
@@ -12,6 +12,7 @@ import {
   formatMontoNotificacion,
 } from '../lib/notifications.js';
 import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
+import { normalizarPesoCajonKg } from '../lib/uxbCosto.js';
 
 const router = Router();
 
@@ -176,6 +177,11 @@ router.post('/', soloComprador, async (req, res) => {
           if (!productoId) return null;
           const bultos = Number(d.bultos) || 0;
           const precioPorBulto = Number(d.precioPorBulto) || 0;
+          const rawPesoCajon = d.pesoCajon;
+          if (rawPesoCajon != null && rawPesoCajon !== '' && Number.isNaN(Number(rawPesoCajon))) {
+            throw apiError(MSG.COMPRAS_PESO_CAJON_NO_NUMERICO, 'COMPRAS_013', 400);
+          }
+          const pesoCajon = normalizarPesoCajonKg(rawPesoCajon);
           const pesoPorBulto = Number(d.pesoPorBulto) || 0;
           const precioPorKg = pesoPorBulto > 0 ? precioPorBulto / pesoPorBulto : 0;
           const total = bultos * precioPorBulto;
@@ -185,6 +191,7 @@ router.post('/', soloComprador, async (req, res) => {
             productoId,
             bultos,
             precioPorBulto,
+            pesoCajon,
             pesoPorBulto,
             precioPorKg,
             total,
@@ -249,6 +256,7 @@ router.post('/', soloComprador, async (req, res) => {
           codigo: d.producto?.codigo ?? '—',
           bultos: d.bultos,
           precioPorBulto: Number(d.precioPorBulto),
+          pesoCajon: Number(d.pesoCajon),
           total: Number(d.total),
         })),
       };
@@ -299,6 +307,9 @@ router.post('/', soloComprador, async (req, res) => {
 
     res.status(201).json(compra);
   } catch (e) {
+    if (e && typeof e.status === 'number' && e.status < 500 && e.message && e.code) {
+      return sendError(res, e.status, e.message, e.code);
+    }
     sendError(res, 500, MSG.COMPRAS_GUARDAR, 'COMPRAS_006', e);
   }
 });
