@@ -11,7 +11,7 @@ import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
 import AppLoader from '../components/AppLoader';
 import ProveedorLabel from '../components/ProveedorLabel';
-import { ChevronDown, FileSpreadsheet, Loader2, Search, X } from 'lucide-react';
+import { ChevronDown, FileSpreadsheet, Loader2, Pencil, Search, X } from 'lucide-react';
 import { usePullToRefresh } from '../context/PullToRefreshContext';
 import { formatNum, formatDate, todayStr, formatProveedorText, getProveedorNombre, getProveedorCodigo, fechaCivilYmdKey } from '../lib/format';
 import { fetchAllPagedItems } from '../lib/fetchPagedCollection';
@@ -23,6 +23,12 @@ const isApp = () => Capacitor.isNativePlatform();
 
 function getNumeroCompra(c) {
   return c.numeroCompra != null ? c.numeroCompra : '—';
+}
+
+/** Compras Nº 1–10: datos de testeo; se muestran con etiqueta para no confundir con operación real. */
+function esCompraNumeroTesteo(c) {
+  const n = Number(c?.numeroCompra);
+  return Number.isFinite(n) && n >= 1 && n <= 10;
 }
 
 /** Costo por kg útil = precioPorBulto / (UxB − peso cajón de la compra). */
@@ -93,7 +99,7 @@ function exportarPorProveedor(comprasList) {
   const encabezados = [
     'Código',
     'Descripción',
-    'Bultos Comp.',
+    'Bultos compra',
     '$/Bulto (compra)',
     'Peso cajón (kg)',
     'Subtotal (compra)',
@@ -294,7 +300,7 @@ function exportarPorArticulo(comprasList) {
     'Fecha',
     'Cód. artículo',
     'Descripción',
-    'Bultos Comp.',
+    'Bultos compra',
     '$/Bulto (compra)',
     'Subtotal (compra)',
     'Bultos Recib.',
@@ -716,6 +722,7 @@ export default function VerCompras() {
         <div className="vercompras-list">
           {list.map((c) => {
             const expandido = expandidoKey === c.id;
+            const enEdicionCompra = editingCompraId === c.id;
             return (
               <article key={c.id} className={`vercompras-card ${expandido ? 'vercompras-card--open' : ''}`}>
                 <button
@@ -725,7 +732,14 @@ export default function VerCompras() {
                   aria-expanded={expandido}
                   aria-controls={`vercomp-detalle-${c.id}`}
                 >
-                  <span className="vercompras-card-numero" title="Número de compra">Nº {getNumeroCompra(c)}</span>
+                  <span className="vercompras-card-head-left">
+                    <span className="vercompras-card-numero" title="Número de compra">Nº {getNumeroCompra(c)}</span>
+                    {esCompraNumeroTesteo(c) && (
+                      <span className="vercompras-tag-testeo" title="Compra de pruebas del sistema">
+                        TESTEO
+                      </span>
+                    )}
+                  </span>
                   <span className="vercompras-card-fecha">{formatDate(c.fecha)}</span>
                   <ProveedorLabel proveedor={c.proveedor} className="vercompras-card-proveedor" />
                   <span className="vercompras-card-user">{c.user?.nombre}</span>
@@ -733,41 +747,9 @@ export default function VerCompras() {
                 </button>
                 {expandido && (
                   <div id={`vercomp-detalle-${c.id}`} className="vercompras-card-body">
-                    {puedeEditarBultos && c.detalles?.length > 0 && (
-                      <div className="vercompras-bultos-toolbar">
-                        {editingCompraId === c.id ? (
-                          <>
-                            <button
-                              type="button"
-                              className="vercompras-btn-bultos vercompras-btn-bultos-primary"
-                              onClick={() => guardarBultosCompra(c)}
-                              disabled={guardandoBultos}
-                            >
-                              {guardandoBultos ? 'Guardando…' : 'Guardar cantidades'}
-                            </button>
-                            <button
-                              type="button"
-                              className="vercompras-btn-bultos vercompras-btn-bultos-secondary"
-                              onClick={cancelarEdicionBultos}
-                              disabled={guardandoBultos}
-                            >
-                              Cancelar
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            type="button"
-                            className="vercompras-btn-bultos vercompras-btn-bultos-secondary"
-                            onClick={() => iniciarEdicionBultos(c)}
-                          >
-                            Editar cantidades (bultos)
-                          </button>
-                        )}
-                      </div>
-                    )}
                     <div className="vercompras-card-totales">
                       {(() => {
-                        const enEdicion = editingCompraId === c.id;
+                        const enEdicion = enEdicionCompra;
                         const { totalBultos: tb, totalMonto: tm } = enEdicion
                           ? totalesCompraDesdeDetalles(c, bultosDraft)
                           : {
@@ -786,6 +768,26 @@ export default function VerCompras() {
                             <span className="vercompras-total-chip vercompras-total-chip--monto" aria-label={`Total compra: $ ${montoFmt}`}>
                               $ {montoFmt}
                             </span>
+                            {puedeEditarBultos && enEdicion && c.detalles?.length > 0 && (
+                              <div className="vercompras-bultos-actions" role="group" aria-label="Acciones de edición de bultos">
+                                <button
+                                  type="button"
+                                  className="vercompras-btn-bultos vercompras-btn-bultos-primary"
+                                  onClick={() => guardarBultosCompra(c)}
+                                  disabled={guardandoBultos}
+                                >
+                                  {guardandoBultos ? 'Guardando…' : 'Guardar'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="vercompras-btn-bultos vercompras-btn-bultos-secondary"
+                                  onClick={cancelarEdicionBultos}
+                                  disabled={guardandoBultos}
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            )}
                           </>
                         );
                       })()}
@@ -797,7 +799,22 @@ export default function VerCompras() {
                             <tr>
                               <th>Código</th>
                               <th>Descripción</th>
-                              <th className="vercompras-col-num">Bultos Comp.</th>
+                              <th className="vercompras-col-num vercompras-th-bultos-compra" scope="col">
+                                <div className="vercompras-th-bultos-inner">
+                                  <span className="vercompras-th-bultos-label">Bultos compra</span>
+                                  {puedeEditarBultos && !enEdicionCompra && c.detalles?.length > 0 && (
+                                    <button
+                                      type="button"
+                                      className="vercompras-btn-edit-bultos"
+                                      onClick={() => iniciarEdicionBultos(c)}
+                                      title="Editar bultos comprados"
+                                      aria-label="Editar bultos comprados de esta compra"
+                                    >
+                                      <Pencil className="vercompras-icon-pencil" aria-hidden strokeWidth={2} />
+                                    </button>
+                                  )}
+                                </div>
+                              </th>
                               <th className="vercompras-col-num">$/Bulto</th>
                               <th className="vercompras-col-num">P. cajón (kg)</th>
                               <th className="vercompras-col-num">Subtotal compra</th>
@@ -817,7 +834,7 @@ export default function VerCompras() {
                               const costoTotal = costoUnidad != null && dr != null && (dr.cantidad ?? 0) > 0
                                 ? (Number(dr.cantidad) * costoUnidad)
                                 : null;
-                              const enEdicionFila = editingCompraId === c.id;
+                              const enEdicionFila = enEdicionCompra;
                               let bultosParaSubtotal = Number(d.bultos) || 0;
                               if (enEdicionFila && bultosDraft[d.id] !== undefined) {
                                 const pb = parseBultosEntero(bultosDraft[d.id]);
