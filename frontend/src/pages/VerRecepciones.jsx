@@ -12,6 +12,7 @@ import { useResponse } from '../context/ResponseContext';
 import { formatNum, formatDate, formatPct, todayStr } from '../lib/format';
 import { costoPorUnidadRecepcion, uxbNetoParaCosto } from '../lib/costoRecepcion';
 import { NOTIFICATIONS_POLL_REQUEST } from '../lib/notificationEvents';
+import { esCompraNumeroTesteo } from '../lib/compraTesteo';
 import ListPaginationBar from '../components/ListPaginationBar';
 import './VerCompras.css';
 
@@ -241,7 +242,14 @@ export default function VerRecepciones() {
                   aria-expanded={expandido}
                   aria-controls={`verrec-detalle-${r.id}`}
                 >
-                  <span className="vercompras-card-numero" title="Número de recepción">Nº {getNumeroRecepcion(r)}</span>
+                  <span className="vercompras-card-head-left">
+                    <span className="vercompras-card-numero" title="Número de recepción">Nº {getNumeroRecepcion(r)}</span>
+                    {esCompraNumeroTesteo(r.compra) && (
+                      <span className="app-tag-testeo" title="Recepción de compra de pruebas (Nº compra 1–10)">
+                        TESTEO
+                      </span>
+                    )}
+                  </span>
                   <span
                     className="vercompras-card-fecha"
                     title="Fecha de la compra (planilla)."

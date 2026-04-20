@@ -19,15 +19,28 @@ function getNumeroCompra(c) {
   return c.numeroCompra != null ? c.numeroCompra : '—';
 }
 
+function detallesEvento(ev) {
+  return ev.details && typeof ev.details === 'object' ? ev.details : {};
+}
+
+function esEventoAjusteBultosCompra(ev) {
+  const tipo = ev.auditoria && typeof ev.auditoria === 'object' ? String(ev.auditoria.tipo || '') : '';
+  if (tipo === 'compra.bultos_actualizados') return true;
+  const d = detallesEvento(ev);
+  return ev.entity === 'compra' && ev.action === 'actualizar' && Boolean(d.ajusteBultos);
+}
+
 function tituloEvento(ev) {
   const tipo = ev.auditoria && typeof ev.auditoria === 'object' ? String(ev.auditoria.tipo || '') : '';
   if (tipo === 'compra.creada') return 'Compra registrada';
+  if (tipo === 'compra.bultos_actualizados') return 'Bultos de compra modificados';
   if (tipo === 'recepcion.precios_venta') return 'Precios de venta guardados';
   if (tipo === 'recepcion.creada') return 'Recepción creada / guardada';
   if (tipo === 'recepcion.actualizada') return 'Recepción actualizada';
   if (tipo === 'info_final.uxb') return 'UxB actualizado (Info Final)';
 
   if (ev.entity === 'compra' && ev.action === 'crear') return 'Compra registrada';
+  if (esEventoAjusteBultosCompra(ev)) return 'Bultos de compra modificados';
   if (ev.entity === 'recepcion') {
     const d = ev.details && typeof ev.details === 'object' ? ev.details : {};
     if (d.preciosVenta) return 'Precios de venta guardados';
@@ -42,7 +55,23 @@ function tituloEvento(ev) {
 }
 
 function detalleEvento(ev) {
-  const d = ev.details && typeof ev.details === 'object' ? ev.details : {};
+  const d = detallesEvento(ev);
+  if (esEventoAjusteBultosCompra(ev)) {
+    const items = Array.isArray(d.items) ? d.items : [];
+    if (items.length === 0) {
+      return 'Se modificaron las cantidades de bultos en la compra.';
+    }
+    return items
+      .map((it) => {
+        const cod = it.codigo != null ? String(it.codigo) : '—';
+        const art = it.articulo != null ? String(it.articulo).trim() : '';
+        const ant = it.bultosAntes != null ? String(it.bultosAntes) : '—';
+        const desp = it.bultosDespues != null ? String(it.bultosDespues) : '—';
+        const suf = art && art !== cod ? ` · ${art}` : '';
+        return `${cod}${suf}: ${ant} → ${desp} bultos`;
+      })
+      .join(' · ');
+  }
   if (ev.entity === 'compra' && ev.action === 'crear') {
     const prov = d.proveedor ? String(d.proveedor) : '';
     const tb = d.totalBultos != null ? d.totalBultos : '';

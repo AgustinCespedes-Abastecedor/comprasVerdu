@@ -103,6 +103,8 @@ export const MSG = {
   COMPRAS_NO_ENCONTRADA: 'Compra no encontrada.',
   COMPRAS_PESO_CAJON_NO_NUMERICO: 'El peso del cajón debe ser un número válido (kg).',
   COMPRAS_EDIT_BULTOS_SOLO_ROL_COMPRADOR: 'Solo el rol Comprador puede modificar las cantidades de bultos de una compra.',
+  COMPRAS_EDIT_BULTOS_SIN_PERMISO:
+    'Solo un usuario con rol Comprador o Administrador puede modificar las cantidades de bultos de una compra.',
   COMPRAS_DETALLE_NO_PERTENECE: 'Uno de los ítems no pertenece a esta compra.',
   COMPRAS_BULTOS_DEBE_SER_ENTERO: 'La cantidad de bultos debe ser un número entero mayor o igual a cero.',
   COMPRAS_BULTOS_MENOR_RECEPCION:

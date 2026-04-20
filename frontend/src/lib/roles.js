@@ -38,6 +38,13 @@ export function esRolComprador(user) {
   return String(user.role?.nombre || '').trim() === 'Comprador';
 }
 
+/** Comprador o Administrador (p. ej. nivel ELAB 100): pueden corregir bultos cargados en una compra. */
+export function esRolCompradorOAdministrador(user) {
+  if (!user) return false;
+  const n = String(user.role?.nombre || '').trim();
+  return n === 'Comprador' || n === 'Administrador';
+}
+
 /** Valores permitidos en registro público (el backend mapea a roles por nombre). */
 export const ROLES_REGISTRO = ['COMPRADOR', 'RECEPCIONISTA', 'VISOR'];
 

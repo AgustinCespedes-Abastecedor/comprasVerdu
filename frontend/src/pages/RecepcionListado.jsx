@@ -11,6 +11,7 @@ import ProveedorLabel from '../components/ProveedorLabel';
 import { formatNum, formatDate, todayStr } from '../lib/format';
 import { costoPorUnidadRecepcion, recepcionUxBBrutoInvalidoVsCajon, uxbNetoParaCosto } from '../lib/costoRecepcion';
 import { NOTIFICATIONS_POLL_REQUEST } from '../lib/notificationEvents';
+import { esCompraNumeroTesteo } from '../lib/compraTesteo';
 import ListPaginationBar from '../components/ListPaginationBar';
 import './RecepcionListado.css';
 
@@ -244,7 +245,14 @@ export default function RecepcionListado() {
                   aria-expanded={expandidoId === c.id}
                   aria-controls={`recepcion-detalle-${c.id}`}
                 >
-                  <span className="recepcion-listado-card-numero">Nº {getNumeroCompra(c)}</span>
+                  <span className="recepcion-listado-card-head-left">
+                    <span className="recepcion-listado-card-numero">Nº {getNumeroCompra(c)}</span>
+                    {esCompraNumeroTesteo(c) && (
+                      <span className="app-tag-testeo" title="Compra de pruebas del sistema (Nº 1–10)">
+                        TESTEO
+                      </span>
+                    )}
+                  </span>
                   <span className="recepcion-listado-card-fecha">{formatDate(c.fecha)}</span>
                   <ProveedorLabel proveedor={c.proveedor} className="recepcion-listado-card-proveedor" />
                   <span className="recepcion-listado-card-chevron" aria-hidden>

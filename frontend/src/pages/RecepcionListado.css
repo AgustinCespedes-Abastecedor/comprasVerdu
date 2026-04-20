@@ -148,6 +148,14 @@
   background: rgba(0, 0, 0, 0.04);
 }
 
+.recepcion-listado-card-head-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
 .recepcion-listado-card-numero {
   font-weight: 600;
   color: var(--text);

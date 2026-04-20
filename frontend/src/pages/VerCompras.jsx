@@ -5,7 +5,8 @@ import * as XLSX from 'xlsx';
 import { compras, proveedores as apiProveedores } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useResponse } from '../context/ResponseContext';
-import { esRolComprador } from '../lib/roles';
+import { esRolCompradorOAdministrador } from '../lib/roles';
+import { esCompraNumeroTesteo } from '../lib/compraTesteo';
 import AppHeader from '../components/AppHeader';
 import BackNavIcon from '../components/icons/BackNavIcon';
 import ThemeToggle from '../components/ThemeToggle';
@@ -23,12 +24,6 @@ const isApp = () => Capacitor.isNativePlatform();
 
 function getNumeroCompra(c) {
   return c.numeroCompra != null ? c.numeroCompra : '—';
-}
-
-/** Compras Nº 1–10: datos de testeo; se muestran con etiqueta para no confundir con operación real. */
-function esCompraNumeroTesteo(c) {
-  const n = Number(c?.numeroCompra);
-  return Number.isFinite(n) && n >= 1 && n <= 10;
 }
 
 /** Costo por kg útil = precioPorBulto / (UxB − peso cajón de la compra). */
@@ -345,7 +340,7 @@ function exportarPorArticulo(comprasList) {
 export default function VerCompras() {
   const { user } = useAuth();
   const { showSuccess, showError } = useResponse();
-  const puedeEditarBultos = esRolComprador(user);
+  const puedeEditarBultos = esRolCompradorOAdministrador(user);
 
   const [list, setList] = useState([]);
   const [total, setTotal] = useState(0);
@@ -735,7 +730,7 @@ export default function VerCompras() {
                   <span className="vercompras-card-head-left">
                     <span className="vercompras-card-numero" title="Número de compra">Nº {getNumeroCompra(c)}</span>
                     {esCompraNumeroTesteo(c) && (
-                      <span className="vercompras-tag-testeo" title="Compra de pruebas del sistema">
+                      <span className="app-tag-testeo" title="Compra de pruebas del sistema">
                         TESTEO
                       </span>
                     )}

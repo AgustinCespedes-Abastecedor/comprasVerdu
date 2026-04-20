@@ -95,6 +95,17 @@ export function soloRolComprador(req, res, next) {
   next();
 }
 
+/**
+ * Ajuste de bultos en compra: rol Comprador o Administrador (p. ej. nivel ELAB 100).
+ */
+export function soloRolCompradorOAdministrador(req, res, next) {
+  const nombre = String(req.rol?.nombre || '').trim();
+  if (nombre === 'Comprador' || nombre === 'Administrador') {
+    return next();
+  }
+  return sendError(res, 403, MSG.COMPRAS_EDIT_BULTOS_SIN_PERMISO, 'COMPRAS_014');
+}
+
 /** Solo quien tiene permiso "ver-compras" (listar y ver compras). */
 export const soloVerCompras = requierePermiso('ver-compras');
 

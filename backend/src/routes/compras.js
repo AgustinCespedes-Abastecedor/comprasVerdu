@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { soloComprador, soloVerCompras, soloRolComprador } from '../middleware/auth.js';
+import { soloComprador, soloVerCompras, soloRolCompradorOAdministrador } from '../middleware/auth.js';
 import { sendError, MSG, apiError } from '../lib/errors.js';
 import { createLog } from '../lib/logs.js';
 import { appendCompraAuditoriaDesdeActivityLog } from '../lib/compraAuditoria.js';
@@ -315,10 +315,10 @@ router.post('/', soloComprador, async (req, res) => {
 });
 
 /**
- * PATCH /compras/:id/detalles-bultos — Solo rol "Comprador". Ajusta bultos por línea, recalcula total línea y totales de compra.
+ * PATCH /compras/:id/detalles-bultos — Rol Comprador o Administrador (nivel sistema). Ajusta bultos por línea, recalcula total línea y totales de compra.
  * Body: { detalles: [{ id: detalleCompraId, bultos: number }] }
  */
-router.patch('/:id/detalles-bultos', soloVerCompras, soloRolComprador, async (req, res) => {
+router.patch('/:id/detalles-bultos', soloVerCompras, soloRolCompradorOAdministrador, async (req, res) => {
   try {
     if (!req.userId) {
       return sendError(res, 401, MSG.COMPRAS_USUARIO_NO_IDENTIFICADO, 'COMPRAS_003');

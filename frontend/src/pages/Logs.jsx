@@ -314,7 +314,7 @@ export default function Logs() {
                       {isRecepcionPrecios
                         ? 'Valores de precio y margen establecidos por el usuario.'
                         : isCompraAjusteBultos
-                          ? 'Ajuste de bultos comprados por un comprador; se conserva la cantidad original en el sistema.'
+                          ? 'Ajuste de bultos comprados; se conserva la cantidad original en el sistema (Comprador o Administrador).'
                           : 'Foto de lo cargado: cada artículo con sus cantidades y montos.'}
                     </p>
                     <div className="logs-modal-items-wrap">
