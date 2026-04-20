@@ -212,6 +212,24 @@
   color: var(--text);
 }
 
+/* Métricas y cantidades: centrado para alinear con Ver compras / Ver recepciones y despegar columnas */
+.recepcion-listado-detalle th.recepcion-listado-col-metric,
+.recepcion-listado-detalle td.recepcion-listado-col-metric {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  padding-left: 0.85rem;
+  padding-right: 0.85rem;
+  vertical-align: middle;
+}
+
+.recepcion-listado-detalle .recepcion-listado-col-metric .recepcion-listado-input-cantidad,
+.recepcion-listado-detalle .recepcion-listado-col-metric .recepcion-listado-input-costo {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
 .recepcion-listado-uxb-final {
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);

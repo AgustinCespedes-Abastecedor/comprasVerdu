@@ -267,12 +267,12 @@ export default function RecepcionListado() {
                         <tr>
                           <th>Código</th>
                           <th>Descripción</th>
-                          <th>Bultos</th>
-                          <th>Peso cajón (kg)</th>
-                          <th>Bultos recibidos</th>
-                          <th>UxB</th>
-                          <th>UxB final</th>
-                          <th>Costo</th>
+                          <th className="recepcion-listado-col-metric" scope="col">Bultos</th>
+                          <th className="recepcion-listado-col-metric" scope="col">Peso cajón (kg)</th>
+                          <th className="recepcion-listado-col-metric" scope="col">Bultos recibidos</th>
+                          <th className="recepcion-listado-col-metric" scope="col">UxB</th>
+                          <th className="recepcion-listado-col-metric" scope="col">UxB final</th>
+                          <th className="recepcion-listado-col-metric" scope="col">Costo</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -280,9 +280,9 @@ export default function RecepcionListado() {
                           <tr key={d.id}>
                             <td>{d.producto?.codigo}</td>
                             <td>{d.producto?.descripcion}</td>
-                            <td>{formatNum(d.bultos)}</td>
-                            <td>{formatNum(d.pesoCajon != null ? Number(d.pesoCajon) : 0)}</td>
-                            <td>
+                            <td className="recepcion-listado-col-metric">{formatNum(d.bultos)}</td>
+                            <td className="recepcion-listado-col-metric">{formatNum(d.pesoCajon != null ? Number(d.pesoCajon) : 0)}</td>
+                            <td className="recepcion-listado-col-metric">
                               <input
                                 type="text"
                                 className="recepcion-listado-input-cantidad"
@@ -293,7 +293,7 @@ export default function RecepcionListado() {
                                 aria-label={`Bultos recibidos para ${d.producto?.descripcion || d.producto?.codigo}`}
                               />
                             </td>
-                            <td>
+                            <td className="recepcion-listado-col-metric">
                               <input
                                 type="text"
                                 className="recepcion-listado-input-cantidad"
@@ -304,12 +304,12 @@ export default function RecepcionListado() {
                                 aria-label={`UxB en kilogramos (peso bruto por bulto) para ${d.producto?.descripcion || d.producto?.codigo}`}
                               />
                             </td>
-                            <td>
+                            <td className="recepcion-listado-col-metric">
                               <span className="recepcion-listado-uxb-final" aria-live="polite">
                                 {uxbFinalMostrado(d)}
                               </span>
                             </td>
-                            <td>
+                            <td className="recepcion-listado-col-metric">
                               <input
                                 type="text"
                                 className="recepcion-listado-input-costo"

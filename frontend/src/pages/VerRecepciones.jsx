@@ -284,7 +284,7 @@ export default function VerRecepciones() {
                             <tr>
                               <th>Código</th>
                               <th>Descripción</th>
-                              <th>Bultos</th>
+                              <th className="vercompras-col-num vercompras-th-bultos-compra" scope="col">Bultos</th>
                               <th>P. cajón (kg)</th>
                               <th>Bultos Recibidos</th>
                               <th>UxB</th>
@@ -307,7 +307,7 @@ export default function VerRecepciones() {
                                 <tr key={d.id}>
                                   <td>{dc?.producto?.codigo}</td>
                                   <td>{dc?.producto?.descripcion}</td>
-                                  <td>{formatNum(dc?.bultos)}</td>
+                                  <td className="vercompras-col-num vercompras-col-bultos">{formatNum(dc?.bultos)}</td>
                                   <td>{dc?.pesoCajon != null ? formatNum(dc.pesoCajon) : '—'}</td>
                                   <td>{formatNum(d.cantidad)}</td>
                                   <td>{formatNum(d.uxb)}</td>
