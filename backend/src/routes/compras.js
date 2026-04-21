@@ -12,6 +12,7 @@ import {
   formatMontoNotificacion,
 } from '../lib/notifications.js';
 import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
+import { COMPRAS_LIST_ORDER_BY } from '../lib/compraRecepcionListOrder.js';
 import { normalizarPesoCajonKg } from '../lib/uxbCosto.js';
 
 const router = Router();
@@ -75,7 +76,7 @@ router.get('/', soloVerCompras, async (req, res) => {
         },
       },
     };
-    const orderBy = [{ numeroCompra: 'asc' }, { fecha: 'asc' }, { createdAt: 'asc' }];
+    const orderBy = COMPRAS_LIST_ORDER_BY;
 
     if (wantsPagedEnvelope(req.query)) {
       const { page, pageSize, skip } = parseOffsetPagination(req.query);

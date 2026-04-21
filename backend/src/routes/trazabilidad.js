@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { sendError, MSG } from '../lib/errors.js';
 import { parseYmdToPrismaDateOnly, logWarnIfInvalidYmdQuery } from '../lib/dateOnly.js';
 import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
+import { COMPRAS_LIST_ORDER_BY } from '../lib/compraRecepcionListOrder.js';
 
 const router = Router();
 
@@ -77,8 +78,6 @@ const compraTrazSelect = {
   user: { select: { id: true, nombre: true, email: true } },
   recepcion: { select: { id: true, numeroRecepcion: true, createdAt: true, updatedAt: true, completa: true, userId: true } },
 };
-
-const compraTrazOrderBy = [{ numeroCompra: 'asc' }, { fecha: 'asc' }, { createdAt: 'asc' }];
 
 /** Enriquece compras con eventos de auditoría + ActivityLog (misma página de resultados). */
 async function buildTrazabilidadComprasRows(compras) {
@@ -253,8 +252,8 @@ async function buildTrazabilidadComprasRows(compras) {
       out.sort((a, b) => {
         const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        if (ta !== tb) return ta - tb;
-        return String(a.id).localeCompare(String(b.id));
+        if (ta !== tb) return tb - ta;
+        return String(b.id).localeCompare(String(a.id));
       });
       return out;
     };
@@ -294,7 +293,7 @@ router.get('/compras', async (req, res) => {
         prisma.compra.count({ where }),
         prisma.compra.findMany({
           where,
-          orderBy: compraTrazOrderBy,
+          orderBy: COMPRAS_LIST_ORDER_BY,
           skip,
           take: pageSize,
           select: compraTrazSelect,
@@ -306,7 +305,7 @@ router.get('/compras', async (req, res) => {
 
     const compras = await prisma.compra.findMany({
       where,
-      orderBy: compraTrazOrderBy,
+      orderBy: COMPRAS_LIST_ORDER_BY,
       select: compraTrazSelect,
     });
 

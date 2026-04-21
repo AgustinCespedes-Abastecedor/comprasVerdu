@@ -8,6 +8,10 @@ import { createLog } from '../lib/logs.js';
 import { appendCompraAuditoriaEvento } from '../lib/compraAuditoria.js';
 import { getCalendarDayBoundsUtc, utcInstantToCalendarDayString } from '../lib/appCalendarDay.js';
 import { parseOffsetPagination, wantsPagedEnvelope } from '../lib/listPagination.js';
+import {
+  RECEPCIONES_LIST_ORDER_BY,
+  compareRecepcionesNewestFirst,
+} from '../lib/compraRecepcionListOrder.js';
 import { costoPorUnidadDesdeBulto } from '../lib/uxbCosto.js';
 
 const router = Router();
@@ -26,6 +30,7 @@ router.get('/fechas-con-datos', soloInfoFinalArticulos, async (req, res) => {
         updatedAt: { gte: new Date(desdeMs) },
         detalles: { some: {} },
       },
+      orderBy: RECEPCIONES_LIST_ORDER_BY,
       select: { updatedAt: true },
     });
     const dias = new Set();
@@ -61,6 +66,7 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
         updatedAt: { gte: bounds.gte, lt: bounds.lt },
         detalles: { some: {} },
       },
+      orderBy: RECEPCIONES_LIST_ORDER_BY,
       include: {
         compra: { select: { numeroCompra: true, fecha: true, createdAt: true } },
         detalles: {
@@ -76,8 +82,7 @@ router.get('/', soloInfoFinalArticulos, async (req, res) => {
     });
 
     const conDetalle = recepciones.filter((r) => r.detalles?.length > 0);
-    const porNumeroRecepcion = (a, b) => (b.numeroRecepcion ?? 0) - (a.numeroRecepcion ?? 0);
-    const recepcionesDesc = [...conDetalle].sort(porNumeroRecepcion);
+    const recepcionesDesc = [...conDetalle].sort(compareRecepcionesNewestFirst);
 
     /** Por codigo: datos de la última recepción que contiene ese artículo (rec, detalle, detalleCompra, producto) */
     const ultimaPorCodigo = new Map();
@@ -227,6 +232,7 @@ const handlerUxb = async (req, res) => {
         updatedAt: { gte: bounds.gte, lt: bounds.lt },
         detalles: { some: {} },
       },
+      orderBy: RECEPCIONES_LIST_ORDER_BY,
       include: {
         detalles: {
           include: {

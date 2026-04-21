@@ -5,12 +5,14 @@
  */
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { RECEPCIONES_LIST_ORDER_BY } from '../src/lib/compraRecepcionListOrder.js';
 
 const prisma = new PrismaClient();
 
 async function main() {
   const recepciones = await prisma.recepcion.findMany({
     where: { completa: false },
+    orderBy: RECEPCIONES_LIST_ORDER_BY,
     include: { detalles: { select: { precioVenta: true, margenPorc: true, uxb: true } } },
   });
   let updated = 0;
