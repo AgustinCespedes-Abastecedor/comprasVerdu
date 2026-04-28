@@ -52,6 +52,8 @@ services:
       NODE_ENV: production
       PORT: 4000
       DATABASE_URL: postgresql://${POSTGRES_USER:-compras_verdu}:${POSTGRES_PASSWORD:-compras_verdu_secret}@db:5432/${POSTGRES_DB:-compras_verdu}?schema=public
+      # SSO: debe coincidir con Tablero (CVERDU_SSO_SECRET)
+      TABLERO_SSO_SECRET: ${TABLERO_SSO_SECRET:-}
     depends_on:
       db:
         condition: service_healthy

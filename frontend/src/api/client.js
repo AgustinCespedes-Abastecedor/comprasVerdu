@@ -72,6 +72,7 @@ export const auth = {
   getPublicConfig: () => api('/auth/config'),
   /** @param {string} loginId Correo, usuario o código (cuerpo JSON sigue usando la clave `email` por compatibilidad con el backend). */
   login: (loginId, password) => api('/auth/login', { method: 'POST', body: JSON.stringify({ email: loginId, password }) }),
+  tableroSso: (token) => api('/auth/tablero-sso', { method: 'POST', body: JSON.stringify({ token }) }),
   registro: (body) => api('/auth/registro', { method: 'POST', body: JSON.stringify(body) }),
   me: () => api('/auth/me'),
 };

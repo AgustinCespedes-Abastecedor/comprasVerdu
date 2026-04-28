@@ -51,6 +51,26 @@ export default function Login() {
   const [configStatus, setConfigStatus] = useState('loading');
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tableroSso = params.get('tablero_sso');
+    if (!tableroSso) return;
+    setError('');
+    setErrorCode('');
+    setLoading(true);
+    void (async () => {
+      try {
+        const { user: u, token } = await auth.tableroSso(tableroSso);
+        login(u, token);
+        navigate('/', { replace: true });
+      } catch (err) {
+        setError(err?.message || 'No se pudo iniciar sesión automáticamente.');
+        setErrorCode(err?.code ?? '');
+        setLoading(false);
+      }
+    })();
+  }, [login, navigate]);
+
+  useEffect(() => {
     let cancelled = false;
     setConfigStatus('loading');
     fetchExternalAuthFlagWithRetry()

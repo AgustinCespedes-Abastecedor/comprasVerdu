@@ -250,6 +250,98 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.post('/tablero-sso', async (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const token = typeof body.token === 'string' ? body.token.trim() : '';
+    if (!token) {
+      return sendError(res, 400, MSG.AUTH_FALTAN_DATOS, 'AUTH_SSO_001');
+    }
+    const secret = String(process.env.TABLERO_SSO_SECRET ?? '').trim();
+    if (!secret || secret.length < 16) {
+      return sendError(res, 503, 'SSO no configurado en el servidor.', 'AUTH_SSO_002');
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(token, secret, { issuer: 'tablero', audience: 'cverdu' });
+    } catch (e) {
+      return sendError(res, 401, MSG.AUTH_TOKEN_INVALIDO, 'AUTH_SSO_003', e);
+    }
+
+    const sub = typeof payload?.sub === 'string' ? payload.sub.trim() : '';
+    const em = typeof payload?.em === 'string' ? payload.em.trim() : '';
+    const loginId = (em || sub).trim().toLowerCase();
+    if (!loginId) {
+      return sendError(res, 400, MSG.AUTH_FALTAN_DATOS, 'AUTH_SSO_004');
+    }
+
+    if (!isExternalAuthLoginEnabled()) {
+      return sendError(res, 403, 'SSO no habilitado en este entorno.', 'AUTH_SSO_005');
+    }
+
+    let row;
+    try {
+      row = await fetchUsuarioExternoPorLogin(loginId);
+    } catch (e) {
+      return sendError(res, 503, MSG.AUTH_SQL_NO_DISPONIBLE, 'AUTH_SSO_006', e);
+    }
+    if (!row) {
+      return sendError(res, 401, MSG.AUTH_CREDENCIALES, 'AUTH_SSO_007');
+    }
+    if (!isNivelPermitidoLoginExterno(row.nivel)) {
+      return sendError(res, 403, MSG.AUTH_NIVEL_SIN_ACCESO, 'AUTH_SSO_008');
+    }
+    const roleNombre = mapNivelToRoleNombre(row.nivel);
+    if (!roleNombre) {
+      return sendError(res, 403, MSG.AUTH_NIVEL_SIN_ACCESO, 'AUTH_SSO_008');
+    }
+    const role = await prisma.role.findUnique({ where: { nombre: roleNombre } });
+    if (!role) {
+      return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_SSO_009', { roleNombre });
+    }
+
+    let user;
+    try {
+      const prismaEmail = resolvePrismaEmailForExternoUser(loginId, row.loginMail);
+      user = await ensurePrismaUserFromExterno({
+        externUserId: row.externUserId,
+        emailNorm: prismaEmail,
+        nombre: row.nombre,
+        roleId: role.id,
+      });
+    } catch (e) {
+      if (e.code === 'SYNC_USER_EMAIL_USO_LOCAL') {
+        return sendError(res, 409, MSG.AUTH_EMAIL_CONFLICTO_IDENTIDAD, 'AUTH_SSO_010', e);
+      }
+      return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_SSO_011', e);
+    }
+
+    const jwtToken = jwt.sign(
+      { userId: user.id, email: user.email },
+      getJwtSecret(),
+      { expiresIn: TOKEN_EXPIRY }
+    );
+    const permisos = Array.isArray(user.role?.permisos) ? user.role.permisos : [];
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        nombre: user.nombre,
+        externUserId: user.externUserId ?? null,
+        role: { id: user.role.id, nombre: user.role.nombre, permisos },
+      },
+      token: jwtToken,
+    });
+  } catch (e) {
+    const conn = getPrismaConnectionFailureResponse(e);
+    if (conn) {
+      return sendError(res, conn.status, conn.message, conn.clientCode, e);
+    }
+    return sendError(res, 500, MSG.AUTH_SESION_ERROR, 'AUTH_SSO_012', e);
+  }
+});
+
 router.get('/me', async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {

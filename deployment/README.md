@@ -24,6 +24,7 @@ Desde la raíz del proyecto:
 
 ```bash
 cd /home/adm_agustin/comprasVerdu
+./deployment/bootstrap-secrets.sh   # (una vez) genera .env con secretos requeridos
 ./levantar.sh
 ```
 

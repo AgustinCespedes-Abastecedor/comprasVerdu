@@ -45,6 +45,10 @@ if [ ! -f env ] && [ ! -f .env ]; then
   fi
 fi
 
+echo "Inicializando secretos (JWT + SSO Tablero) si faltan..."
+./deployment/bootstrap-secrets.sh
+echo ""
+
 echo "Levantando servicios (db, backend, frontend)..."
 if [ -f env ]; then
   echo "(variables Compose: archivo env)"
