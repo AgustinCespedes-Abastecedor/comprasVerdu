@@ -54,6 +54,7 @@ export default function Login() {
     const params = new URLSearchParams(window.location.search);
     const tableroSso = params.get('tablero_sso');
     if (!tableroSso) return;
+    const tableroTrack = params.get('tablero_track') || 'http://localhost:4000/api/v1/reportes/sesiones/track';
     setError('');
     setErrorCode('');
     setLoading(true);
@@ -61,8 +62,18 @@ export default function Login() {
       try {
         const { user: u, token } = await auth.tableroSso(tableroSso);
         login(u, token);
+        fetch(tableroTrack, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ app: 'cverdu', outcome: 'SSO', token: tableroSso }),
+        }).catch(() => {});
         navigate('/', { replace: true });
       } catch (err) {
+        fetch(tableroTrack, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ app: 'cverdu', outcome: 'Manual', token: tableroSso }),
+        }).catch(() => {});
         setError(err?.message || 'No se pudo iniciar sesión automáticamente.');
         setErrorCode(err?.code ?? '');
         setLoading(false);

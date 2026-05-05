@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { Capacitor } from '@capacitor/core';
 import { proveedores, productos, compras } from '../api/client';
 import ProveedorLabel from '../components/ProveedorLabel';
@@ -169,6 +170,18 @@ export default function PlanillaCompra() {
     const onEscape = (e) => { if (e.key === 'Escape') setProviderPickerOpen(false); };
     document.addEventListener('keydown', onEscape);
     return () => document.removeEventListener('keydown', onEscape);
+  }, [providerPickerOpen]);
+
+  useEffect(() => {
+    if (!isApp()) return;
+    if (!providerPickerOpen) return;
+    const appShell = document.querySelector('.app-shell');
+    if (!appShell) return;
+    const prevOverflow = appShell.style.overflow;
+    appShell.style.overflow = 'hidden';
+    return () => {
+      appShell.style.overflow = prevOverflow;
+    };
   }, [providerPickerOpen]);
 
   useEffect(() => {
@@ -732,7 +745,7 @@ export default function PlanillaCompra() {
                 </span>
                 <ChevronDown className="planilla-provider-picker-chevron" aria-hidden strokeWidth={2} />
               </button>
-              {providerPickerOpen && (
+              {providerPickerOpen && createPortal(
                 <div
                   className="planilla-provider-picker-backdrop planilla-provider-picker-backdrop--top"
                   onClick={() => setProviderPickerOpen(false)}
@@ -810,7 +823,8 @@ export default function PlanillaCompra() {
                       </ul>
                     </div>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </>
           ) : (

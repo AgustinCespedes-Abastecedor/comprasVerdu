@@ -264,7 +264,7 @@ router.post('/tablero-sso', async (req, res) => {
 
     let payload;
     try {
-      payload = jwt.verify(token, secret, { issuer: 'tablero', audience: 'cverdu' });
+      payload = jwt.verify(token, secret, { issuer: 'tablero', audience: 'cverdu', clockTolerance: 10 });
     } catch (e) {
       return sendError(res, 401, MSG.AUTH_TOKEN_INVALIDO, 'AUTH_SSO_003', e);
     }

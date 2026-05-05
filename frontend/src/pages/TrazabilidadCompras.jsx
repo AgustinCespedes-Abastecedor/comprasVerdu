@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { Capacitor } from '@capacitor/core';
 import { trazabilidad, proveedores as apiProveedores } from '../api/client';
 import AppHeader from '../components/AppHeader';
@@ -152,6 +153,18 @@ export default function TrazabilidadCompras() {
   }, [providerPickerOpen]);
 
   useEffect(() => {
+    if (!isApp()) return;
+    if (!providerPickerOpen) return;
+    const appShell = document.querySelector('.app-shell');
+    if (!appShell) return;
+    const prevOverflow = appShell.style.overflow;
+    appShell.style.overflow = 'hidden';
+    return () => {
+      appShell.style.overflow = prevOverflow;
+    };
+  }, [providerPickerOpen]);
+
+  useEffect(() => {
     apiProveedores.list().then(setProveedoresList).catch(() => setProveedoresList([]));
   }, []);
 
@@ -256,7 +269,7 @@ export default function TrazabilidadCompras() {
                 </span>
                 <ChevronDown className="traz-provider-picker-chevron" aria-hidden strokeWidth={2} />
               </button>
-              {providerPickerOpen && (
+              {providerPickerOpen && createPortal(
                 <div
                   className="traz-provider-picker-backdrop"
                   onClick={() => setProviderPickerOpen(false)}
@@ -351,7 +364,8 @@ export default function TrazabilidadCompras() {
                       </ul>
                     </div>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </>
           ) : (

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { Capacitor } from '@capacitor/core';
 import * as XLSX from 'xlsx';
 import { compras, proveedores as apiProveedores } from '../api/client';
@@ -446,6 +447,18 @@ export default function VerCompras() {
   }, [providerPickerOpen]);
 
   useEffect(() => {
+    if (!isApp()) return;
+    if (!providerPickerOpen) return;
+    const appShell = document.querySelector('.app-shell');
+    if (!appShell) return;
+    const prevOverflow = appShell.style.overflow;
+    appShell.style.overflow = 'hidden';
+    return () => {
+      appShell.style.overflow = prevOverflow;
+    };
+  }, [providerPickerOpen]);
+
+  useEffect(() => {
     apiProveedores.list().then(setProveedoresList).catch(() => setProveedoresList([]));
   }, []);
 
@@ -562,7 +575,7 @@ export default function VerCompras() {
                 </span>
                 <ChevronDown className="vercompras-provider-picker-chevron" aria-hidden strokeWidth={2} />
               </button>
-              {providerPickerOpen && (
+              {providerPickerOpen && createPortal(
                 <div
                   className="vercompras-provider-picker-backdrop"
                   onClick={() => setProviderPickerOpen(false)}
@@ -657,7 +670,8 @@ export default function VerCompras() {
                       </ul>
                     </div>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </>
           ) : (

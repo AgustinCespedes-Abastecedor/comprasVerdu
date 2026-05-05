@@ -346,6 +346,7 @@ export default function VerRecepciones() {
         title="Precio de venta"
         size="large"
         boxClassName="verrecepciones-modal-box"
+        overlayClassName="modal-overlay--top"
         preventClose={guardandoPrecios}
         subtitle={modalRecepcion ? (
           <span>

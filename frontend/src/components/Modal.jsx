@@ -1,4 +1,5 @@
 import { useEffect, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import './Modal.css';
 
@@ -46,9 +47,13 @@ export default function Modal({
   useEffect(() => {
     if (!open) return;
     const prevOverflow = document.body.style.overflow;
+    const appShell = document.querySelector('.app-shell');
+    const prevAppShellOverflow = appShell ? appShell.style.overflow : '';
     document.body.style.overflow = 'hidden';
+    if (appShell) appShell.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prevOverflow;
+      if (appShell) appShell.style.overflow = prevAppShellOverflow;
     };
   }, [open]);
 
@@ -58,7 +63,7 @@ export default function Modal({
     if (!preventClose) onClose();
   };
 
-  return (
+  return createPortal(
     <div
       className={`modal-overlay${overlayClassName ? ` ${overlayClassName}` : ''}`}
       onClick={handleOverlayClick}
@@ -95,6 +100,7 @@ export default function Modal({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

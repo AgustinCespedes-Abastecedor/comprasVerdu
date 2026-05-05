@@ -17,7 +17,7 @@ RUN npm ci
 COPY frontend/ .
 # public/img suele ser symlink a ../../img; dentro del contenedor el destino no existe y vite build falla.
 RUN rm -rf public/img
-COPY img ./public/img
+RUN mkdir -p public/img
 
 RUN npm run build
 
